@@ -248,7 +248,10 @@ impl crate::pool::Client for PoolClient {
                 ) {
                     None => {
                         // Record timing for pipeline analysis
-                        global_collector().record_txn_verify(tx_hash, total_start.elapsed().as_secs_f64() * 1000.0);
+                        global_collector().record_txn_verify(
+                            tx_hash,
+                            total_start.elapsed().as_secs_f64() * 1000.0,
+                        );
                         Ok(checked_txn)
                     }
                     Some(status) => {
@@ -283,7 +286,10 @@ impl crate::pool::Client for PoolClient {
                             );
                         }
                         // Record timing for pipeline analysis
-                        global_collector().record_txn_verify(tx_hash, total_start.elapsed().as_secs_f64() * 1000.0);
+                        global_collector().record_txn_verify(
+                            tx_hash,
+                            total_start.elapsed().as_secs_f64() * 1000.0,
+                        );
                         Ok(checked_txn)
                     }
                     Some(status) => {

@@ -346,7 +346,10 @@ fn start_node_and_wait(node_config: Arc<NodeConfig>) -> Result<(NodeHandle, u128
     info!("Waiting for node services to fully initialize...");
     std::thread::sleep(std::time::Duration::from_secs(3));
     let node_startup_ms = node_start.elapsed().as_millis();
-    info!("[Phase Timing] Node startup (incl 3s wait): {}ms", node_startup_ms);
+    info!(
+        "[Phase Timing] Node startup (incl 3s wait): {}ms",
+        node_startup_ms
+    );
     Ok((node, node_startup_ms))
 }
 
@@ -367,14 +370,19 @@ fn build_node_config(
     } else {
         cli.txpool_max_count
     };
-    println!("[Benchmark] Setting txpool max_count to {}", txpool_max_count);
+    println!(
+        "[Benchmark] Setting txpool max_count to {}",
+        txpool_max_count
+    );
 
     let mut init_opt = StarcoinOpt {
         net: Some(chain_network.clone()),
         base_data_dir: Some(base_dir.to_path_buf()),
         ..Default::default()
     };
-    init_opt.txpool.set_max_per_sender(txpool_max_per_sender_for_bench);
+    init_opt
+        .txpool
+        .set_max_per_sender(txpool_max_per_sender_for_bench);
     init_opt.txpool.set_max_count(txpool_max_count);
     init_opt.genesis_config = genesis_config.clone();
     init_opt.network.disable_seed = true; // Single-node benchmark, no peers needed
@@ -385,7 +393,9 @@ fn build_node_config(
         base_data_dir: Some(base_dir.to_path_buf()),
         ..Default::default()
     };
-    global_opt.txpool.set_max_per_sender(txpool_max_per_sender_for_bench);
+    global_opt
+        .txpool
+        .set_max_per_sender(txpool_max_per_sender_for_bench);
     global_opt.txpool.set_max_count(txpool_max_count);
     global_opt.genesis_config = genesis_config;
     global_opt.network.disable_seed = true;
@@ -408,8 +418,11 @@ fn run_post_benchmark(cli: &Cli, node: NodeHandle) -> Result<()> {
         }
     }
 
-    let pipeline_stages: std::collections::HashMap<String, starcoin_pipeline_timing::StageTiming> = 
-        timing_stats.into_iter().map(|(k, v)| (k.to_string(), v)).collect();
+    let pipeline_stages: std::collections::HashMap<String, starcoin_pipeline_timing::StageTiming> =
+        timing_stats
+            .into_iter()
+            .map(|(k, v)| (k.to_string(), v))
+            .collect();
 
     node.stop()?;
 
@@ -419,7 +432,10 @@ fn run_post_benchmark(cli: &Cli, node: NodeHandle) -> Result<()> {
             Ok(json_content) => {
                 match serde_json::from_str::<results::BenchmarkJsonOutput>(&json_content) {
                     Ok(output) => {
-                        info!("[Agent Mode] Loaded stats from benchmark_results.json: TPS={:.2}", output.summary.tps);
+                        info!(
+                            "[Agent Mode] Loaded stats from benchmark_results.json: TPS={:.2}",
+                            output.summary.tps
+                        );
                         output.summary
                     }
                     Err(e) => {
@@ -429,7 +445,10 @@ fn run_post_benchmark(cli: &Cli, node: NodeHandle) -> Result<()> {
                 }
             }
             Err(e) => {
-                warn!("[Agent Mode] Failed to read benchmark_results.json: {}, using defaults", e);
+                warn!(
+                    "[Agent Mode] Failed to read benchmark_results.json: {}, using defaults",
+                    e
+                );
                 results::BenchmarkStats::default()
             }
         };
@@ -447,14 +466,20 @@ fn run_normal_bench(cli: &Cli) -> Result<()> {
     let base_dir = data_dir.path().to_path_buf();
 
     let custom_genesis = if matches!(network_choice, NetworkChoice::Custom) {
-        Some(prepare_custom_genesis_template(&base_dir, cli.custom_template)?)
+        Some(prepare_custom_genesis_template(
+            &base_dir,
+            cli.custom_template,
+        )?)
     } else {
         None
     };
     if matches!(network_choice, NetworkChoice::Custom) {
         let chain_dir = base_dir.join(chain_network.chain_name());
         if chain_dir.exists() {
-            info!("Removing existing custom chain data directory: {:?}", chain_dir);
+            info!(
+                "Removing existing custom chain data directory: {:?}",
+                chain_dir
+            );
             std::fs::remove_dir_all(&chain_dir)?;
         }
     }
@@ -469,13 +494,22 @@ fn run_normal_bench(cli: &Cli) -> Result<()> {
     clear_timing();
     enable_timing();
 
-    let rt = tokio::runtime::Builder::new_multi_thread().enable_all().build()?;
+    let rt = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()?;
     let bench_result = rt.block_on(execute_benchmark(
         &node,
-        cli.account_count, cli.initial_balance, cli.initial_gas_fee,
-        cli.gas_price, cli.max_gas, cli.batch_user_count,
-        cli.balance_wait_timeout_secs, cli.settle_delay_ms,
-        cli.preload_batches, cli.simple_transfer, cli.rounds,
+        cli.account_count,
+        cli.initial_balance,
+        cli.initial_gas_fee,
+        cli.gas_price,
+        cli.max_gas,
+        cli.batch_user_count,
+        cli.balance_wait_timeout_secs,
+        cli.settle_delay_ms,
+        cli.preload_batches,
+        cli.simple_transfer,
+        cli.rounds,
     ));
 
     run_post_benchmark(cli, node)?;
@@ -487,7 +521,10 @@ fn run_normal_bench(cli: &Cli) -> Result<()> {
 
 /// Prepare benchmark mode: setup + save state + exit (no benchmark execution)
 fn run_prepare_bench(cli: &Cli, prepare_dir: &Path) -> Result<()> {
-    println!("[Prepare] Creating prepared benchmark state at {:?}", prepare_dir);
+    println!(
+        "[Prepare] Creating prepared benchmark state at {:?}",
+        prepare_dir
+    );
     std::fs::create_dir_all(prepare_dir)?;
 
     let chain_data_dir = prepare_dir.join(PREPARED_CHAIN_DATA_DIR);
@@ -497,7 +534,10 @@ fn run_prepare_bench(cli: &Cli, prepare_dir: &Path) -> Result<()> {
     let chain_network = network_choice.to_chain_network()?;
 
     let custom_genesis = if matches!(network_choice, NetworkChoice::Custom) {
-        Some(prepare_custom_genesis_template(&chain_data_dir, cli.custom_template)?)
+        Some(prepare_custom_genesis_template(
+            &chain_data_dir,
+            cli.custom_template,
+        )?)
     } else {
         None
     };
@@ -510,12 +550,21 @@ fn run_prepare_bench(cli: &Cli, prepare_dir: &Path) -> Result<()> {
     let node_config = build_node_config(cli, &chain_data_dir, &chain_network, genesis_config)?;
     let (node, _) = start_node_and_wait(node_config.clone())?;
 
-    let rt = tokio::runtime::Builder::new_multi_thread().enable_all().build()?;
+    let rt = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()?;
     let signed_txns = rt.block_on(prepare_benchmark_state(
-        &node, cli.account_count, cli.initial_balance, cli.initial_gas_fee,
-        cli.gas_price, cli.max_gas, cli.batch_user_count,
-        cli.balance_wait_timeout_secs, cli.settle_delay_ms,
-        cli.simple_transfer, cli.rounds,
+        &node,
+        cli.account_count,
+        cli.initial_balance,
+        cli.initial_gas_fee,
+        cli.gas_price,
+        cli.max_gas,
+        cli.batch_user_count,
+        cli.balance_wait_timeout_secs,
+        cli.settle_delay_ms,
+        cli.simple_transfer,
+        cli.rounds,
         node_config,
     ))?;
 
@@ -526,7 +575,9 @@ fn run_prepare_bench(cli: &Cli, prepare_dir: &Path) -> Result<()> {
     let txns_size_mb = txns_json.len() as f64 / 1024.0 / 1024.0;
     println!(
         "[Prepare] Saved {} pre-signed transactions to {:?} ({:.1} MB)",
-        signed_txns.len(), txns_path, txns_size_mb
+        signed_txns.len(),
+        txns_path,
+        txns_size_mb
     );
 
     // Save metadata
@@ -547,9 +598,13 @@ fn run_prepare_bench(cli: &Cli, prepare_dir: &Path) -> Result<()> {
     let chain_size = dir_size(&chain_data_dir)?;
     println!(
         "[Prepare] Chain data at {:?} ({:.1} MB)",
-        chain_data_dir, chain_size as f64 / 1024.0 / 1024.0
+        chain_data_dir,
+        chain_size as f64 / 1024.0 / 1024.0
     );
-    println!("[Prepare] Done! Use --load-bench {:?} to run benchmarks from this state.", prepare_dir);
+    println!(
+        "[Prepare] Done! Use --load-bench {:?} to run benchmarks from this state.",
+        prepare_dir
+    );
     Ok(())
 }
 
@@ -559,8 +614,14 @@ fn run_load_bench(cli: &Cli, load_dir: &Path) -> Result<()> {
 
     // Load metadata
     let meta_path = load_dir.join(PREPARED_META_FILE);
-    let meta: PreparedBenchMeta = serde_json::from_str(&std::fs::read_to_string(&meta_path)
-        .map_err(|e| anyhow::anyhow!("Failed to read {:?}: {}. Run --prepare-bench first.", meta_path, e))?)?;
+    let meta: PreparedBenchMeta =
+        serde_json::from_str(&std::fs::read_to_string(&meta_path).map_err(|e| {
+            anyhow::anyhow!(
+                "Failed to read {:?}: {}. Run --prepare-bench first.",
+                meta_path,
+                e
+            )
+        })?)?;
     println!(
         "[Load] Loading prepared state: {} txns, {} accounts, {} rounds",
         meta.total_txn_count, meta.account_count, meta.rounds
@@ -573,7 +634,11 @@ fn run_load_bench(cli: &Cli, load_dir: &Path) -> Result<()> {
         .map_err(|e| anyhow::anyhow!("Failed to read {:?}: {}", txns_path, e))?;
     let signed_txns: Vec<SignedUserTransaction> = serde_json::from_str(&txns_json)?;
     let load_txns_ms = phase_start.elapsed().as_millis();
-    println!("[Phase Timing] Load signed txns from file: {}ms ({} txns)", load_txns_ms, signed_txns.len());
+    println!(
+        "[Phase Timing] Load signed txns from file: {}ms ({} txns)",
+        load_txns_ms,
+        signed_txns.len()
+    );
 
     // Copy chain data to temp dir (so prepared state stays clean for reuse)
     let phase_start = std::time::Instant::now();
@@ -600,7 +665,10 @@ fn run_load_bench(cli: &Cli, load_dir: &Path) -> Result<()> {
             Some(template_path.to_string_lossy().to_string())
         } else {
             // Fallback: use prepare_custom_genesis_template on the temp dir
-            Some(prepare_custom_genesis_template(&temp_chain_dir, cli.custom_template)?)
+            Some(prepare_custom_genesis_template(
+                &temp_chain_dir,
+                cli.custom_template,
+            )?)
         }
     } else {
         network_choice.genesis_name().map(ToOwned::to_owned)
@@ -613,8 +681,14 @@ fn run_load_bench(cli: &Cli, load_dir: &Path) -> Result<()> {
     enable_timing();
 
     // Run benchmark from pre-signed transactions
-    let rt = tokio::runtime::Builder::new_multi_thread().enable_all().build()?;
-    let bench_result = rt.block_on(run_benchmark_from_signed_txns(&node, signed_txns, meta.total_txn_count));
+    let rt = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()?;
+    let bench_result = rt.block_on(run_benchmark_from_signed_txns(
+        &node,
+        signed_txns,
+        meta.total_txn_count,
+    ));
 
     let total_setup_ms = total_start.elapsed().as_millis();
     println!(
@@ -1088,7 +1162,7 @@ fn build_transfer_transactions_sync(
                 next_seq,
                 gas_price,
                 max_gas,
-                G_STC_TOKEN_CODE.clone().try_into()?,
+                G_STC_TOKEN_CODE.clone(),
                 expire_time,
                 chain_id,
             )
@@ -1271,8 +1345,10 @@ impl BenchmarkState {
         ) {
             Ok(txns) => Some(txns),
             Err(e) => {
-                error!("Failed to build batch {} (round {}, batch_in_round {}): {:?}", 
-                       batch_index, round, batch_in_round, e);
+                error!(
+                    "Failed to build batch {} (round {}, batch_in_round {}): {:?}",
+                    batch_index, round, batch_in_round, e
+                );
                 None
             }
         }
@@ -1358,7 +1434,10 @@ async fn execute_benchmark(
         let phase_start = std::time::Instant::now();
         let receivers = create_account(account_count, account_service.clone()).await?;
         let account_creation_ms = phase_start.elapsed().as_millis();
-        info!("[Phase Timing] Account creation: {}ms ({} accounts)", account_creation_ms, account_count);
+        info!(
+            "[Phase Timing] Account creation: {}ms ({} accounts)",
+            account_creation_ms, account_count
+        );
 
         // Funding batch size: 10 receivers per transaction (~13.8M gas)
         let batch_size = 10usize;
@@ -1386,7 +1465,11 @@ async fn execute_benchmark(
         )
         .await?;
         let funding_ms = phase_start.elapsed().as_millis();
-        info!("[Phase Timing] Funding: {}ms ({} accounts)", funding_ms, receivers.len());
+        info!(
+            "[Phase Timing] Funding: {}ms ({} accounts)",
+            funding_ms,
+            receivers.len()
+        );
 
         // wait for node/txpool state to settle before observing benchmark traffic
         let phase_start = std::time::Instant::now();
@@ -1438,7 +1521,7 @@ async fn execute_benchmark(
 
         let expire_time = config.net().time_service().now_secs() + 3600;
         let mut all_transactions: Vec<RawUserTransaction2> = Vec::new();
-        
+
         let phase_start = std::time::Instant::now();
         for _ in 0..total_batches {
             if let Some(batch) = benchmark_state.build_next_batch(expire_time) {
@@ -1448,24 +1531,29 @@ async fn execute_benchmark(
         let build_ms = phase_start.elapsed().as_millis();
         info!(
             "[Phase Timing] Transaction building: {}ms ({} txns)",
-            build_ms, all_transactions.len()
+            build_ms,
+            all_transactions.len()
         );
-        
+
         // Sign and import ALL transactions at once
         let phase_start = std::time::Instant::now();
         let txn_hashes =
             sign_and_import_transactions(&all_transactions, &account_service, &txpool).await?;
         let sign_import_ms = phase_start.elapsed().as_millis();
-        info!("[Phase Timing] Sign + import: {}ms ({} txns)", sign_import_ms, txn_hashes.len());
-        
+        info!(
+            "[Phase Timing] Sign + import: {}ms ({} txns)",
+            sign_import_ms,
+            txn_hashes.len()
+        );
+
         info!(
             "[Phase Timing] TOTAL SETUP: {}ms (create={}ms + fund={}ms + settle={}ms + build={}ms + sign={}ms)",
             account_creation_ms + funding_ms + settle_ms + build_ms + sign_import_ms,
             account_creation_ms, funding_ms, settle_ms, build_ms, sign_import_ms
         );
-        
+
         benchmark_state.add_txn_hashes(&txn_hashes);
-        
+
         info!(
             "Preloading complete: {} transactions in txpool",
             txn_hashes.len()
@@ -1576,26 +1664,51 @@ async fn prepare_benchmark_state(
         let chain_reader_service = registry.service_ref::<ChainReaderService>().await?;
 
         wait_for_sufficient_balance(
-            account_count, initial_balance, initial_gas_fee, gas_price, max_gas,
-            chain_reader_service.clone(), storage1.clone(), storage2.clone(),
+            account_count,
+            initial_balance,
+            initial_gas_fee,
+            gas_price,
+            max_gas,
+            chain_reader_service.clone(),
+            storage1.clone(),
+            storage2.clone(),
             Duration::from_secs(balance_wait_timeout_secs),
-        ).await?;
+        )
+        .await?;
 
-        let txpool = registry.get_shared::<starcoin_txpool::TxPoolService>().await?;
+        let txpool = registry
+            .get_shared::<starcoin_txpool::TxPoolService>()
+            .await?;
 
         let phase_start = std::time::Instant::now();
         let receivers = create_account(account_count, account_service.clone()).await?;
         let account_creation_ms = phase_start.elapsed().as_millis();
-        info!("[Phase Timing] Account creation: {}ms ({} accounts)", account_creation_ms, account_count);
+        info!(
+            "[Phase Timing] Account creation: {}ms ({} accounts)",
+            account_creation_ms, account_count
+        );
 
         let batch_size = 10usize;
         let phase_start = std::time::Instant::now();
         transfer_to_accounts(
-            &receivers, initial_balance, gas_price, max_gas, config.clone(),
-            chain_reader_service.clone(), &txpool, storage1.clone(), storage2.clone(), batch_size,
-        ).await?;
+            &receivers,
+            initial_balance,
+            gas_price,
+            max_gas,
+            config.clone(),
+            chain_reader_service.clone(),
+            &txpool,
+            storage1.clone(),
+            storage2.clone(),
+            batch_size,
+        )
+        .await?;
         let funding_ms = phase_start.elapsed().as_millis();
-        info!("[Phase Timing] Funding: {}ms ({} accounts)", funding_ms, receivers.len());
+        info!(
+            "[Phase Timing] Funding: {}ms ({} accounts)",
+            funding_ms,
+            receivers.len()
+        );
 
         let phase_start = std::time::Instant::now();
         tokio::time::sleep(tokio::time::Duration::from_millis(settle_delay_ms)).await;
@@ -1606,7 +1719,13 @@ async fn prepare_benchmark_state(
         let chain_id = ChainId2::new(current_header.chain_id().id());
 
         let benchmark_state = BenchmarkState::new(
-            receivers, gas_price, max_gas, batch_user_count, chain_id, simple_transfer, rounds,
+            receivers,
+            gas_price,
+            max_gas,
+            batch_user_count,
+            chain_id,
+            simple_transfer,
+            rounds,
         );
 
         // Use expire_time within the on-chain transaction_timeout (86400s = 1 day).
@@ -1623,13 +1742,21 @@ async fn prepare_benchmark_state(
             }
         }
         let build_ms = phase_start.elapsed().as_millis();
-        info!("[Phase Timing] Transaction building: {}ms ({} txns)", build_ms, all_transactions.len());
+        info!(
+            "[Phase Timing] Transaction building: {}ms ({} txns)",
+            build_ms,
+            all_transactions.len()
+        );
 
         // Sign all transactions (but don't import to txpool)
         let phase_start = std::time::Instant::now();
         let signed_txns = sign_transactions(&all_transactions, &account_service).await?;
         let sign_ms = phase_start.elapsed().as_millis();
-        info!("[Phase Timing] Signing: {}ms ({} txns)", sign_ms, signed_txns.len());
+        info!(
+            "[Phase Timing] Signing: {}ms ({} txns)",
+            sign_ms,
+            signed_txns.len()
+        );
 
         info!(
             "[Phase Timing] TOTAL PREPARE: {}ms (create={}ms + fund={}ms + settle={}ms + build={}ms + sign={}ms)",
@@ -1653,7 +1780,9 @@ async fn run_benchmark_from_signed_txns(
     let registry = node.registry();
 
     let fut = async move {
-        let txpool = registry.get_shared::<starcoin_txpool::TxPoolService>().await?;
+        let txpool = registry
+            .get_shared::<starcoin_txpool::TxPoolService>()
+            .await?;
 
         // Wait for sync to reach Synchronized before importing txns.
         // The miner (GenerateBlockEventPacemaker) only produces blocks when synced.
@@ -1661,15 +1790,28 @@ async fn run_benchmark_from_signed_txns(
         // and the miner never starts.
         let sync_wait_start = std::time::Instant::now();
         loop {
-            if let Ok(status) = registry.get_shared::<starcoin_types::sync_status::SyncStatus>().await {
+            if let Ok(status) = registry
+                .get_shared::<starcoin_types::sync_status::SyncStatus>()
+                .await
+            {
                 let state = status.sync_status();
                 if matches!(state, starcoin_types::sync_status::SyncState::Synchronized) {
-                    println!("[Load] Sync reached Synchronized in {}ms", sync_wait_start.elapsed().as_millis());
+                    println!(
+                        "[Load] Sync reached Synchronized in {}ms",
+                        sync_wait_start.elapsed().as_millis()
+                    );
                     break;
                 }
-                println!("[Load] Waiting for sync... current: {:?} ({}ms elapsed)", state, sync_wait_start.elapsed().as_millis());
+                println!(
+                    "[Load] Waiting for sync... current: {:?} ({}ms elapsed)",
+                    state,
+                    sync_wait_start.elapsed().as_millis()
+                );
             } else {
-                println!("[Load] SyncStatus not yet available ({}ms elapsed)", sync_wait_start.elapsed().as_millis());
+                println!(
+                    "[Load] SyncStatus not yet available ({}ms elapsed)",
+                    sync_wait_start.elapsed().as_millis()
+                );
             }
             if sync_wait_start.elapsed().as_secs() > 30 {
                 anyhow::bail!("Timed out waiting for node sync (30s). The miner won't produce blocks without Synchronized status.");
@@ -1695,25 +1837,30 @@ async fn run_benchmark_from_signed_txns(
         println!("[Load] Importing {} txns to txpool...", signed_txns.len());
         // Import pre-signed transactions to txpool
         let phase_start = std::time::Instant::now();
-        let signed_txns_multi: Vec<MultiSignedUserTransaction> =
-            signed_txns.iter().map(|t| MultiSignedUserTransaction::VM2(t.clone())).collect();
-        let import_results = txpool.add_txns_multi_signed(
-            signed_txns_multi,
-            false,
-            None,
-        )?;
+        let signed_txns_multi: Vec<MultiSignedUserTransaction> = signed_txns
+            .iter()
+            .map(|t| MultiSignedUserTransaction::VM2(t.clone()))
+            .collect();
+        let import_results = txpool.add_txns_multi_signed(signed_txns_multi, false, None)?;
         let import_ms = phase_start.elapsed().as_millis();
         let accepted = import_results.iter().filter(|r| r.is_ok()).count();
         let rejected = import_results.len() - accepted;
-        println!("[Phase Timing] Import to txpool: {}ms ({} txns, {} accepted, {} rejected)",
-            import_ms, txn_hashes.len(), accepted, rejected);
+        println!(
+            "[Phase Timing] Import to txpool: {}ms ({} txns, {} accepted, {} rejected)",
+            import_ms,
+            txn_hashes.len(),
+            accepted,
+            rejected
+        );
 
         // Kick the miner: add_txns_multi_signed is a sync API that bypasses the event bus,
         // so the miner's GenerateBlockEventPacemaker doesn't get notified.
         // We broadcast GenerateBlockEvent directly to trigger block production.
         use starcoin_service_registry::bus::{Bus, BusService};
         let bus = registry.service_ref::<BusService>().await?;
-        match bus.broadcast(starcoin_types::system_events::GenerateBlockEvent::new(true, true)) {
+        match bus.broadcast(starcoin_types::system_events::GenerateBlockEvent::new(
+            true, true,
+        )) {
             Ok(_) => println!("[Load] Broadcast GenerateBlockEvent OK"),
             Err(e) => println!("[Load] Broadcast GenerateBlockEvent FAILED: {:?}", e),
         }
@@ -1737,7 +1884,9 @@ async fn run_benchmark_from_signed_txns(
             if last_progress.elapsed().as_secs() >= 5 {
                 println!(
                     "[Load] Progress: executed={}/{}, txpool_pending={}, elapsed={}s",
-                    executed, benchmark_state.total_txn_count, pending,
+                    executed,
+                    benchmark_state.total_txn_count,
+                    pending,
                     bench_start.elapsed().as_secs()
                 );
                 last_progress = std::time::Instant::now();
@@ -1745,7 +1894,9 @@ async fn run_benchmark_from_signed_txns(
                 // Re-kick the miner if no txns executed yet and pending > 0
                 if executed == 0 && pending > 0 {
                     kick_count += 1;
-                    let _ = bus.broadcast(starcoin_types::system_events::GenerateBlockEvent::new(true, true));
+                    let _ = bus.broadcast(starcoin_types::system_events::GenerateBlockEvent::new(
+                        true, true,
+                    ));
                     println!("[Load] Re-kick miner (attempt #{})", kick_count);
                 }
             }
@@ -2120,22 +2271,21 @@ impl ObserverService {
 
         // Count benchmark transactions only (not funding transactions)
         let mut benchmark_txn_count = 0usize;
-        
+
         for transaction in &block.body.transactions2 {
             let txn_hash = transaction.id();
-            
+
             // Only record benchmark transactions for TPS calculation
             if let Some(ref state) = self.benchmark_state {
                 if state.is_benchmark_txn(&txn_hash) {
-                    self.transaction_data
-                        .entry(txn_hash)
-                        .or_default()
-                        .push(TransactionExecutionResult::Executed(
+                    self.transaction_data.entry(txn_hash).or_default().push(
+                        TransactionExecutionResult::Executed(
                             connected_time_ms,
                             block_number,
                             block_id,
                             block_timestamp_ms,
-                        ));
+                        ),
+                    );
                     benchmark_txn_count += 1;
                 }
             }
@@ -2169,21 +2319,16 @@ impl ObserverService {
 
         // Record mined event only for benchmark transactions
         let mut benchmark_txn_count = 0usize;
-        
+
         for transaction in &block.body.transactions2 {
             let txn_hash = transaction.id();
-            
+
             // Only record benchmark transactions
             if let Some(ref state) = self.benchmark_state {
                 if state.is_benchmark_txn(&txn_hash) {
-                    self.transaction_data
-                        .entry(txn_hash)
-                        .or_default()
-                        .push(TransactionExecutionResult::Mined(
-                            mined_time_ms,
-                            block_number,
-                            block_id,
-                        ));
+                    self.transaction_data.entry(txn_hash).or_default().push(
+                        TransactionExecutionResult::Mined(mined_time_ms, block_number, block_id),
+                    );
                     benchmark_txn_count += 1;
                 }
             }
@@ -2226,7 +2371,7 @@ impl ObserverService {
 
         // Export to JSON for AI agent loop with pipeline timing data from global collector
         dumper.export_json("./benchmark_results.json")?;
-        
+
         dumper.dump_results()
     }
 }

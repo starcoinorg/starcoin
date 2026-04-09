@@ -207,15 +207,25 @@ impl GlobalTimingCollector {
     }
 
     /// Get or create block timing entry
-    pub fn get_or_create_block(&self, block_id: HashValue, block_number: u64, txn_count: usize) -> BlockPipelineTiming {
+    pub fn get_or_create_block(
+        &self,
+        block_id: HashValue,
+        block_number: u64,
+        txn_count: usize,
+    ) -> BlockPipelineTiming {
         let mut timings = self.block_timings.write();
-        timings.entry(block_id).or_insert_with(|| {
-            BlockPipelineTiming::new(block_number, block_id, txn_count)
-        }).clone()
+        timings
+            .entry(block_id)
+            .or_insert_with(|| BlockPipelineTiming::new(block_number, block_id, txn_count))
+            .clone()
     }
 
     /// Update block timing
-    pub fn update_block_timing(&self, block_id: HashValue, update_fn: impl FnOnce(&mut BlockPipelineTiming)) {
+    pub fn update_block_timing(
+        &self,
+        block_id: HashValue,
+        update_fn: impl FnOnce(&mut BlockPipelineTiming),
+    ) {
         if !self.is_enabled() {
             return;
         }
@@ -226,15 +236,20 @@ impl GlobalTimingCollector {
     }
 
     /// Record block build start time
-    pub fn record_block_build_start(&self, block_id: HashValue, block_number: u64, txn_count: usize) {
+    pub fn record_block_build_start(
+        &self,
+        block_id: HashValue,
+        block_number: u64,
+        txn_count: usize,
+    ) {
         if !self.is_enabled() {
             return;
         }
         let start_ms = self.now_epoch_ms();
         let mut timings = self.block_timings.write();
-        let entry = timings.entry(block_id).or_insert_with(|| {
-            BlockPipelineTiming::new(block_number, block_id, txn_count)
-        });
+        let entry = timings
+            .entry(block_id)
+            .or_insert_with(|| BlockPipelineTiming::new(block_number, block_id, txn_count));
         entry.build_start_ms = Some(start_ms);
     }
 
@@ -257,9 +272,9 @@ impl GlobalTimingCollector {
         }
         let start_ms = self.now_epoch_ms();
         let mut timings = self.block_timings.write();
-        let entry = timings.entry(block_id).or_insert_with(|| {
-            BlockPipelineTiming::new(block_number, block_id, txn_count)
-        });
+        let entry = timings
+            .entry(block_id)
+            .or_insert_with(|| BlockPipelineTiming::new(block_number, block_id, txn_count));
         entry.exec_start_ms = Some(start_ms);
     }
 
@@ -276,15 +291,20 @@ impl GlobalTimingCollector {
     }
 
     /// Record state commit start time
-    pub fn record_state_commit_start(&self, block_id: HashValue, block_number: u64, txn_count: usize) {
+    pub fn record_state_commit_start(
+        &self,
+        block_id: HashValue,
+        block_number: u64,
+        txn_count: usize,
+    ) {
         if !self.is_enabled() {
             return;
         }
         let start_ms = self.now_epoch_ms();
         let mut timings = self.block_timings.write();
-        let entry = timings.entry(block_id).or_insert_with(|| {
-            BlockPipelineTiming::new(block_number, block_id, txn_count)
-        });
+        let entry = timings
+            .entry(block_id)
+            .or_insert_with(|| BlockPipelineTiming::new(block_number, block_id, txn_count));
         entry.commit_start_ms = Some(start_ms);
     }
 
@@ -306,7 +326,7 @@ impl GlobalTimingCollector {
             return;
         }
         let mut samples = self.stage_samples.write();
-        samples.entry(stage).or_insert_with(Vec::new).push(TimingRecord {
+        samples.entry(stage).or_default().push(TimingRecord {
             duration_ms,
             item_count,
         });
@@ -333,7 +353,8 @@ impl GlobalTimingCollector {
             .values()
             .filter_map(|b| b.build_time_ms())
             .collect();
-        let build_txn_count: u64 = block_timings.values()
+        let build_txn_count: u64 = block_timings
+            .values()
             .filter(|b| b.build_time_ms().is_some())
             .map(|b| b.txn_count as u64)
             .sum();
@@ -347,7 +368,8 @@ impl GlobalTimingCollector {
             .values()
             .filter_map(|b| b.exec_time_ms())
             .collect();
-        let exec_txn_count: u64 = block_timings.values()
+        let exec_txn_count: u64 = block_timings
+            .values()
             .filter(|b| b.exec_time_ms().is_some())
             .map(|b| b.txn_count as u64)
             .sum();
@@ -361,7 +383,8 @@ impl GlobalTimingCollector {
             .values()
             .filter_map(|b| b.commit_time_ms())
             .collect();
-        let commit_txn_count: u64 = block_timings.values()
+        let commit_txn_count: u64 = block_timings
+            .values()
             .filter(|b| b.commit_time_ms().is_some())
             .map(|b| b.txn_count as u64)
             .sum();
@@ -387,7 +410,7 @@ impl GlobalTimingCollector {
     pub fn export_json(&self) -> String {
         let stats = self.calculate_stage_stats();
         let block_timings = self.get_block_timings();
-        
+
         let output = serde_json::json!({
             "pipeline_stages": stats.into_iter().map(|(k, v)| {
                 (k.to_string(), v)
@@ -396,7 +419,7 @@ impl GlobalTimingCollector {
             "total_blocks": block_timings.len(),
             "total_txns_verified": self.txn_verify_times.read().len(),
         });
-        
+
         serde_json::to_string_pretty(&output).unwrap_or_default()
     }
 }

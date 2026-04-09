@@ -729,7 +729,7 @@ impl BlockChain {
         // Record state commit timing
         let commit_start = std::time::Instant::now();
         global_collector().record_state_commit_start(block_id, header.number(), txn_count);
-        
+
         statedb2
             .flush()
             .map_err(BlockExecutorError::BlockChainStateErr)?;
@@ -2358,12 +2358,12 @@ impl BlockChain {
         // If cache hit, we can skip execution and apply_write_set entirely
         let state_cache = global_block_state_cache();
         let cached_state = state_cache.remove(header.txn_accumulator_root());
-        
+
         // Record VM Execute timing for DAG path
         let dag_txn_count_for_exec = transactions.len() + transactions2.len();
         let dag_vm_exec_start = std::time::Instant::now();
         global_collector().record_vm_exec_start(block_id, header.number(), dag_txn_count_for_exec);
-        
+
         // Execute or use cached data
         let (executed_data, executed_data2, cached_statedb, cached_statedb2) =
             if let Some(cached) = cached_state {
@@ -2402,7 +2402,7 @@ impl BlockChain {
                 )?;
                 (data, data2, None, None)
             };
-        
+
         // Record VM Execute end
         global_collector().record_vm_exec_end(block_id);
         let dag_vm_exec_duration_ms = dag_vm_exec_start.elapsed().as_secs_f64() * 1000.0;
@@ -2418,7 +2418,7 @@ impl BlockChain {
         let dag_txn_count = transactions.len() + transactions2.len();
         let dag_commit_start = std::time::Instant::now();
         global_collector().record_state_commit_start(block_id, header.number(), dag_txn_count);
-        
+
         if cached_statedb.is_some() && cached_statedb2.is_some() {
             // Flush cached statedbs
             let cached_db = cached_statedb.as_ref().unwrap();
@@ -2431,7 +2431,7 @@ impl BlockChain {
             statedb.flush()?;
             statedb2.flush()?;
         }
-        
+
         global_collector().record_state_commit_end(block_id);
         let dag_commit_duration_ms = dag_commit_start.elapsed().as_secs_f64() * 1000.0;
         if global_collector().is_enabled() {

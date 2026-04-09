@@ -7,8 +7,8 @@
 //! 4. State Commit - State persistence to storage
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use starcoin_pipeline_timing::StageTiming;
+use std::collections::HashMap;
 
 /// Bottleneck severity level
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -330,10 +330,7 @@ mod tests {
         let analyzer = BottleneckAnalyzer::new();
         let analysis = analyzer.analyze(&timings, 50.0);
 
-        assert_eq!(
-            analysis.primary_bottleneck,
-            Some("Block Build".to_string())
-        );
+        assert_eq!(analysis.primary_bottleneck, Some("Block Build".to_string()));
         assert!(analysis.improvement_potential_pct > 0.0);
     }
 }

@@ -1,0 +1,193 @@
+name: TPS Benchmark
+
+concurrency:
+  group: bench-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+    inputs:
+      runner_label:
+        description: "self-hosted runner label"
+        required: false
+        type: string
+        default: ""
+      strict_mode:
+        description: "Fail CI on TPS regression"
+        required: false
+        type: boolean
+        default: false
+
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, labeled]
+    branches:
+      - dual-verse-dag
+
+env:
+  # ── Toggle: set to "true" to make regressions fail the workflow ──
+  # Can also be overridden per-run via workflow_dispatch input.
+  BENCH_STRICT_MODE: "false"
+  CARGO_TERM_COLOR: always
+  RUST_LOG: error
+
+jobs:
+  choose-runner:
+    if: >-
+      (github.event_name == 'pull_request'
+        && contains(join(github.event.pull_request.labels.*.name, ','), 'ci-runner:'))
+      || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    outputs:
+      runs_on_json: ${{ steps.pick.outputs.runs_on_json }}
+    steps:
+      - name: Pick runner
+        id: pick
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          LABELS_JSON: ${{ toJson(github.event.pull_request.labels) }}
+          INPUT_LABEL: ${{ inputs.runner_label }}
+          DEFAULT_CI_RUNNER_LABEL: ${{ vars.DEFAULT_CI_RUNNER_LABEL }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            target=$(printf '%s' "$LABELS_JSON" \
+              | jq -r '.[]?.name | select(startswith("ci-runner:")) | sub("^ci-runner:\\s*"; "")' \
+              | head -n1)
+          else
+            target="$INPUT_LABEL"
+          fi
+          if [ -z "${target:-}" ] || [ "$target" = "null" ]; then
+            target="${DEFAULT_CI_RUNNER_LABEL:-}"
+          fi
+          if [ -z "${target:-}" ] || [ "$target" = "null" ]; then
+            echo "No runner label found." >&2; exit 1
+          fi
+          printf 'runs_on_json=%s\n' "$(jq -cn --arg t "$target" '["self-hosted", $t]')" >> "$GITHUB_OUTPUT"
+
+  tps-benchmark:
+    name: TPS Benchmark
+    needs: choose-runner
+    runs-on: ${{ fromJSON(needs.choose-runner.outputs.runs_on_json) }}
+    timeout-minutes: 30
+    steps:
+      # ── 1. Checkout current branch ──
+      - name: Checkout current branch
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0           # need full history to checkout base branch later
+
+      - name: Install Rust (reads rust-toolchain.toml)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup build environment
+        run: bash ./scripts/dev_setup.sh -b -t -m
+
+      # ── 2. Build & run benchmark on current branch ──
+      - name: Build benchmark binary (current branch)
+        run: cargo build --release -p starcoin-execute-bench
+
+      - name: Run benchmark (current branch)
+        run: |
+          rm -f benchmark_results.json
+          STARCOIN_FIXED_BLOCK_TIME=1 ./target/release/starcoin-execute-bench \
+            --simple-transfer \
+            --fixed-block-time \
+            --rounds 10 \
+            --agent-mode \
+            2>&1 | tail -20
+          cp benchmark_results.json bench_current.json
+        env:
+          RUST_LOG: error
+          RUST_BACKTRACE: full
+
+      # ── 3. Checkout base branch & run benchmark ──
+      - name: Run benchmark on base branch (dual-verse-dag)
+        id: base_bench
+        run: |
+          set -euo pipefail
+          BASE_BRANCH="dual-verse-dag"
+          CURRENT_SHA=$(git rev-parse HEAD)
+
+          # Stash any untracked files from the current-branch run
+          git stash --include-untracked || true
+
+          # Checkout base branch
+          git checkout "$BASE_BRANCH" -- 2>/dev/null || git checkout "origin/$BASE_BRANCH" --
+          git submodule update --init --recursive || true
+
+          # Check if the bench crate exists on the base branch
+          if [ ! -f sync/starcoin-execute-bench/Cargo.toml ]; then
+            echo "ℹ️  starcoin-execute-bench not found on $BASE_BRANCH — skipping base benchmark."
+            echo "has_base=false" >> "$GITHUB_OUTPUT"
+            # Return to current branch
+            git checkout "$CURRENT_SHA" --
+            git stash pop || true
+            exit 0
+          fi
+
+          echo "has_base=true" >> "$GITHUB_OUTPUT"
+
+          # Build & run on base
+          cargo build --release -p starcoin-execute-bench
+          rm -f benchmark_results.json
+          STARCOIN_FIXED_BLOCK_TIME=1 ./target/release/starcoin-execute-bench \
+            --simple-transfer \
+            --fixed-block-time \
+            --rounds 10 \
+            --agent-mode \
+            2>&1 | tail -20
+          cp benchmark_results.json bench_base.json
+
+          # Return to current branch
+          git checkout "$CURRENT_SHA" --
+          git stash pop || true
+        env:
+          RUST_LOG: error
+          RUST_BACKTRACE: full
+
+      # ── 4. Compare results ──
+      - name: Compare benchmark results
+        id: compare
+        run: |
+          set -euo pipefail
+
+          # Resolve strict mode: workflow_dispatch input takes precedence
+          STRICT="${{ inputs.strict_mode || env.BENCH_STRICT_MODE }}"
+
+          STRICT_FLAG=""
+          if [ "$STRICT" = "true" ]; then
+            STRICT_FLAG="--strict"
+          fi
+
+          BASE_FLAG=""
+          if [ "${{ steps.base_bench.outputs.has_base }}" = "true" ] && [ -f bench_base.json ]; then
+            BASE_FLAG="--base bench_base.json"
+          fi
+
+          python3 scripts/bench_compare.py \
+            --current bench_current.json \
+            $BASE_FLAG \
+            --output bench_report.md \
+            $STRICT_FLAG
+
+      # ── 5. Upload artifacts ──
+      - name: Upload benchmark artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tps-benchmark-results
+          path: |
+            bench_current.json
+            bench_base.json
+            bench_report.md
+          retention-days: 90
+
+      # ── 6. Post report as PR comment ──
+      - name: Post benchmark report to PR
+        if: always() && github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: tps-benchmark
+          path: bench_report.md
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -64,18 +64,18 @@ fn calculate_trimmed_mean(values: &[f64], trim_pct: f64) -> f64 {
         // Not enough data to trim, return regular mean
         return values.iter().sum::<f64>() / values.len() as f64;
     }
-    
+
     let mut sorted = values.to_vec();
     sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-    
+
     let trim_count = ((values.len() as f64) * trim_pct).floor() as usize;
     let trim_count = trim_count.max(1).min(values.len() / 2 - 1); // At least 1, but keep at least 1 value
-    
+
     let trimmed = &sorted[trim_count..sorted.len() - trim_count];
     if trimmed.is_empty() {
         return sorted[sorted.len() / 2]; // Return median if over-trimmed
     }
-    
+
     trimmed.iter().sum::<f64>() / trimmed.len() as f64
 }
 
@@ -165,7 +165,11 @@ impl std::fmt::Display for BenchmarkStats {
             "TPS (per-block, mined->exec) - Min: {:.2} | Max: {:.2} | Avg: {:.2} | Median: {:.2}",
             self.mined_tps_min, self.mined_tps_max, self.mined_tps_avg, self.mined_tps_median
         )?;
-        writeln!(f, "Total Executed: {} | Benchmark Blocks: {}", self.total_executed, self.block_count)?;
+        writeln!(
+            f,
+            "Total Executed: {} | Benchmark Blocks: {}",
+            self.total_executed, self.block_count
+        )?;
         writeln!(
             f,
             "Unique Txn (with Added): {} | Duplicates: {} ({:.1}%)",
@@ -248,19 +252,26 @@ impl<'a> ResultsDumper<'a> {
 
         // Calculate TPS based on executed times (OLD - affected by event queue delays)
         let tps = self.calculate_tps_from_executed();
-        
+
         // Calculate TPS based on block timestamps (STABLE - not affected by event queue delays)
         // This uses block header timestamps set when blocks are created, providing more
         // consistent measurements for CI benchmarks.
-        let (block_ts_tps, _total_txns, _first_block_ts, _last_block_ts) = 
+        let (block_ts_tps, _total_txns, _first_block_ts, _last_block_ts) =
             self.calculate_tps_from_block_timestamps();
-        
+
         // Use block timestamp TPS as stable_tps (more reliable for CI)
         let stable_tps = block_ts_tps;
-        
+
         // Calculate per-block TPS statistics (for reference, not used as stable_tps)
-        let (block_tps_min, block_tps_max, block_tps_avg, block_tps_median, _old_stable_tps, block_count, middle_block_count) =
-            self.calculate_per_block_tps_stats();
+        let (
+            block_tps_min,
+            block_tps_max,
+            block_tps_avg,
+            block_tps_median,
+            _old_stable_tps,
+            block_count,
+            middle_block_count,
+        ) = self.calculate_per_block_tps_stats();
         // Calculate per-block TPS statistics (mined_time -> executed_time)
         let (mined_tps_min, mined_tps_max, mined_tps_avg, mined_tps_median) =
             self.calculate_per_block_mined_tps_stats();
@@ -389,9 +400,9 @@ impl<'a> ResultsDumper<'a> {
         let first_block_ts = sorted.first().unwrap().1;
         let last_block_ts = sorted.last().unwrap().1;
         let total_txns: usize = sorted.iter().map(|(_, _, cnt)| cnt).sum();
-        
+
         let duration_secs = (last_block_ts - first_block_ts) as f64 / 1000.0;
-        
+
         let tps = if duration_secs > 0.0 {
             total_txns as f64 / duration_secs
         } else {
@@ -474,11 +485,13 @@ impl<'a> ResultsDumper<'a> {
         for (block_num, (block_ts, exec_ts, txn_count)) in sorted_blocks.iter() {
             let duration_ms = exec_ts.saturating_sub(*block_ts);
             let duration_secs = duration_ms as f64 / 1000.0;
-            let tps = if duration_secs > 0.0 { *txn_count as f64 / duration_secs } else { 0.0 };
-            if *exec_ts > *block_ts && *txn_count > 0 {
-                if duration_secs > 0.0 {
-                    all_block_tps.push((*block_num, tps));
-                }
+            let tps = if duration_secs > 0.0 {
+                *txn_count as f64 / duration_secs
+            } else {
+                0.0
+            };
+            if *exec_ts > *block_ts && *txn_count > 0 && duration_secs > 0.0 {
+                all_block_tps.push((*block_num, tps));
             }
         }
 
@@ -516,7 +529,15 @@ impl<'a> ResultsDumper<'a> {
             (median_tps, all_block_tps.len())
         };
 
-        (min_tps, max_tps, avg_tps, median_tps, stable_tps, block_count, middle_block_count)
+        (
+            min_tps,
+            max_tps,
+            avg_tps,
+            median_tps,
+            stable_tps,
+            block_count,
+            middle_block_count,
+        )
     }
 
     /// Calculate per-block TPS statistics based on Mined event time.
@@ -604,12 +625,9 @@ impl<'a> ResultsDumper<'a> {
     }
 
     /// Export benchmark results to JSON format for AI agent loop consumption
-    pub fn export_json(
-        &self,
-        file_path: &str,
-    ) -> anyhow::Result<()> {
+    pub fn export_json(&self, file_path: &str) -> anyhow::Result<()> {
         let stats = self.calculate_stats();
-        
+
         // Build stage timing data from global collector
         let stage_timings: HashMap<String, StageTiming> = global_collector()
             .calculate_stage_stats()
@@ -622,7 +640,8 @@ impl<'a> ResultsDumper<'a> {
             summary: stats,
             pipeline_stages: stage_timings,
             block_count: self.get_user_transfer_block_stats().len(),
-            top_latency_blocks: self.get_top_latency_blocks(10)
+            top_latency_blocks: self
+                .get_top_latency_blocks(10)
                 .into_iter()
                 .map(|(id, num, lat)| TopLatencyBlock {
                     block_id: id.to_string(),
@@ -634,9 +653,8 @@ impl<'a> ResultsDumper<'a> {
 
         let json = serde_json::to_string_pretty(&output)
             .context("failed to serialize benchmark results to JSON")?;
-        
-        std::fs::write(file_path, json)
-            .context("failed to write JSON file")?;
+
+        std::fs::write(file_path, json).context("failed to write JSON file")?;
 
         info!("Exported benchmark results to {}", file_path);
         Ok(())

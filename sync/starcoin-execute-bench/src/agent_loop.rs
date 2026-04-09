@@ -81,7 +81,8 @@ impl BenchmarkOutput {
                         stage: "Block Build".to_string(),
                         priority: "MEDIUM".to_string(),
                         title: "Incremental state root computation".to_string(),
-                        description: "Compute state root incrementally during block building".to_string(),
+                        description: "Compute state root incrementally during block building"
+                            .to_string(),
                         expected_improvement_pct: 20.0,
                     });
                 }
@@ -122,12 +123,24 @@ impl BenchmarkOutput {
 
 impl std::fmt::Display for BenchmarkOutput {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "╔══════════════════════════════════════════════════════════════╗")?;
-        writeln!(f, "║                 BENCHMARK ANALYSIS OUTPUT                    ║")?;
-        writeln!(f, "╠══════════════════════════════════════════════════════════════╣")?;
+        writeln!(
+            f,
+            "╔══════════════════════════════════════════════════════════════╗"
+        )?;
+        writeln!(
+            f,
+            "║                 BENCHMARK ANALYSIS OUTPUT                    ║"
+        )?;
+        writeln!(
+            f,
+            "╠══════════════════════════════════════════════════════════════╣"
+        )?;
         writeln!(f, "║ Run ID: {}", self.run_id)?;
         writeln!(f, "║ Timestamp: {}", self.timestamp)?;
-        writeln!(f, "╚══════════════════════════════════════════════════════════════╝")?;
+        writeln!(
+            f,
+            "╚══════════════════════════════════════════════════════════════╝"
+        )?;
         writeln!(f)?;
 
         // Sample Quality and method description based on block count
@@ -141,11 +154,18 @@ impl std::fmt::Display for BenchmarkOutput {
 
         // Benchmark Results - highlight stable TPS for CI
         writeln!(f, "========== Benchmark Results ==========")?;
-        writeln!(f, "Total Blocks: {} | Used for calc: {} [{}]", 
-            self.stats.block_count, self.stats.middle_block_count, sample_quality)?;
+        writeln!(
+            f,
+            "Total Blocks: {} | Used for calc: {} [{}]",
+            self.stats.block_count, self.stats.middle_block_count, sample_quality
+        )?;
         writeln!(f)?;
         writeln!(f, "╭─────────────────────────────────────────╮")?;
-        writeln!(f, "│  ★ STABLE TPS (CI Metric): {:<12.2} │", self.stats.stable_tps)?;
+        writeln!(
+            f,
+            "│  ★ STABLE TPS (CI Metric): {:<12.2} │",
+            self.stats.stable_tps
+        )?;
         writeln!(f, "│    ({})     │", method_desc)?;
         writeln!(f, "╰─────────────────────────────────────────╯")?;
         writeln!(f)?;
@@ -159,24 +179,40 @@ impl std::fmt::Display for BenchmarkOutput {
         writeln!(
             f,
             "Per-block TPS - Min: {:.2} | Max: {:.2} | Avg: {:.2} | Median: {:.2}",
-            self.stats.block_tps_min, self.stats.block_tps_max,
-            self.stats.block_tps_avg, self.stats.block_tps_median
+            self.stats.block_tps_min,
+            self.stats.block_tps_max,
+            self.stats.block_tps_avg,
+            self.stats.block_tps_median
         )?;
         writeln!(f, "Total Executed: {} txns", self.stats.total_executed)?;
         writeln!(
             f,
             "Latency - Min: {:.2}ms | Max: {:.2}ms | Avg: {:.2}ms | Median: {:.2}ms",
-            self.stats.min_latency_ms, self.stats.max_latency_ms,
-            self.stats.avg_latency_ms, self.stats.median_latency_ms
+            self.stats.min_latency_ms,
+            self.stats.max_latency_ms,
+            self.stats.avg_latency_ms,
+            self.stats.median_latency_ms
         )?;
         writeln!(f, "========================================")?;
         writeln!(f)?;
 
         // Pipeline Analysis
         writeln!(f, "========== Pipeline Analysis ==========")?;
-        writeln!(f, "Total Pipeline Time: {:.2}ms", self.pipeline_analysis.total_time_ms)?;
-        writeln!(f, "Observed TPS: {:.2}", self.pipeline_analysis.observed_tps)?;
-        writeln!(f, "Pipeline Efficiency: {:.1}%", self.pipeline_analysis.efficiency * 100.0)?;
+        writeln!(
+            f,
+            "Total Pipeline Time: {:.2}ms",
+            self.pipeline_analysis.total_time_ms
+        )?;
+        writeln!(
+            f,
+            "Observed TPS: {:.2}",
+            self.pipeline_analysis.observed_tps
+        )?;
+        writeln!(
+            f,
+            "Pipeline Efficiency: {:.1}%",
+            self.pipeline_analysis.efficiency * 100.0
+        )?;
         writeln!(f)?;
         writeln!(f, "Stage Breakdown:")?;
         for stage in &self.pipeline_analysis.stages {
@@ -188,8 +224,11 @@ impl std::fmt::Display for BenchmarkOutput {
             writeln!(
                 f,
                 "  {}: {:.2}ms avg ({:.1}% of total){} | throughput: {:.2} txns/s",
-                stage.stage, stage.avg_time_ms, stage.time_percentage,
-                bottleneck_marker, stage.throughput
+                stage.stage,
+                stage.avg_time_ms,
+                stage.time_percentage,
+                bottleneck_marker,
+                stage.throughput
             )?;
         }
         if let Some(ref bottleneck) = self.pipeline_analysis.primary_bottleneck {
@@ -206,9 +245,16 @@ impl std::fmt::Display for BenchmarkOutput {
                 writeln!(
                     f,
                     "{}. [{}] {} - {}",
-                    i + 1, suggestion.priority, suggestion.stage, suggestion.title
+                    i + 1,
+                    suggestion.priority,
+                    suggestion.stage,
+                    suggestion.title
                 )?;
-                writeln!(f, "   Expected improvement: {:.0}%", suggestion.expected_improvement_pct)?;
+                writeln!(
+                    f,
+                    "   Expected improvement: {:.0}%",
+                    suggestion.expected_improvement_pct
+                )?;
             }
             writeln!(f, "==============================================")?;
         }
