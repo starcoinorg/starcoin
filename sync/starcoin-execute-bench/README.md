@@ -20,7 +20,7 @@ This will:
 
 ### Expected Output
 
-```
+```text
 ========== Benchmark Results ==========
 TPS (executed-time): ~900-1100
 TPS (per-block, block_ts->exec) - Min/Max/Avg

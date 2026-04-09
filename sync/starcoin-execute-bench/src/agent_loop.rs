@@ -1,4 +1,4 @@
-//! Simplified Agent Output - Stat)less benchmark analysis
+//! Simplified Agent Output - Stateless benchmark analysis
 //!
 //! Provides:
 //! 1. Pipeline analysis with bottleneck detection

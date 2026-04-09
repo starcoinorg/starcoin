@@ -113,7 +113,7 @@ jobs:
           git stash --include-untracked || true
 
           # Checkout base branch
-          git checkout "$BASE_BRANCH" -- 2>/dev/null || git checkout "origin/$BASE_BRANCH" --
+          git checkout "$BASE_BRANCH" 2>/dev/null || git checkout "origin/$BASE_BRANCH"
           git submodule update --init --recursive || true
 
           # Check if the bench crate exists on the base branch
@@ -121,7 +121,7 @@ jobs:
             echo "ℹ️  starcoin-execute-bench not found on $BASE_BRANCH — skipping base benchmark."
             echo "has_base=false" >> "$GITHUB_OUTPUT"
             # Return to current branch
-            git checkout "$CURRENT_SHA" --
+            git checkout "$CURRENT_SHA"
             git stash pop || true
             exit 0
           fi
@@ -140,7 +140,7 @@ jobs:
           cp benchmark_results.json bench_base.json
 
           # Return to current branch
-          git checkout "$CURRENT_SHA" --
+          git checkout "$CURRENT_SHA"
           git stash pop || true
         env:
           RUST_LOG: error
