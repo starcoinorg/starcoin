@@ -18,10 +18,10 @@ pub mod verified_rpc_client;
 
 static SYNC_PROFILING_INFO_ENABLED: AtomicBool = AtomicBool::new(false);
 
-pub fn set_sync_profiling_info_enabled(enabled: bool) {
+pub(crate) fn set_sync_profiling_info_enabled(enabled: bool) {
     SYNC_PROFILING_INFO_ENABLED.store(enabled, Ordering::Relaxed);
 }
 
-pub fn sync_profiling_info_enabled() -> bool {
+pub(crate) fn sync_profiling_info_enabled() -> bool {
     SYNC_PROFILING_INFO_ENABLED.load(Ordering::Relaxed)
 }

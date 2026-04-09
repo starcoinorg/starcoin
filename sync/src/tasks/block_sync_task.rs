@@ -1002,15 +1002,14 @@ where
         let collect_result = match ensure_result {
             Ok(ParallelSign::NeedMoreBlocks) => Ok(CollectorState::Need),
             Ok(ParallelSign::Continue) => {
-                let state = self.check_enough();
-                if let anyhow::Result::Ok(CollectorState::Enough) = &state {
-                    if self.chain.has_dag_block(block.header().id())? {
+                match self.check_enough()? {
+                    CollectorState::Enough if self.chain.has_dag_block(block.header().id())? => {
                         let current_header = self.chain.current_header();
                         let current_block = self
                             .local_store
                             .get_block(current_header.id())?
                             .expect("failed to get the current block which should exist");
-                        self.latest_block_id = block.header().id();
+                        self.latest_block_id = current_header.id();
                         let notify_begin = Instant::now();
                         let notify_result = self.notify_connected_block(
                             current_block,
@@ -1018,11 +1017,12 @@ where
                                 .get_block_info(current_header.id())?
                                 .expect("block info should exist"),
                             BlockConnectAction::ConnectExecutedBlock,
-                            state?,
+                            CollectorState::Enough,
                         );
                         notify_connected_ms = notify_begin.elapsed().as_millis();
                         notify_result
-                    } else {
+                    }
+                    _ => {
                         info!("successfully ensure block's parents exist");
 
                         let timestamp = block.header().timestamp();
@@ -1055,61 +1055,17 @@ where
                             }
                         };
                         apply_connect_ms = apply_begin.elapsed().as_millis();
-                        self.latest_block_id = block.header().id();
+                        self.latest_block_id = self.chain.current_header().id();
 
                         //verify target
-                        let state: Result<CollectorState, anyhow::Error> =
-                            self.check_enough_by_info(block_info.clone());
+                        let state = self.check_enough_by_info(block_info.clone())?;
 
                         let notify_begin = Instant::now();
                         let notify_result =
-                            self.notify_connected_block(block, block_info, action, state?);
+                            self.notify_connected_block(block, block_info, action, state);
                         notify_connected_ms = notify_begin.elapsed().as_millis();
                         notify_result
                     }
-                } else {
-                    info!("successfully ensure block's parents exist");
-
-                    let timestamp = block.header().timestamp();
-
-                    let block_info = if self.chain.has_dag_block(block.header().id())? {
-                        block_info
-                    } else {
-                        None
-                    };
-
-                    let apply_begin = Instant::now();
-                    let (block_info, action) = match block_info {
-                        Some(block_info) => {
-                            let multi_state = self.local_store.get_vm_multi_state(block.id())?;
-                            self.chain.connect(ExecutedBlock::new(
-                                block.clone(),
-                                block_info.clone(),
-                                multi_state,
-                            ))?;
-                            (block_info, BlockConnectAction::ConnectExecutedBlock)
-                        }
-                        None => {
-                            self.apply_block(block.clone(), peer_id)?;
-                            self.chain.time_service().adjust(timestamp);
-                            (
-                                self.chain.status().info,
-                                BlockConnectAction::ConnectNewBlock,
-                            )
-                        }
-                    };
-                    apply_connect_ms = apply_begin.elapsed().as_millis();
-                    self.latest_block_id = block.header().id();
-
-                    //verify target
-                    let state: Result<CollectorState, anyhow::Error> =
-                        self.check_enough_by_info(block_info.clone());
-
-                    let notify_begin = Instant::now();
-                    let notify_result =
-                        self.notify_connected_block(block, block_info, action, state?);
-                    notify_connected_ms = notify_begin.elapsed().as_millis();
-                    notify_result
                 }
             }
             Err(err) => Err(err),

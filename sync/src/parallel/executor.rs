@@ -10,7 +10,7 @@ use starcoin_config::TimeService;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
-use starcoin_logger::prelude::{error, info};
+use starcoin_logger::prelude::{error, info, warn};
 use starcoin_storage::Store;
 use starcoin_storage::Store2;
 use starcoin_types::block::{Block, BlockHeader};
@@ -27,6 +27,7 @@ use tokio::{
 };
 
 const MAX_TOTAL_WAITING_TIME: u64 = 3600000; // an hour
+const MAX_READY_PARENT_CACHE_ENTRIES: usize = 100_000;
 const WAIT_PARENTS_LOG_MS: u128 = 500;
 const EXECUTE_SLOW_LOG_MS: u128 = 200;
 const SYNC_PROF_PREFIX: &str = "[sync-prof]";
@@ -145,6 +146,9 @@ impl DagBlockExecutor {
 
             if !chain.has_block_connected(&header)? {
                 return Ok(false);
+            }
+            if ready_parent_cache.len() >= MAX_READY_PARENT_CACHE_ENTRIES {
+                ready_parent_cache.clear();
             }
             ready_parent_cache.insert(*parent_id);
         }
@@ -276,6 +280,17 @@ impl DagBlockExecutor {
                                             block.header().id(),
                                             e
                                         );
+                                        if let Err(send_err) = self
+                                            .send_state(ExecuteState::Error(Box::new(
+                                                header.clone(),
+                                            )))
+                                            .await
+                                        {
+                                            error!(
+                                                "failed to send error state: {:?}, for reason: {:?}",
+                                                header, send_err
+                                            );
+                                        }
                                         break;
                                     }
                                 }
@@ -286,6 +301,17 @@ impl DagBlockExecutor {
                                         Ok(new_chain) => Some(new_chain),
                                         Err(e) => {
                                             error!("failed to fork in parallel for: {:?}", e);
+                                            if let Err(send_err) = self
+                                                .send_state(ExecuteState::Error(Box::new(
+                                                    header.clone(),
+                                                )))
+                                                .await
+                                            {
+                                                error!(
+                                                    "failed to send error state: {:?}, for reason: {:?}",
+                                                    header, send_err
+                                                );
+                                            }
                                             break;
                                         }
                                     }
@@ -322,19 +348,47 @@ impl DagBlockExecutor {
                         {
                             Ok(result) => result,
                             Err(_) => {
+                                let elapsed_ms = execute_begin.elapsed().as_millis();
                                 error!(
                                     "sync parallel worker execute exceeded timeout ({}ms), report failure immediately: {:?}",
                                     self.execute_timeout_ms,
                                     header
                                 );
-                                execute_handle.abort();
+                                warn!(
+                                    "spawn_blocking execution cannot be force-aborted once running; report timeout and detach completion watcher: {:?}",
+                                    header
+                                );
+                                let timeout_header = header.clone();
+                                tokio::spawn(async move {
+                                    match execute_handle.await {
+                                        Ok((_updated_chain, Ok(executed_block))) => {
+                                            warn!(
+                                                "timed-out execute finished later: block_id={}, block_number={}",
+                                                executed_block.header().id(),
+                                                executed_block.header().number()
+                                            );
+                                        }
+                                        Ok((_updated_chain, Err(err))) => {
+                                            warn!(
+                                                "timed-out execute finished later with error: block={:?}, error={:?}",
+                                                timeout_header, err
+                                            );
+                                        }
+                                        Err(join_err) => {
+                                            warn!(
+                                                "timed-out execute completion watcher join error: block={:?}, error={:?}",
+                                                timeout_header, join_err
+                                            );
+                                        }
+                                    }
+                                });
                                 if sync_profiling_info_enabled() {
                                     error!(
                                         "{} stage=parallel_execute status=timeout block_id={} block_number={} elapsed_ms={}",
                                         SYNC_PROF_PREFIX,
                                         header.id(),
                                         header.number(),
-                                        execute_begin.elapsed().as_millis()
+                                        elapsed_ms
                                     );
                                 }
                                 let _ = self

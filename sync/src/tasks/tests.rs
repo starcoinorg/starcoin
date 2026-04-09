@@ -1323,11 +1323,32 @@ pub async fn test_range_location() -> Result<()> {
 
 #[derive(Clone)]
 struct SequenceRangeLocateFetcher {
-    responses: Arc<Mutex<VecDeque<RangeInLocation>>>,
+    responses: Arc<Mutex<VecDeque<RangeLocateMockStep>>>,
+}
+
+#[derive(Clone)]
+struct RangeLocateMockStep {
+    expected_start_id: HashValue,
+    expected_end_id: Option<HashValue>,
+    response: RangeInLocation,
+}
+
+impl RangeLocateMockStep {
+    fn new(
+        expected_start_id: HashValue,
+        expected_end_id: Option<HashValue>,
+        response: RangeInLocation,
+    ) -> Self {
+        Self {
+            expected_start_id,
+            expected_end_id,
+            response,
+        }
+    }
 }
 
 impl SequenceRangeLocateFetcher {
-    fn new(responses: Vec<RangeInLocation>) -> Self {
+    fn new(responses: Vec<RangeLocateMockStep>) -> Self {
         Self {
             responses: Arc::new(Mutex::new(VecDeque::from(responses))),
         }
@@ -1338,17 +1359,30 @@ impl BlockIdRangeFetcher for SequenceRangeLocateFetcher {
     fn fetch_range_locate(
         &self,
         _peer: Option<PeerId>,
-        _start_id: HashValue,
-        _end_id: Option<HashValue>,
+        start_id: HashValue,
+        end_id: Option<HashValue>,
     ) -> BoxFuture<Result<RangeInLocation>> {
         let responses = self.responses.clone();
         async move {
             let mut guard = responses
                 .lock()
                 .map_err(|_| format_err!("range locate fetcher lock poisoned"))?;
-            guard
+            let response = guard
                 .pop_front()
-                .ok_or_else(|| format_err!("no more range locate mock responses"))
+                .ok_or_else(|| format_err!("no more range locate mock responses"))?;
+            ensure!(
+                response.expected_start_id == start_id,
+                "unexpected range locate start_id: expected {}, got {}",
+                response.expected_start_id,
+                start_id
+            );
+            ensure!(
+                response.expected_end_id == end_id,
+                "unexpected range locate end_id: expected {:?}, got {:?}",
+                response.expected_end_id,
+                end_id
+            );
+            Ok(response.response)
         }
         .boxed()
     }
@@ -1361,11 +1395,15 @@ async fn test_range_location_direct_in_selected_chain_hit() -> Result<()> {
     let _ = local_chain.produce_and_apply_with_tips_for_times(8)?;
 
     let storage = local_chain.head().get_storage();
+    let head_id = local_chain.head().current_header().id();
     let genesis_id = storage
         .get_genesis()?
         .ok_or_else(|| format_err!("genesis should exist"))?;
-    let fetcher =
-        SequenceRangeLocateFetcher::new(vec![RangeInLocation::InSelectedChain(genesis_id, vec![])]);
+    let fetcher = SequenceRangeLocateFetcher::new(vec![RangeLocateMockStep::new(
+        head_id,
+        None,
+        RangeInLocation::InSelectedChain(genesis_id, vec![]),
+    )]);
 
     let task_state = FindRangeLocateTask::new(
         local_chain.head().current_header().id(),
@@ -1401,12 +1439,25 @@ async fn test_range_location_not_in_chain_then_fallback_to_genesis() -> Result<(
     let _ = local_chain.produce_and_apply_with_tips_for_times(12)?;
 
     let storage = local_chain.head().get_storage();
+    let head_id = local_chain.head().current_header().id();
     let genesis_id = storage
         .get_genesis()?
         .ok_or_else(|| format_err!("genesis should exist"))?;
+    let first_header = storage
+        .get_block_header_by_hash(head_id)?
+        .ok_or_else(|| format_err!("missing header for head {}", head_id))?;
+    let fallback_start_id = if first_header.pruning_point() == HashValue::zero() {
+        genesis_id
+    } else {
+        first_header.pruning_point()
+    };
     let fetcher = SequenceRangeLocateFetcher::new(vec![
-        RangeInLocation::NotInSelectedChain,
-        RangeInLocation::InSelectedChain(genesis_id, vec![]),
+        RangeLocateMockStep::new(head_id, None, RangeInLocation::NotInSelectedChain),
+        RangeLocateMockStep::new(
+            fallback_start_id,
+            Some(head_id),
+            RangeInLocation::InSelectedChain(genesis_id, vec![]),
+        ),
     ]);
 
     let task_state = FindRangeLocateTask::new(
@@ -1443,12 +1494,14 @@ async fn test_range_location_len_one_uses_hash_value_when_no_prior_common() -> R
     let _ = local_chain.produce_and_apply_with_tips_for_times(6)?;
 
     let storage = local_chain.head().get_storage();
+    let head_id = local_chain.head().current_header().id();
     let genesis_id = storage
         .get_genesis()?
         .ok_or_else(|| format_err!("genesis should exist"))?;
-    let fetcher = SequenceRangeLocateFetcher::new(vec![RangeInLocation::InSelectedChain(
-        genesis_id,
-        vec![HashValue::random()],
+    let fetcher = SequenceRangeLocateFetcher::new(vec![RangeLocateMockStep::new(
+        head_id,
+        None,
+        RangeInLocation::InSelectedChain(genesis_id, vec![HashValue::from_u64(900_001)]),
     )]);
 
     let task_state = FindRangeLocateTask::new(
@@ -1500,10 +1553,19 @@ async fn test_range_location_all_in_range_then_len_one_returns_last_common() -> 
         .get_block_info_by_number(8)?
         .ok_or_else(|| format_err!("missing block info #8"))?
         .block_id();
+    let head_id = local_chain.head().current_header().id();
 
     let fetcher = SequenceRangeLocateFetcher::new(vec![
-        RangeInLocation::InSelectedChain(id_2, vec![id_4, id_8]),
-        RangeInLocation::InSelectedChain(id_8, vec![HashValue::random()]),
+        RangeLocateMockStep::new(
+            head_id,
+            None,
+            RangeInLocation::InSelectedChain(id_2, vec![id_4, id_8]),
+        ),
+        RangeLocateMockStep::new(
+            id_8,
+            None,
+            RangeInLocation::InSelectedChain(id_8, vec![HashValue::from_u64(900_002)]),
+        ),
     ]);
 
     let task_state = FindRangeLocateTask::new(
@@ -1545,10 +1607,20 @@ async fn test_range_location_in_range_then_len_one_keeps_prior_common() -> Resul
         .get_block_info_by_number(3)?
         .ok_or_else(|| format_err!("missing block info #3"))?
         .block_id();
+    let head_id = local_chain.head().current_header().id();
+    let in_range_end_id = HashValue::from_u64(900_011);
 
     let fetcher = SequenceRangeLocateFetcher::new(vec![
-        RangeInLocation::InSelectedChain(id_3, vec![id_3, HashValue::random()]),
-        RangeInLocation::InSelectedChain(id_3, vec![HashValue::random()]),
+        RangeLocateMockStep::new(
+            head_id,
+            None,
+            RangeInLocation::InSelectedChain(id_3, vec![id_3, in_range_end_id]),
+        ),
+        RangeLocateMockStep::new(
+            id_3,
+            Some(in_range_end_id),
+            RangeInLocation::InSelectedChain(id_3, vec![HashValue::from_u64(900_012)]),
+        ),
     ]);
 
     let task_state = FindRangeLocateTask::new(
@@ -1585,13 +1657,18 @@ async fn test_range_location_not_in_range_returns_hash_value() -> Result<()> {
     let _ = local_chain.produce_and_apply_with_tips_for_times(6)?;
 
     let storage = local_chain.head().get_storage();
+    let head_id = local_chain.head().current_header().id();
     let genesis_id = storage
         .get_genesis()?
         .ok_or_else(|| format_err!("genesis should exist"))?;
 
-    let fetcher = SequenceRangeLocateFetcher::new(vec![RangeInLocation::InSelectedChain(
-        genesis_id,
-        vec![HashValue::random(), HashValue::random()],
+    let fetcher = SequenceRangeLocateFetcher::new(vec![RangeLocateMockStep::new(
+        head_id,
+        None,
+        RangeInLocation::InSelectedChain(
+            genesis_id,
+            vec![HashValue::from_u64(900_021), HashValue::from_u64(900_022)],
+        ),
     )]);
 
     let task_state = FindRangeLocateTask::new(
