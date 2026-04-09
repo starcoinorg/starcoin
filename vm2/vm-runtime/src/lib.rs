@@ -16,7 +16,6 @@ use starcoin_gas_schedule::{
 
 mod access_path_cache;
 mod errors;
-mod layout_identifier_mapping_cache;
 pub mod move_vm_ext;
 pub mod parallel_executor;
 mod verifier;

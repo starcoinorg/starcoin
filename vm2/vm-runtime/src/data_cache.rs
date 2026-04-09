@@ -18,6 +18,9 @@ use move_vm_runtime::config::DEFAULT_MAX_VALUE_NEST_DEPTH;
 use move_vm_types::delayed_values::delayed_field_id::{
     DelayedFieldID, ExtractUniqueIndex, ExtractWidth, TryFromMoveValue,
 };
+#[cfg(test)]
+use move_vm_types::layout_identifier_mapping::compute_layout_has_identifier_mappings;
+use move_vm_types::layout_identifier_mapping::LayoutIdentifierMappingCache;
 use move_vm_types::loaded_data::runtime_types::TypeBuilder;
 use move_vm_types::value_serde::{ValueSerDeContext, ValueToIdentifierMapping};
 use move_vm_types::value_traversal::find_identifiers_in_value;
@@ -64,9 +67,6 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-#[cfg(test)]
-use crate::layout_identifier_mapping_cache::compute_layout_has_identifier_mappings;
-use crate::layout_identifier_mapping_cache::LayoutIdentifierMappingCache;
 use crate::parallel_executor::{
     materialize_events, materialize_resource_write_set, storage_wrapper::DelayedFieldCache,
 };
@@ -260,7 +260,7 @@ impl<S: StateView> TStateView for StateViewCache<'_, S> {
 impl<'a, S: StateView> StorageAdapter<'a, S> {
     fn layout_has_identifier_mappings(&self, layout: &MoveTypeLayout) -> bool {
         self.layout_identifier_mapping_cache
-            .has_identifier_mappings(layout)
+            .has_identifier_mappings_stable_ref(layout)
     }
 
     pub fn new(
@@ -1214,7 +1214,7 @@ pub(crate) mod tests {
         let start_cached = Instant::now();
         let mut cached_acc = 0usize;
         for _ in 0..iterations {
-            let hit = cache.has_identifier_mappings(&layout);
+            let hit = cache.has_identifier_mappings_stable_ref(&layout);
             cached_acc ^= usize::from(black_box(hit));
         }
         let cached_elapsed = start_cached.elapsed();

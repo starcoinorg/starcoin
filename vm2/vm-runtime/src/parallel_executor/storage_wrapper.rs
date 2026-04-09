@@ -14,6 +14,7 @@ use move_table_extension::{TableHandle, TableResolver};
 use move_vm_types::delayed_values::delayed_field_id::{
     DelayedFieldID, ExtractUniqueIndex, TryFromMoveValue,
 };
+use move_vm_types::layout_identifier_mapping::LayoutIdentifierMappingCache;
 use move_vm_types::value_serde::{ValueSerDeContext, ValueToIdentifierMapping};
 use move_vm_types::value_traversal::find_identifiers_in_value;
 use starcoin_aggregator::bounded_math::{BoundedMath, SignedU128};
@@ -41,7 +42,6 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::Arc;
 
 use crate::data_cache::get_resource_group_member_from_metadata;
-use crate::layout_identifier_mapping_cache::LayoutIdentifierMappingCache;
 use crate::move_vm_ext::{resource_state_key, AsExecutorView, ResourceGroupResolver};
 use crate::parallel_executor::{ParallelStateKey, ParallelStateValue};
 
@@ -180,7 +180,7 @@ pub(crate) struct VersionedView<'a, S: StateView> {
 impl<'a, S: StateView> VersionedView<'a, S> {
     fn layout_has_identifier_mappings(&self, layout: &MoveTypeLayout) -> bool {
         self.layout_identifier_mapping_cache
-            .has_identifier_mappings(layout)
+            .has_identifier_mappings_stable_ref(layout)
     }
 
     pub fn new(
