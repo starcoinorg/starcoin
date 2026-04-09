@@ -10,7 +10,9 @@ use move_binary_format::CompiledModule;
 use move_bytecode_utils::compiled_module_viewer::CompiledModuleView;
 use move_core_types::metadata::Metadata;
 use move_core_types::resolver::{resource_size, ModuleResolver, ResourceResolver};
-use move_core_types::value::{MoveStructLayout, MoveTypeLayout};
+#[cfg(test)]
+use move_core_types::value::MoveStructLayout;
+use move_core_types::value::MoveTypeLayout;
 use move_table_extension::{TableHandle, TableResolver};
 use move_vm_runtime::config::DEFAULT_MAX_VALUE_NEST_DEPTH;
 use move_vm_types::delayed_values::delayed_field_id::{
@@ -56,12 +58,15 @@ use std::sync::{
     Arc,
 };
 use std::{
-    cell::{Cell, RefCell},
+    cell::RefCell,
     collections::btree_map::BTreeMap,
     collections::HashSet,
     ops::{Deref, DerefMut},
 };
 
+#[cfg(test)]
+use crate::layout_identifier_mapping_cache::compute_layout_has_identifier_mappings;
+use crate::layout_identifier_mapping_cache::LayoutIdentifierMappingCache;
 use crate::parallel_executor::{
     materialize_events, materialize_resource_write_set, storage_wrapper::DelayedFieldCache,
 };
@@ -151,57 +156,6 @@ struct GroupReadInfo {
     size: u64,
     delayed_ids: HashSet<DelayedFieldID>,
     layouts: BTreeMap<StructTag, Arc<MoveTypeLayout>>,
-}
-
-fn compute_layout_has_identifier_mappings(layout: &MoveTypeLayout) -> bool {
-    match layout {
-        MoveTypeLayout::Native(..) => true,
-        MoveTypeLayout::Vector(inner) => compute_layout_has_identifier_mappings(inner),
-        MoveTypeLayout::Struct(struct_layout) => match struct_layout {
-            MoveStructLayout::Runtime(fields) => {
-                fields.iter().any(compute_layout_has_identifier_mappings)
-            }
-            MoveStructLayout::WithFields(fields) => fields
-                .iter()
-                .any(|field| compute_layout_has_identifier_mappings(&field.layout)),
-            MoveStructLayout::WithTypes { fields, .. } => fields
-                .iter()
-                .any(|field| compute_layout_has_identifier_mappings(&field.layout)),
-        },
-        _ => false,
-    }
-}
-
-#[derive(Default)]
-struct LayoutIdentifierMappingCache {
-    last_key: Cell<usize>,
-    last_value: Cell<bool>,
-    has_last: Cell<bool>,
-    entries: RefCell<HashMap<usize, bool>>,
-}
-
-impl LayoutIdentifierMappingCache {
-    fn has_identifier_mappings(&self, layout: &MoveTypeLayout) -> bool {
-        let key = layout as *const MoveTypeLayout as usize;
-        if self.has_last.get() && self.last_key.get() == key {
-            return self.last_value.get();
-        }
-
-        if let Some(cached) = self.entries.borrow().get(&key) {
-            let value = *cached;
-            self.last_key.set(key);
-            self.last_value.set(value);
-            self.has_last.set(true);
-            return value;
-        }
-
-        let computed = compute_layout_has_identifier_mappings(layout);
-        self.entries.borrow_mut().insert(key, computed);
-        self.last_key.set(key);
-        self.last_value.set(computed);
-        self.has_last.set(true);
-        computed
-    }
 }
 
 /// Adapter to convert a `ExecutorView` into a `MoveResolver`.

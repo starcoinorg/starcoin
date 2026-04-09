@@ -9,7 +9,7 @@ use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::{ModuleId, StructTag};
 use move_core_types::metadata::Metadata;
 use move_core_types::resolver::{resource_size, ModuleResolver, ResourceResolver};
-use move_core_types::value::{MoveStructLayout, MoveTypeLayout};
+use move_core_types::value::MoveTypeLayout;
 use move_table_extension::{TableHandle, TableResolver};
 use move_vm_types::delayed_values::delayed_field_id::{
     DelayedFieldID, ExtractUniqueIndex, TryFromMoveValue,
@@ -36,11 +36,12 @@ use starcoin_vm_types::state_store::{
     state_value::StateValueMetadata, StateView, TStateView,
 };
 use starcoin_vm_types::write_set::{TransactionWrite, WriteOp};
-use std::cell::{Cell, RefCell};
+use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::Arc;
 
 use crate::data_cache::get_resource_group_member_from_metadata;
+use crate::layout_identifier_mapping_cache::LayoutIdentifierMappingCache;
 use crate::move_vm_ext::{resource_state_key, AsExecutorView, ResourceGroupResolver};
 use crate::parallel_executor::{ParallelStateKey, ParallelStateValue};
 
@@ -162,57 +163,6 @@ struct GroupReadInfo {
     size: u64,
     delayed_ids: HashSet<DelayedFieldID>,
     layouts: BTreeMap<StructTag, Arc<MoveTypeLayout>>,
-}
-
-fn compute_layout_has_identifier_mappings(layout: &MoveTypeLayout) -> bool {
-    match layout {
-        MoveTypeLayout::Native(..) => true,
-        MoveTypeLayout::Vector(inner) => compute_layout_has_identifier_mappings(inner),
-        MoveTypeLayout::Struct(struct_layout) => match struct_layout {
-            MoveStructLayout::Runtime(fields) => {
-                fields.iter().any(compute_layout_has_identifier_mappings)
-            }
-            MoveStructLayout::WithFields(fields) => fields
-                .iter()
-                .any(|field| compute_layout_has_identifier_mappings(&field.layout)),
-            MoveStructLayout::WithTypes { fields, .. } => fields
-                .iter()
-                .any(|field| compute_layout_has_identifier_mappings(&field.layout)),
-        },
-        _ => false,
-    }
-}
-
-#[derive(Default)]
-struct LayoutIdentifierMappingCache {
-    last_key: Cell<usize>,
-    last_value: Cell<bool>,
-    has_last: Cell<bool>,
-    entries: RefCell<HashMap<usize, bool>>,
-}
-
-impl LayoutIdentifierMappingCache {
-    fn has_identifier_mappings(&self, layout: &MoveTypeLayout) -> bool {
-        let key = layout as *const MoveTypeLayout as usize;
-        if self.has_last.get() && self.last_key.get() == key {
-            return self.last_value.get();
-        }
-
-        if let Some(cached) = self.entries.borrow().get(&key) {
-            let value = *cached;
-            self.last_key.set(key);
-            self.last_value.set(value);
-            self.has_last.set(true);
-            return value;
-        }
-
-        let computed = compute_layout_has_identifier_mappings(layout);
-        self.entries.borrow_mut().insert(key, computed);
-        self.last_key.set(key);
-        self.last_value.set(computed);
-        self.has_last.set(true);
-        computed
-    }
 }
 
 pub(crate) struct VersionedView<'a, S: StateView> {
