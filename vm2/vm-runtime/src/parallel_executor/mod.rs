@@ -261,7 +261,11 @@ impl ParallelStarcoinVM {
         )
         .with_delayed_fields(delayed_fields_enabled)
         .execute_transactions_parallel_with_delayed_fields(
-            (state_view, delayed_field_cache.clone()),
+            (
+                state_view,
+                delayed_field_cache.clone(),
+                max_value_nest_depth,
+            ),
             signature_verified_block,
         ) {
             Ok((results, delayed_fields)) => {
@@ -369,138 +373,28 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
     state_view: &S,
     max_value_nest_depth: Option<u64>,
 ) -> Result<Vec<TransactionOutput>, VMStatus> {
-    let mut outputs = outputs;
-    let mut needs_sequential = false;
-    let mut has_agg_v1 = false;
-    let mut has_group_dup = false;
-    let mut group_touches = 0u64;
-    let mut group_keys = HashSet::new();
-    for (_, output) in outputs.iter() {
-        if !output.output.aggregator_v1_delta_set().is_empty() {
-            needs_sequential = true;
-            has_agg_v1 = true;
-            break;
-        }
-        for (key, op) in output.output.resource_write_set() {
-            if matches!(
-                op,
-                AbstractResourceWriteOp::WriteResourceGroup(_)
-                    | AbstractResourceWriteOp::ResourceGroupInPlaceDelayedFieldChange(_)
-            ) {
-                group_touches += 1;
-                if !group_keys.insert(key.clone()) {
-                    needs_sequential = true;
-                    has_group_dup = true;
-                    break;
-                }
-            }
-        }
-        if needs_sequential {
-            break;
-        }
-    }
-    outputs.sort_by_key(|(idx, _)| *idx);
-
-    if !needs_sequential {
-        let mut results = outputs
-            .into_par_iter()
-            .map(|(txn_idx, output)| {
-                let (vm_output, group_read_layouts) = output.into_inner();
-                let has_delayed = vm_output.contains_delayed_fields();
-                let has_group_ops = vm_output.resource_write_set().values().any(|op| {
-                    matches!(
-                        op,
-                        AbstractResourceWriteOp::WriteResourceGroup(_)
-                            | AbstractResourceWriteOp::ResourceGroupInPlaceDelayedFieldChange(_)
-                    )
-                });
-                if !has_delayed && vm_output.aggregator_v1_delta_set().is_empty() && !has_group_ops
-                {
-                    let txn_output = vm_output.into_transaction_output().map_err(|err| {
-                        VMStatus::error(
-                            StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
-                            Some(err.to_string()),
-                        )
-                    })?;
-                    return Ok((txn_idx, txn_output));
-                }
-                let mapping = DelayedFieldValueMapping {
-                    delayed_fields: &delayed_fields,
-                    txn_idx,
-                };
-
-                let mut group_cache = HashMap::new();
-                let patched_resource_write_set = if has_group_ops {
-                    materialize_resource_write_set(
-                        &vm_output,
-                        &mapping,
-                        &delayed_field_cache,
-                        &group_read_layouts,
-                        state_view,
-                        &mut group_cache,
-                        has_delayed,
-                        max_value_nest_depth,
-                    )?
-                } else {
-                    materialize_resource_write_set_no_groups(
-                        &vm_output,
-                        &mapping,
-                        &delayed_field_cache,
-                        max_value_nest_depth,
-                    )?
-                };
-                let patched_events = if has_delayed {
-                    materialize_events(&vm_output, &mapping, max_value_nest_depth)?
-                } else {
-                    vm_output
-                        .events()
-                        .iter()
-                        .map(|(event, _)| event.clone())
-                        .collect()
-                };
-
-                let txn_output = vm_output
-                    .into_transaction_output_with_materialized_write_set(
-                        Vec::new(),
-                        patched_resource_write_set,
-                        patched_events,
-                    )
-                    .map_err(|err| {
-                        VMStatus::error(
-                            StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
-                            Some(err.to_string()),
-                        )
-                    })?;
-                Ok((txn_idx, txn_output))
-            })
-            .collect::<Result<Vec<_>, VMStatus>>()?;
-
-        results.sort_by_key(|(idx, _)| *idx);
-        return Ok(results.into_iter().map(|(_, output)| output).collect());
+    fn is_group_write_op(op: &AbstractResourceWriteOp) -> bool {
+        matches!(
+            op,
+            AbstractResourceWriteOp::WriteResourceGroup(_)
+                | AbstractResourceWriteOp::ResourceGroupInPlaceDelayedFieldChange(_)
+        )
     }
 
-    info!(
-        target: "vm-bench",
-        "materialize sequential: agg_v1={} group_dup={} group_touches={}",
-        has_agg_v1,
-        has_group_dup,
-        group_touches
-    );
-    let mut state_cache = StateViewCache::new(state_view);
-    let mut group_cache: HashMap<StateKey, BTreeMap<StructTag, Bytes>> = HashMap::new();
-    let mut results = Vec::with_capacity(outputs.len());
-
-    for (txn_idx, output) in outputs.into_iter() {
-        let (mut vm_output, group_read_layouts) = output.into_inner();
+    fn materialize_parallel_candidate<S: StateView + Sync>(
+        txn_idx: usize,
+        output: StarcoinTransactionOutput,
+        delayed_fields: &VersionedDelayedFields<DelayedFieldID>,
+        delayed_field_cache: &DelayedFieldCache,
+        state_view: &S,
+        max_value_nest_depth: Option<u64>,
+    ) -> Result<(usize, TransactionOutput), VMStatus> {
+        let (vm_output, group_read_layouts) = output.into_inner();
         let has_delayed = vm_output.contains_delayed_fields();
-        let has_agg_v1 = !vm_output.aggregator_v1_delta_set().is_empty();
-        let has_group_ops = vm_output.resource_write_set().values().any(|op| {
-            matches!(
-                op,
-                AbstractResourceWriteOp::WriteResourceGroup(_)
-                    | AbstractResourceWriteOp::ResourceGroupInPlaceDelayedFieldChange(_)
-            )
-        });
+        let has_group_ops = vm_output
+            .resource_write_set()
+            .values()
+            .any(is_group_write_op);
         if !has_delayed && vm_output.aggregator_v1_delta_set().is_empty() && !has_group_ops {
             let txn_output = vm_output.into_transaction_output().map_err(|err| {
                 VMStatus::error(
@@ -508,36 +402,34 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
                     Some(err.to_string()),
                 )
             })?;
-            state_cache
-                .push_write_set(txn_output.write_set())
-                .map_err(|err| {
-                    VMStatus::error(
-                        StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR,
-                        Some(format!("Failed to apply write set: {:?}", err)),
-                    )
-                })?;
-            results.push(txn_output);
-            continue;
+            return Ok((txn_idx, txn_output));
         }
 
-        if has_delayed || has_agg_v1 {
-            vm_output.try_materialize(&state_cache)?;
-        }
         let mapping = DelayedFieldValueMapping {
-            delayed_fields: &delayed_fields,
+            delayed_fields,
             txn_idx,
         };
 
-        let patched_resource_write_set = materialize_resource_write_set(
-            &vm_output,
-            &mapping,
-            &delayed_field_cache,
-            &group_read_layouts,
-            &state_cache,
-            &mut group_cache,
-            has_delayed,
-            max_value_nest_depth,
-        )?;
+        let mut group_cache = HashMap::new();
+        let patched_resource_write_set = if has_group_ops {
+            materialize_resource_write_set(
+                &vm_output,
+                &mapping,
+                delayed_field_cache,
+                &group_read_layouts,
+                state_view,
+                &mut group_cache,
+                has_delayed,
+                max_value_nest_depth,
+            )?
+        } else {
+            materialize_resource_write_set_no_groups(
+                &vm_output,
+                &mapping,
+                delayed_field_cache,
+                max_value_nest_depth,
+            )?
+        };
         let patched_events = if has_delayed {
             materialize_events(&vm_output, &mapping, max_value_nest_depth)?
         } else {
@@ -560,6 +452,158 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
                     Some(err.to_string()),
                 )
             })?;
+        Ok((txn_idx, txn_output))
+    }
+
+    let mut outputs = outputs;
+    let mut has_agg_v1 = false;
+    let mut group_touches = 0u64;
+    let mut group_touch_counts: HashMap<StateKey, usize> = HashMap::new();
+    for (_, output) in outputs.iter() {
+        if !output.output.aggregator_v1_delta_set().is_empty() {
+            has_agg_v1 = true;
+        }
+        for (key, op) in output.output.resource_write_set() {
+            if is_group_write_op(op) {
+                group_touches += 1;
+                *group_touch_counts.entry(key.clone()).or_insert(0) += 1;
+            }
+        }
+    }
+    let has_group_dup = group_touch_counts.values().any(|count| *count > 1);
+    let needs_sequential = has_agg_v1 || has_group_dup;
+    outputs.sort_by_key(|(idx, _)| *idx);
+
+    if !needs_sequential {
+        let mut results = outputs
+            .into_par_iter()
+            .map(|(txn_idx, output)| {
+                materialize_parallel_candidate(
+                    txn_idx,
+                    output,
+                    &delayed_fields,
+                    delayed_field_cache.as_ref(),
+                    state_view,
+                    max_value_nest_depth,
+                )
+            })
+            .collect::<Result<Vec<_>, VMStatus>>()?;
+
+        results.sort_by_key(|(idx, _)| *idx);
+        return Ok(results.into_iter().map(|(_, output)| output).collect());
+    }
+
+    info!(
+        target: "vm-bench",
+        "materialize sequential: agg_v1={} group_dup={} group_touches={}",
+        has_agg_v1,
+        has_group_dup,
+        group_touches
+    );
+    let mut state_cache = StateViewCache::new(state_view);
+    let mut group_cache: HashMap<StateKey, BTreeMap<StructTag, Bytes>> = HashMap::new();
+    let ordered_indices = outputs.iter().map(|(idx, _)| *idx).collect::<Vec<_>>();
+    let mut sequential_outputs = HashMap::new();
+    let mut parallel_candidates = Vec::new();
+    for (txn_idx, output) in outputs.into_iter() {
+        let has_delayed = output.output.contains_delayed_fields();
+        let has_agg_v1 = !output.output.aggregator_v1_delta_set().is_empty();
+        let touches_duplicated_group =
+            output.output.resource_write_set().iter().any(|(key, op)| {
+                is_group_write_op(op) && group_touch_counts.get(key).copied().unwrap_or(0) > 1
+            });
+        // In mixed mode, keep delayed-field outputs in sequential path so
+        // delayed_field_cache updates remain in transaction order.
+        if has_delayed || has_agg_v1 || touches_duplicated_group {
+            sequential_outputs.insert(txn_idx, output);
+        } else {
+            parallel_candidates.push((txn_idx, output));
+        }
+    }
+
+    let mut parallel_results = parallel_candidates
+        .into_par_iter()
+        .map(|(txn_idx, output)| {
+            materialize_parallel_candidate(
+                txn_idx,
+                output,
+                &delayed_fields,
+                delayed_field_cache.as_ref(),
+                state_view,
+                max_value_nest_depth,
+            )
+        })
+        .collect::<Result<Vec<_>, VMStatus>>()?
+        .into_iter()
+        .collect::<HashMap<_, _>>();
+
+    let mut results = Vec::with_capacity(ordered_indices.len());
+    for txn_idx in ordered_indices {
+        let txn_output = if let Some(output) = sequential_outputs.remove(&txn_idx) {
+            let (mut vm_output, group_read_layouts) = output.into_inner();
+            let has_delayed = vm_output.contains_delayed_fields();
+            let has_agg_v1 = !vm_output.aggregator_v1_delta_set().is_empty();
+            let has_group_ops = vm_output
+                .resource_write_set()
+                .values()
+                .any(is_group_write_op);
+            if !has_delayed && vm_output.aggregator_v1_delta_set().is_empty() && !has_group_ops {
+                vm_output.into_transaction_output().map_err(|err| {
+                    VMStatus::error(
+                        StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
+                        Some(err.to_string()),
+                    )
+                })?
+            } else {
+                if has_delayed || has_agg_v1 {
+                    vm_output.try_materialize(&state_cache)?;
+                }
+                let mapping = DelayedFieldValueMapping {
+                    delayed_fields: &delayed_fields,
+                    txn_idx,
+                };
+
+                let patched_resource_write_set = materialize_resource_write_set(
+                    &vm_output,
+                    &mapping,
+                    &delayed_field_cache,
+                    &group_read_layouts,
+                    &state_cache,
+                    &mut group_cache,
+                    has_delayed,
+                    max_value_nest_depth,
+                )?;
+                let patched_events = if has_delayed {
+                    materialize_events(&vm_output, &mapping, max_value_nest_depth)?
+                } else {
+                    vm_output
+                        .events()
+                        .iter()
+                        .map(|(event, _)| event.clone())
+                        .collect()
+                };
+
+                vm_output
+                    .into_transaction_output_with_materialized_write_set(
+                        Vec::new(),
+                        patched_resource_write_set,
+                        patched_events,
+                    )
+                    .map_err(|err| {
+                        VMStatus::error(
+                            StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
+                            Some(err.to_string()),
+                        )
+                    })?
+            }
+        } else {
+            parallel_results.remove(&txn_idx).ok_or_else(|| {
+                VMStatus::error(
+                    StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
+                    Some(format!("Missing materialized output for txn {}", txn_idx)),
+                )
+            })?
+        };
 
         state_cache
             .push_write_set(txn_output.write_set())
@@ -569,8 +613,18 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
                     Some(format!("Failed to apply write set: {:?}", err)),
                 )
             })?;
-
         results.push(txn_output);
+    }
+
+    if !sequential_outputs.is_empty() || !parallel_results.is_empty() {
+        return Err(VMStatus::error(
+            StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
+            Some(format!(
+                "Unconsumed outputs after mixed materialization: seq={}, par={}",
+                sequential_outputs.len(),
+                parallel_results.len()
+            )),
+        ));
     }
 
     Ok(results)
@@ -1075,11 +1129,23 @@ mod tests {
     use move_core_types::identifier::Identifier;
     use move_core_types::language_storage::StructTag;
     use move_core_types::value::{MoveStructLayout, MoveTypeLayout};
+    use move_core_types::vm_status::KeptVMStatus;
     use move_vm_types::delayed_values::delayed_field_id::DelayedFieldID;
     use move_vm_types::value_serde::ValueSerDeContext;
     use move_vm_types::values::{Struct, Value};
+    use starcoin_aggregator::bounded_math::SignedU128;
+    use starcoin_aggregator::delta_change_set::DeltaOp;
+    use starcoin_aggregator::delta_math::DeltaHistory;
+    use starcoin_vm_runtime_types::change_set::VMChangeSet;
+    use starcoin_vm_runtime_types::module_write_set::ModuleWriteSet;
+    use starcoin_vm_runtime_types::resolver::ResourceGroupSize;
+    use starcoin_vm_types::fee_statement::FeeStatement;
+    use starcoin_vm_types::state_store::in_memory_state_view::InMemoryStateView;
+    use starcoin_vm_types::state_store::state_value::StateValue;
     use starcoin_vm_types::state_store::state_value::StateValueMetadata;
+    use starcoin_vm_types::transaction::TransactionAuxiliaryData;
     use starcoin_vm_types::write_set::WriteOp;
+    use std::time::{Duration, Instant};
 
     struct TestMapping {
         value: u64,
@@ -1141,10 +1207,10 @@ mod tests {
         ]));
         let updated_bytes =
             ValueSerDeContext::<DelayedFieldID>::new(Some(DEFAULT_MAX_VALUE_NEST_DEPTH))
-                .with_delayed_fields_serde()
-                .serialize(&updated_value, &layout_delayed)
-                .unwrap()
-                .unwrap();
+            .with_delayed_fields_serde()
+            .serialize(&updated_value, &layout_delayed)
+            .unwrap()
+            .unwrap();
 
         let delayed_field_cache = DelayedFieldCache::default();
         delayed_field_cache.insert_base_value(
@@ -1174,5 +1240,320 @@ mod tests {
 
         assert_eq!(field0, 99);
         assert_eq!(field1, 555);
+    }
+
+    fn build_sparse_conflict_case(
+        txn_count: usize,
+        conflict_a: usize,
+        conflict_b: usize,
+        members_per_group: usize,
+        bytes_per_member: usize,
+    ) -> (
+        Vec<(usize, StarcoinTransactionOutput)>,
+        InMemoryStateView,
+        StateKey,
+    ) {
+        assert!(txn_count > conflict_a);
+        assert!(txn_count > conflict_b);
+        assert_ne!(conflict_a, conflict_b);
+
+        let mut outputs = Vec::with_capacity(txn_count);
+        let agg_key = StateKey::raw(b"bench-agg");
+
+        for txn_idx in 0..txn_count {
+            if txn_idx == conflict_a || txn_idx == conflict_b {
+                let mut history = DeltaHistory::new();
+                history.record_success(SignedU128::Positive(1));
+                let mut agg_delta_set = BTreeMap::new();
+                agg_delta_set.insert(
+                    agg_key.clone(),
+                    DeltaOp::new(SignedU128::Positive(1), 1_000_000_000, history),
+                );
+                let vm_output = VMOutput::new(
+                    VMChangeSet::new(
+                        BTreeMap::new(),
+                        vec![],
+                        BTreeMap::new(),
+                        BTreeMap::new(),
+                        agg_delta_set,
+                    ),
+                    ModuleWriteSet::empty(),
+                    FeeStatement::zero(),
+                    TransactionStatus::Keep(KeptVMStatus::Executed),
+                    TransactionAuxiliaryData::None,
+                );
+                outputs.push((
+                    txn_idx,
+                    StarcoinTransactionOutput::new(vm_output, HashMap::new()),
+                ));
+                continue;
+            }
+
+            let group_key = StateKey::raw(format!("group-{txn_idx}").as_bytes());
+            let mut inner_ops = BTreeMap::new();
+            let mut expected_group_map = BTreeMap::new();
+            for member_idx in 0..members_per_group {
+                let tag = StructTag {
+                    address: AccountAddress::ONE,
+                    module: Identifier::new(format!("M{member_idx}")).unwrap(),
+                    name: Identifier::new(format!("N{member_idx}")).unwrap(),
+                    type_args: vec![],
+                };
+                let fill = ((txn_idx + member_idx) % 251) as u8;
+                let bytes = Bytes::from(vec![fill; bytes_per_member]);
+                expected_group_map.insert(tag.clone(), bytes.clone());
+                inner_ops.insert(tag, (WriteOp::legacy_modification(bytes), None));
+            }
+            let group_size = ResourceGroupSize::Concrete(
+                serialize_group_map(&expected_group_map).unwrap().len() as u64,
+            );
+            let group_write = GroupWrite::new(
+                WriteOp::legacy_modification(Bytes::new()),
+                inner_ops,
+                group_size,
+                0,
+            );
+
+            let mut resource_write_set = BTreeMap::new();
+            resource_write_set.insert(
+                group_key,
+                AbstractResourceWriteOp::WriteResourceGroup(group_write),
+            );
+            let vm_output = VMOutput::new(
+                VMChangeSet::new(
+                    resource_write_set,
+                    vec![],
+                    BTreeMap::new(),
+                    BTreeMap::new(),
+                    BTreeMap::new(),
+                ),
+                ModuleWriteSet::empty(),
+                FeeStatement::zero(),
+                TransactionStatus::Keep(KeptVMStatus::Executed),
+                TransactionAuxiliaryData::None,
+            );
+            outputs.push((
+                txn_idx,
+                StarcoinTransactionOutput::new(vm_output, HashMap::new()),
+            ));
+        }
+
+        let mut state_data = HashMap::new();
+        state_data.insert(
+            agg_key.clone(),
+            StateValue::new_legacy(Bytes::from(bcs::to_bytes(&100u128).unwrap())),
+        );
+
+        (outputs, InMemoryStateView::new(state_data), agg_key)
+    }
+
+    fn materialize_parallel_outputs_legacy_all_seq<S: StateView + Sync>(
+        mut outputs: Vec<(usize, StarcoinTransactionOutput)>,
+        delayed_fields: VersionedDelayedFields<DelayedFieldID>,
+        delayed_field_cache: Arc<DelayedFieldCache>,
+        state_view: &S,
+        max_value_nest_depth: Option<u64>,
+    ) -> Result<Vec<TransactionOutput>, VMStatus> {
+        outputs.sort_by_key(|(idx, _)| *idx);
+        let mut state_cache = StateViewCache::new(state_view);
+        let mut group_cache: HashMap<StateKey, BTreeMap<StructTag, Bytes>> = HashMap::new();
+        let mut results = Vec::with_capacity(outputs.len());
+
+        for (txn_idx, output) in outputs.into_iter() {
+            let (mut vm_output, group_read_layouts) = output.into_inner();
+            let has_delayed = vm_output.contains_delayed_fields();
+            let has_agg_v1 = !vm_output.aggregator_v1_delta_set().is_empty();
+            let has_group_ops = vm_output.resource_write_set().values().any(|op| {
+                matches!(
+                    op,
+                    AbstractResourceWriteOp::WriteResourceGroup(_)
+                        | AbstractResourceWriteOp::ResourceGroupInPlaceDelayedFieldChange(_)
+                )
+            });
+
+            let txn_output = if !has_delayed && !has_agg_v1 && !has_group_ops {
+                vm_output.into_transaction_output().map_err(|err| {
+                    VMStatus::error(
+                        StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
+                        Some(err.to_string()),
+                    )
+                })?
+            } else {
+                if has_delayed || has_agg_v1 {
+                    vm_output.try_materialize(&state_cache)?;
+                }
+                let mapping = DelayedFieldValueMapping {
+                    delayed_fields: &delayed_fields,
+                    txn_idx,
+                };
+                let patched_resource_write_set = materialize_resource_write_set(
+                    &vm_output,
+                    &mapping,
+                    &delayed_field_cache,
+                    &group_read_layouts,
+                    &state_cache,
+                    &mut group_cache,
+                    has_delayed,
+                    max_value_nest_depth,
+                )?;
+                let patched_events = if has_delayed {
+                    materialize_events(&vm_output, &mapping, max_value_nest_depth)?
+                } else {
+                    vm_output
+                        .events()
+                        .iter()
+                        .map(|(event, _)| event.clone())
+                        .collect()
+                };
+                vm_output
+                    .into_transaction_output_with_materialized_write_set(
+                        Vec::new(),
+                        patched_resource_write_set,
+                        patched_events,
+                    )
+                    .map_err(|err| {
+                        VMStatus::error(
+                            StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
+                            Some(err.to_string()),
+                        )
+                    })?
+            };
+
+            state_cache
+                .push_write_set(txn_output.write_set())
+                .map_err(|err| {
+                    VMStatus::error(
+                        StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR,
+                        Some(format!("Failed to apply write set: {:?}", err)),
+                    )
+                })?;
+            results.push(txn_output);
+        }
+
+        Ok(results)
+    }
+
+    #[test]
+    fn mixed_materialization_matches_legacy_all_seq_outputs() {
+        let (new_outputs, new_state_view, agg_key) = build_sparse_conflict_case(80, 7, 71, 24, 128);
+        let (legacy_outputs, legacy_state_view, legacy_agg_key) =
+            build_sparse_conflict_case(80, 7, 71, 24, 128);
+        assert_eq!(agg_key, legacy_agg_key);
+
+        let mixed = materialize_parallel_outputs(
+            new_outputs,
+            VersionedDelayedFields::empty(),
+            Arc::new(DelayedFieldCache::default()),
+            &new_state_view,
+            Some(DEFAULT_MAX_VALUE_NEST_DEPTH),
+        )
+        .unwrap();
+        let legacy = materialize_parallel_outputs_legacy_all_seq(
+            legacy_outputs,
+            VersionedDelayedFields::empty(),
+            Arc::new(DelayedFieldCache::default()),
+            &legacy_state_view,
+            Some(DEFAULT_MAX_VALUE_NEST_DEPTH),
+        )
+        .unwrap();
+        assert_eq!(mixed, legacy);
+    }
+
+    #[test]
+    #[ignore = "manual benchmark; run with -- --ignored --nocapture"]
+    fn bench_mixed_materialization_sparse_conflicts() {
+        const TXN_COUNT: usize = 100;
+        const CONFLICT_A: usize = 9;
+        const CONFLICT_B: usize = 87;
+        const MEMBERS_PER_GROUP: usize = 32;
+        const BYTES_PER_MEMBER: usize = 256;
+        const ROUNDS: usize = 8;
+
+        // Warmup both paths once.
+        {
+            let (outputs, state_view, _) = build_sparse_conflict_case(
+                TXN_COUNT,
+                CONFLICT_A,
+                CONFLICT_B,
+                MEMBERS_PER_GROUP,
+                BYTES_PER_MEMBER,
+            );
+            let _ = materialize_parallel_outputs_legacy_all_seq(
+                outputs,
+                VersionedDelayedFields::empty(),
+                Arc::new(DelayedFieldCache::default()),
+                &state_view,
+                Some(DEFAULT_MAX_VALUE_NEST_DEPTH),
+            )
+            .unwrap();
+        }
+        {
+            let (outputs, state_view, _) = build_sparse_conflict_case(
+                TXN_COUNT,
+                CONFLICT_A,
+                CONFLICT_B,
+                MEMBERS_PER_GROUP,
+                BYTES_PER_MEMBER,
+            );
+            let _ = materialize_parallel_outputs(
+                outputs,
+                VersionedDelayedFields::empty(),
+                Arc::new(DelayedFieldCache::default()),
+                &state_view,
+                Some(DEFAULT_MAX_VALUE_NEST_DEPTH),
+            )
+            .unwrap();
+        }
+
+        let mut legacy_total = Duration::ZERO;
+        let mut mixed_total = Duration::ZERO;
+
+        for _ in 0..ROUNDS {
+            let (legacy_inputs, legacy_state_view, _) = build_sparse_conflict_case(
+                TXN_COUNT,
+                CONFLICT_A,
+                CONFLICT_B,
+                MEMBERS_PER_GROUP,
+                BYTES_PER_MEMBER,
+            );
+            let legacy_start = Instant::now();
+            let legacy_outputs = materialize_parallel_outputs_legacy_all_seq(
+                legacy_inputs,
+                VersionedDelayedFields::empty(),
+                Arc::new(DelayedFieldCache::default()),
+                &legacy_state_view,
+                Some(DEFAULT_MAX_VALUE_NEST_DEPTH),
+            )
+            .unwrap();
+            legacy_total += legacy_start.elapsed();
+
+            let (mixed_inputs, mixed_state_view, _) = build_sparse_conflict_case(
+                TXN_COUNT,
+                CONFLICT_A,
+                CONFLICT_B,
+                MEMBERS_PER_GROUP,
+                BYTES_PER_MEMBER,
+            );
+            let mixed_start = Instant::now();
+            let mixed_outputs = materialize_parallel_outputs(
+                mixed_inputs,
+                VersionedDelayedFields::empty(),
+                Arc::new(DelayedFieldCache::default()),
+                &mixed_state_view,
+                Some(DEFAULT_MAX_VALUE_NEST_DEPTH),
+            )
+            .unwrap();
+            mixed_total += mixed_start.elapsed();
+
+            assert_eq!(legacy_outputs, mixed_outputs);
+        }
+
+        let legacy_avg_ms = legacy_total.as_secs_f64() * 1000.0 / ROUNDS as f64;
+        let mixed_avg_ms = mixed_total.as_secs_f64() * 1000.0 / ROUNDS as f64;
+        let speedup = legacy_avg_ms / mixed_avg_ms;
+        eprintln!(
+            "materialize benchmark sparse conflicts: txns={} conflicts=2 rounds={} legacy_avg_ms={:.3} mixed_avg_ms={:.3} speedup={:.3}x",
+            TXN_COUNT, ROUNDS, legacy_avg_ms, mixed_avg_ms, speedup
+        );
     }
 }

@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{format_err, Result};
 use starcoin_config::NodeConfig;
 use starcoin_crypto::{keygen::KeyGen, HashValue};
 use starcoin_logger::prelude::*;
@@ -22,7 +22,7 @@ fn test_chain_get_block_txn_infos_in_seq() -> Result<()> {
     let ipc_file = config.rpc.get_ipc_file();
 
     let node_handle = test_helper::run_node_by_config(config.clone())?;
-    std::thread::sleep(Duration::from_millis(500));
+    std::thread::sleep(Duration::from_secs(5));
 
     let txpool = node_handle.txpool();
 
@@ -45,16 +45,21 @@ fn test_chain_get_block_txn_infos_in_seq() -> Result<()> {
     assert!(import_result2[0].is_ok());
     assert!(import_result2[1].is_ok());
 
-    std::thread::sleep(Duration::from_millis(500));
+    std::thread::sleep(Duration::from_secs(5));
 
     let block = node_handle.generate_block()?;
-    let block_hash = block.id();
 
-    std::thread::sleep(Duration::from_millis(500));
+    std::thread::sleep(Duration::from_secs(5));
 
     let client = RpcClient::connect_ipc(ipc_file)?;
+    let block_hash = wait_for_queryable_main_head_hash(
+        &client,
+        block.header().number(),
+        Duration::from_secs(60),
+    )?;
 
-    let txn_infos_in_seq = wait_for_txn_infos_in_seq(&client, block_hash, Duration::from_secs(20))?;
+    let (txn_infos_in_seq, vm1_infos, vm2_infos) =
+        wait_for_consistent_txn_infos(&client, block_hash, Duration::from_secs(60))?;
 
     assert!(
         !txn_infos_in_seq.is_empty(),
@@ -117,9 +122,6 @@ fn test_chain_get_block_txn_infos_in_seq() -> Result<()> {
         "Should have at least 1 VM2 transaction (block meta)"
     );
 
-    let vm1_infos = client.chain_get_block_txn_infos(block_hash)?;
-    let vm2_infos = client.chain_get_block_txn_infos2(block_hash)?;
-
     assert_eq!(
         txn_infos_in_seq.len(),
         vm1_infos.len() + vm2_infos.len(),
@@ -174,34 +176,161 @@ fn test_chain_get_block_txn_infos_in_seq() -> Result<()> {
     Ok(())
 }
 
-fn wait_for_txn_infos_in_seq(
+fn wait_for_queryable_main_head_hash(
+    client: &RpcClient,
+    min_number: u64,
+    timeout: Duration,
+) -> Result<HashValue> {
+    let deadline = Instant::now() + timeout;
+    loop {
+        if Instant::now() >= deadline {
+            return Err(format_err!(
+                "timeout waiting queryable main head, min number {}",
+                min_number
+            ));
+        }
+        if let Ok(chain_info) = client.chain_info() {
+            let head_number = chain_info.head.number.0;
+            let head_hash = chain_info.head.block_hash;
+            if head_number >= min_number {
+                let seq_res = client.chain_get_block_txn_infos_in_seq(head_hash);
+                let vm1_res = client.chain_get_block_txn_infos(head_hash);
+                let vm2_res = client.chain_get_block_txn_infos2(head_hash);
+                if seq_res.is_ok() && vm1_res.is_ok() && vm2_res.is_ok() {
+                    return Ok(head_hash);
+                }
+            }
+        }
+        std::thread::sleep(Duration::from_millis(200));
+    }
+}
+
+fn wait_for_consistent_txn_infos(
     client: &RpcClient,
     block_hash: HashValue,
     timeout: Duration,
-) -> Result<Vec<starcoin_rpc_api::types::TransactionInfoViewEnum>> {
+) -> Result<(
+    Vec<starcoin_rpc_api::types::TransactionInfoViewEnum>,
+    Vec<starcoin_rpc_api::types::TransactionInfoView>,
+    Vec<starcoin_vm2_types::view::TransactionInfoView>,
+)> {
     let deadline = Instant::now() + timeout;
+    let mut last_err: Option<anyhow::Error>;
     loop {
-        match client.chain_get_block_txn_infos_in_seq(block_hash) {
-            Ok(infos) => {
-                if infos.is_empty() {
-                    if Instant::now() >= deadline {
-                        return Err(anyhow::format_err!(
-                            "timeout waiting for txn infos in seq for block {}",
-                            block_hash
-                        ));
-                    }
-                    std::thread::sleep(Duration::from_millis(200));
-                    continue;
+        let seq_infos = client.chain_get_block_txn_infos_in_seq(block_hash);
+        let vm1_infos = client.chain_get_block_txn_infos(block_hash);
+        let vm2_infos = client.chain_get_block_txn_infos2(block_hash);
+
+        match (seq_infos, vm1_infos, vm2_infos) {
+            (Ok(seq_infos), Ok(vm1_infos), Ok(vm2_infos)) => {
+                let has_gap = seq_infos.iter().enumerate().any(|(i, info)| {
+                    let index = match info {
+                        starcoin_rpc_api::types::TransactionInfoViewEnum::VM1(vm1_info) => {
+                            vm1_info.transaction_index
+                        }
+                        starcoin_rpc_api::types::TransactionInfoViewEnum::VM2(vm2_info) => {
+                            vm2_info.transaction_index
+                        }
+                    };
+                    index as usize != i
+                });
+
+                let vm1_hashes: std::collections::HashSet<_> =
+                    vm1_infos.iter().map(|info| info.transaction_hash).collect();
+                let seq_vm1_hashes: std::collections::HashSet<_> = seq_infos
+                    .iter()
+                    .filter_map(|info| {
+                        if let starcoin_rpc_api::types::TransactionInfoViewEnum::VM1(vm1_info) =
+                            info
+                        {
+                            Some(vm1_info.transaction_hash)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+
+                let vm2_hashes: std::collections::HashSet<_> =
+                    vm2_infos.iter().map(|info| info.transaction_hash).collect();
+                let seq_vm2_hashes: std::collections::HashSet<_> = seq_infos
+                    .iter()
+                    .filter_map(|info| {
+                        if let starcoin_rpc_api::types::TransactionInfoViewEnum::VM2(vm2_info) =
+                            info
+                        {
+                            Some(vm2_info.transaction_hash)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+
+                if !seq_infos.is_empty()
+                    && !has_gap
+                    && seq_infos.len() == vm1_infos.len() + vm2_infos.len()
+                    && vm1_hashes == seq_vm1_hashes
+                    && vm2_hashes == seq_vm2_hashes
+                {
+                    return Ok((seq_infos, vm1_infos, vm2_infos));
                 }
-                return Ok(infos);
+
+                let vm1_only_in_seq: Vec<_> = seq_vm1_hashes
+                    .difference(&vm1_hashes)
+                    .take(3)
+                    .cloned()
+                    .collect();
+                let vm1_missing_in_seq: Vec<_> = vm1_hashes
+                    .difference(&seq_vm1_hashes)
+                    .take(3)
+                    .cloned()
+                    .collect();
+                let vm2_only_in_seq: Vec<_> = seq_vm2_hashes
+                    .difference(&vm2_hashes)
+                    .take(3)
+                    .cloned()
+                    .collect();
+                let vm2_missing_in_seq: Vec<_> = vm2_hashes
+                    .difference(&seq_vm2_hashes)
+                    .take(3)
+                    .cloned()
+                    .collect();
+
+                last_err = Some(anyhow::format_err!(
+                    "waiting block {} inconsistent results: has_gap={}, seq_len={}, vm1_len={}, vm2_len={}, vm1_only_in_seq={:?}, vm1_missing_in_seq={:?}, vm2_only_in_seq={:?}, vm2_missing_in_seq={:?}",
+                    block_hash,
+                    has_gap,
+                    seq_infos.len(),
+                    vm1_infos.len(),
+                    vm2_infos.len(),
+                    vm1_only_in_seq,
+                    vm1_missing_in_seq,
+                    vm2_only_in_seq,
+                    vm2_missing_in_seq
+                ));
             }
-            Err(err) => {
-                if Instant::now() >= deadline {
-                    return Err(err);
-                }
-                std::thread::sleep(Duration::from_millis(200));
+            (seq_res, vm1_res, vm2_res) => {
+                let seq_err = seq_res.err().map(|e| format!("seq err: {e:?}"));
+                let vm1_err = vm1_res.err().map(|e| format!("vm1 err: {e:?}"));
+                let vm2_err = vm2_res.err().map(|e| format!("vm2 err: {e:?}"));
+                last_err = Some(anyhow::format_err!(
+                    "waiting block {} failed: {:?} {:?} {:?}",
+                    block_hash,
+                    seq_err,
+                    vm1_err,
+                    vm2_err
+                ));
             }
         }
+
+        if Instant::now() >= deadline {
+            return Err(last_err.unwrap_or_else(|| {
+                anyhow::format_err!(
+                    "timeout waiting consistent txn infos in seq for block {}",
+                    block_hash
+                )
+            }));
+        }
+        std::thread::sleep(Duration::from_millis(200));
     }
 }
 

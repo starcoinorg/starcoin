@@ -17,10 +17,7 @@ use move_vm_types::delayed_values::delayed_field_id::{
     DelayedFieldID, ExtractUniqueIndex, ExtractWidth, TryFromMoveValue,
 };
 use move_vm_types::loaded_data::runtime_types::TypeBuilder;
-use move_vm_types::value_serde::{
-    deserialize_and_allow_delayed_values, deserialize_and_replace_values_with_ids,
-    serialize_and_allow_delayed_values, ValueToIdentifierMapping,
-};
+use move_vm_types::value_serde::{ValueSerDeContext, ValueToIdentifierMapping};
 use move_vm_types::value_traversal::find_identifiers_in_value;
 use starcoin_aggregator::bounded_math::{BoundedMath, SignedU128};
 use starcoin_aggregator::resolver::TDelayedFieldView;
@@ -156,7 +153,7 @@ struct GroupReadInfo {
     layouts: BTreeMap<StructTag, Arc<MoveTypeLayout>>,
 }
 
-/// Adapter to convert a `ExecutorView` into a `AptosMoveResolver`.
+/// Adapter to convert a `ExecutorView` into a `MoveResolver`.
 ///
 /// Resources in groups are handled either through dedicated interfaces of executor_view
 /// (that tie to specialized handling in block executor), or via 'standard' interfaces
@@ -337,9 +334,14 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
         if !Self::layout_has_identifier_mappings(layout) {
             return Ok(HashSet::new());
         }
-        let value = deserialize_and_allow_delayed_values(bytes, layout).ok_or_else(|| {
-            StateviewError::Other("Failed to deserialize value for delayed field scan".to_string())
-        })?;
+        let value = ValueSerDeContext::<DelayedFieldID>::new(self.max_value_nest_depth)
+            .with_delayed_fields_serde()
+            .deserialize(bytes, layout)
+            .ok_or_else(|| {
+                StateviewError::Other(
+                    "Failed to deserialize value for delayed field scan".to_string(),
+                )
+            })?;
         let mut ids: HashSet<u64> = HashSet::new();
         find_identifiers_in_value(&value, &mut ids).map_err(|e| {
             StateviewError::Other(format!("Failed to scan delayed field identifiers: {:?}", e))
@@ -450,11 +452,15 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
             delayed_ids: RefCell::new(HashSet::new()),
         };
 
-        let value = deserialize_and_replace_values_with_ids(state_value.bytes(), layout, &mapping)
+        let value = ValueSerDeContext::<DelayedFieldID>::new(self.max_value_nest_depth)
+            .with_delayed_fields_replacement(&mapping)
+            .deserialize(state_value.bytes(), layout)
             .ok_or_else(|| {
                 StateviewError::Other("Failed to replace delayed values with ids".to_string())
             })?;
-        let serialized = serialize_and_allow_delayed_values(&value, layout)
+        let serialized = ValueSerDeContext::<DelayedFieldID>::new(self.max_value_nest_depth)
+            .with_delayed_fields_serde()
+            .serialize(&value, layout)
             .map_err(|e| StateviewError::Other(e.to_string()))?
             .ok_or_else(|| {
                 StateviewError::Other("Failed to serialize value with delayed ids".to_string())

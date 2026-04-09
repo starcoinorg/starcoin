@@ -68,6 +68,9 @@ impl TxPoolConfig {
     pub fn set_max_count(&mut self, max_count: u64) {
         self.max_count = Some(max_count);
     }
+    pub fn set_max_per_sender(&mut self, max_per_sender: u64) {
+        self.max_per_sender = Some(max_per_sender);
+    }
     pub fn max_count(&self) -> u64 {
         self.max_count.unwrap_or(4096)
     }
@@ -119,8 +122,8 @@ impl ConfigModule for TxPoolConfig {
         if let Some(m) = txpool_opt.max_count.as_ref() {
             self.max_count = Some(*m);
         }
-        if let Some(m) = txpool_opt.max_mem_usage.as_ref() {
-            self.max_mem_usage = Some(*m);
+        if let Some(m) = txpool_opt.max_per_sender.as_ref() {
+            self.max_per_sender = Some(*m);
         }
         if let Some(m) = txpool_opt.tx_propagate_interval.as_ref() {
             self.tx_propagate_interval = Some(*m);

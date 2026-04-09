@@ -52,9 +52,9 @@ members = [
     "node",
     "sync",
     "sync/api",
+    "sync/starcoin-execute-bench",
     "block-relayer",
     "miner",
-    "node",
     "network-p2p",
     "network-p2p/types",
     "network-p2p/peerset",
@@ -92,7 +92,6 @@ members = [
     # "vm/move-package-manager",
     "vm/vm-status-translator",
     # "vm/starcoin-transactional-test-harness",
-    "commons/parallel-executor",
     "vm/transaction-benchmarks",
     "vm/e2e-tests",
     "vm/proptest-helpers",
@@ -193,7 +192,6 @@ default-members = [
     "sync/api",
     "block-relayer",
     "miner",
-    "node",
     "network-p2p",
     "network-p2p/types",
     "network-p2p/peerset",
@@ -269,7 +267,7 @@ panic = "unwind"
 debug = false
 panic = "unwind"
 debug-assertions = false
-codegen-units = 1
+codegen-units = 16
 
 [workspace.package]
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]

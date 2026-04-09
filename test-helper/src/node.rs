@@ -30,3 +30,14 @@ fn launch_node(config: NodeConfig) -> Result<NodeHandle> {
     block_on(async { node_handle.node_service().stop_pacemaker().await })?;
     Ok(node_handle)
 }
+
+/// Launches a test node with all services enabled.
+///
+/// Unlike `run_node_by_config`, this function does not stop pacemaker.
+/// Callers should explicitly manage pacemaker state when needed and must call
+/// `NodeHandle::stop()` for cleanup.
+pub fn run_node_with_all_service(config: Arc<NodeConfig>) -> Result<NodeHandle> {
+    let logger_handle = starcoin_logger::init_for_test();
+    let node_handle = NodeService::launch(config, logger_handle)?;
+    Ok(node_handle)
+}
