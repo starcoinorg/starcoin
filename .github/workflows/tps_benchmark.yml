@@ -120,7 +120,6 @@ jobs:
           if [ ! -f sync/starcoin-execute-bench/Cargo.toml ]; then
             echo "ℹ️  starcoin-execute-bench not found on $BASE_BRANCH — skipping base benchmark."
             echo "has_base=false" >> "$GITHUB_OUTPUT"
-            # Return to current branch
             git checkout "$CURRENT_SHA"
             git stash pop || true
             exit 0
@@ -128,16 +127,40 @@ jobs:
 
           echo "has_base=true" >> "$GITHUB_OUTPUT"
 
-          # Build & run on base
+          # Build on base
           cargo build --release -p starcoin-execute-bench
+
+          # Detect which flags the base binary supports
+          HELP_TEXT=$(./target/release/starcoin-execute-bench --help 2>&1 || true)
+          BASE_ARGS=""
+          if echo "$HELP_TEXT" | grep -q -- '--simple-transfer'; then
+            BASE_ARGS="$BASE_ARGS --simple-transfer"
+          fi
+          if echo "$HELP_TEXT" | grep -q -- '--fixed-block-time'; then
+            BASE_ARGS="$BASE_ARGS --fixed-block-time"
+          fi
+          if echo "$HELP_TEXT" | grep -q -- '--rounds'; then
+            BASE_ARGS="$BASE_ARGS --rounds 10"
+          fi
+          if echo "$HELP_TEXT" | grep -q -- '--agent-mode'; then
+            BASE_ARGS="$BASE_ARGS --agent-mode"
+          fi
+
+          echo "ℹ️  Base bench args: $BASE_ARGS"
+
+          # Run on base
           rm -f benchmark_results.json
           STARCOIN_FIXED_BLOCK_TIME=1 ./target/release/starcoin-execute-bench \
-            --simple-transfer \
-            --fixed-block-time \
-            --rounds 10 \
-            --agent-mode \
+            $BASE_ARGS \
             2>&1 | tail -20
-          cp benchmark_results.json bench_base.json
+
+          # The base bench may not produce benchmark_results.json (older versions)
+          if [ -f benchmark_results.json ]; then
+            cp benchmark_results.json bench_base.json
+          else
+            echo "⚠️  Base bench did not produce benchmark_results.json — skipping comparison."
+            echo "has_base=false" >> "$GITHUB_OUTPUT"
+          fi
 
           # Return to current branch
           git checkout "$CURRENT_SHA"
@@ -165,11 +188,19 @@ jobs:
             BASE_FLAG="--base bench_base.json"
           fi
 
+          if [ ! -f bench_current.json ]; then
+            echo "⚠️  bench_current.json not found — current branch benchmark may have failed."
+            echo "has_report=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           python3 scripts/bench_compare.py \
             --current bench_current.json \
             $BASE_FLAG \
             --output bench_report.md \
             $STRICT_FLAG
+
+          echo "has_report=true" >> "$GITHUB_OUTPUT"
 
       # ── 5. Upload artifacts ──
       - name: Upload benchmark artifacts
@@ -185,7 +216,7 @@ jobs:
 
       # ── 6. Post report as PR comment ──
       - name: Post benchmark report to PR
-        if: always() && github.event_name == 'pull_request'
+        if: always() && github.event_name == 'pull_request' && steps.compare.outputs.has_report == 'true'
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: tps-benchmark
