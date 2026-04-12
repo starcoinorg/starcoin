@@ -4583,6 +4583,12 @@ name = "hashbrown"
 version = "0.16.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "841d1cc9bed7f9236f321df977030373f4a4163ae1a7dbfe1a51a2c1a51d9100"
+
+[[package]]
+name = "hashbrown"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4f467dd6dccf739c208452f8014c75c18bb8301b050ad1cfb27153803edb0f51"
 dependencies = [
  "allocator-api2",
  "equivalent",
@@ -14573,7 +14579,7 @@ dependencies = [
  "bytes 1.11.1",
  "chrono",
  "forkable-jellyfish-merkle",
- "hashbrown 0.16.1",
+ "hashbrown 0.17.0",
  "hex",
  "log 0.4.29",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7d37ed75c76f34abd2ea71774dcf784408625887)",
