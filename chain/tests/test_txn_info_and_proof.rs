@@ -1,6 +1,6 @@
 use anyhow::{bail, format_err, Result};
 use move_vm2_core_types::move_resource::MoveStructType;
-use rand::Rng;
+use rand::RngExt;
 use starcoin_account_api::AccountInfo;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};

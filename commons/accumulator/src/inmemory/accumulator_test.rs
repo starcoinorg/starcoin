@@ -8,7 +8,7 @@ use crate::tree::AccumulatorTree;
 use crate::tree_store::mock::MockAccumulatorStore;
 use crate::LeafCount;
 use proptest::{collection::vec, prelude::*};
-use rand::Rng;
+use rand::RngExt;
 use starcoin_crypto::{hash::ACCUMULATOR_PLACEHOLDER_HASH, HashValue};
 use std::collections::HashMap;
 use std::sync::Arc;

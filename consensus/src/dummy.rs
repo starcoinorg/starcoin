@@ -3,7 +3,7 @@
 
 use crate::consensus::Consensus;
 use anyhow::Result;
-use rand::Rng;
+use rand::RngExt;
 use starcoin_chain_api::ChainReader;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
