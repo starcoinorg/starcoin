@@ -200,6 +200,13 @@ struct Cli {
     agent_mode: bool,
 
     #[arg(
+        long = "pipeline-timing",
+        default_value = "false",
+        help = "Enable pipeline timing instrumentation (global_collector). Records per-block stage timings (TxPool Verify, Block Build, VM Execute, State Commit). Disabled by default to avoid any performance overhead."
+    )]
+    pipeline_timing: bool,
+
+    #[arg(
         long = "prepare-bench",
         value_hint = ValueHint::DirPath,
         help = "Prepare benchmark state: create accounts, fund them, sign all transactions, then save to DIR and exit. \
@@ -408,13 +415,15 @@ fn run_post_benchmark(cli: &Cli, node: NodeHandle) -> Result<()> {
     disable_timing();
 
     let timing_stats = global_collector().calculate_stage_stats();
-    info!("[Pipeline Timing] Stage Statistics:");
-    for (stage, stats) in &timing_stats {
-        if stats.count > 0 {
-            info!(
-                "  {}: count={}, avg={:.3}ms, min={:.3}ms, max={:.3}ms, throughput={:.2} txns/s",
-                stage, stats.count, stats.avg_ms, stats.min_ms, stats.max_ms, stats.throughput
-            );
+    if cli.pipeline_timing {
+        info!("[Pipeline Timing] Stage Statistics:");
+        for (stage, stats) in &timing_stats {
+            if stats.count > 0 {
+                info!(
+                    "  {}: count={}, avg={:.3}ms, min={:.3}ms, max={:.3}ms, throughput={:.2} txns/s",
+                    stage, stats.count, stats.avg_ms, stats.min_ms, stats.max_ms, stats.throughput
+                );
+            }
         }
     }
 
@@ -492,7 +501,9 @@ fn run_normal_bench(cli: &Cli) -> Result<()> {
     let (node, _node_startup_ms) = start_node_and_wait(node_config)?;
 
     clear_timing();
-    enable_timing();
+    if cli.pipeline_timing {
+        enable_timing();
+    }
 
     let rt = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
@@ -678,7 +689,9 @@ fn run_load_bench(cli: &Cli, load_dir: &Path) -> Result<()> {
     let (node, _) = start_node_and_wait(node_config)?;
 
     clear_timing();
-    enable_timing();
+    if cli.pipeline_timing {
+        enable_timing();
+    }
 
     // Run benchmark from pre-signed transactions
     let rt = tokio::runtime::Builder::new_multi_thread()

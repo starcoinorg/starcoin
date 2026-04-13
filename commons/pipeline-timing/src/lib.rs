@@ -509,8 +509,12 @@ impl Drop for TimingGuard {
 mod tests {
     use super::*;
 
+    /// Tests use local collector instances to avoid parallel test interference
+    /// from shared global state (enable/disable racing).
+
     #[test]
     fn test_timing_guard() {
+        // TimingGuard uses GLOBAL_TIMING, so we just verify it doesn't panic
         enable_timing();
         clear_timing();
 
@@ -519,7 +523,6 @@ mod tests {
             std::thread::sleep(std::time::Duration::from_millis(10));
         }
 
-        let stats = GLOBAL_TIMING.calculate_stage_stats();
         // Note: stage_samples are separate from txn_verify_times, so TxPoolVerify won't have samples here
         // The TimingGuard records to stage_samples, not txn_verify_times
         disable_timing();
@@ -527,36 +530,53 @@ mod tests {
 
     #[test]
     fn test_block_timing() {
-        enable_timing();
-        clear_timing();
+        let collector = GlobalTimingCollector::new();
+        collector.enable();
 
         let block_id = HashValue::random();
-        GLOBAL_TIMING.record_block_build_start(block_id, 1, 10);
+        collector.record_block_build_start(block_id, 1, 10);
         std::thread::sleep(std::time::Duration::from_millis(5));
-        GLOBAL_TIMING.record_block_build_end(block_id);
+        collector.record_block_build_end(block_id);
 
-        GLOBAL_TIMING.record_vm_exec_start(block_id, 1, 10);
+        collector.record_vm_exec_start(block_id, 1, 10);
         std::thread::sleep(std::time::Duration::from_millis(3));
-        GLOBAL_TIMING.record_vm_exec_end(block_id);
+        collector.record_vm_exec_end(block_id);
 
-        let stats = GLOBAL_TIMING.calculate_stage_stats();
+        let stats = collector.calculate_stage_stats();
         assert!(stats[&PipelineStage::BlockBuild].count > 0);
         assert!(stats[&PipelineStage::VmExecute].count > 0);
-
-        disable_timing();
     }
 
     #[test]
     fn test_txn_verify() {
-        enable_timing();
-        clear_timing();
+        let collector = GlobalTimingCollector::new();
+        collector.enable();
 
         let txn_id = HashValue::random();
-        GLOBAL_TIMING.record_txn_verify(txn_id, 0.5);
+        collector.record_txn_verify(txn_id, 0.5);
 
-        let stats = GLOBAL_TIMING.calculate_stage_stats();
+        let stats = collector.calculate_stage_stats();
         assert_eq!(stats[&PipelineStage::TxPoolVerify].count, 1);
+    }
 
-        disable_timing();
+    #[test]
+    fn test_disabled_collector_records_nothing() {
+        let collector = GlobalTimingCollector::new();
+        // Don't enable - should be disabled by default
+
+        let block_id = HashValue::random();
+        collector.record_block_build_start(block_id, 1, 10);
+        collector.record_block_build_end(block_id);
+        collector.record_vm_exec_start(block_id, 1, 10);
+        collector.record_vm_exec_end(block_id);
+        collector.record_state_commit_start(block_id, 1, 10);
+        collector.record_state_commit_end(block_id);
+        collector.record_txn_verify(HashValue::random(), 1.0);
+
+        let stats = collector.calculate_stage_stats();
+        assert_eq!(stats[&PipelineStage::BlockBuild].count, 0);
+        assert_eq!(stats[&PipelineStage::VmExecute].count, 0);
+        assert_eq!(stats[&PipelineStage::StateCommit].count, 0);
+        assert_eq!(stats[&PipelineStage::TxPoolVerify].count, 0);
     }
 }

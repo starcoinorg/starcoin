@@ -95,6 +95,7 @@ jobs:
             --fixed-block-time \
             --rounds 10 \
             --agent-mode \
+            --pipeline-timing \
             2>&1 | tail -20
           cp benchmark_results.json bench_current.json
         env:
@@ -144,6 +145,9 @@ jobs:
           fi
           if echo "$HELP_TEXT" | grep -q -- '--agent-mode'; then
             BASE_ARGS="$BASE_ARGS --agent-mode"
+          fi
+          if echo "$HELP_TEXT" | grep -q -- '--pipeline-timing'; then
+            BASE_ARGS="$BASE_ARGS --pipeline-timing"
           fi
 
           echo "ℹ️  Base bench args: $BASE_ARGS"

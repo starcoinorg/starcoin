@@ -606,10 +606,15 @@ impl BlockChain {
 
         assert!(!transactions2.is_empty());
 
-        // Record VM execution start
-        let vm_exec_start = std::time::Instant::now();
-        let txn_count = transactions.len() + transactions2.len();
-        global_collector().record_vm_exec_start(block_id, header.number(), txn_count);
+        // Record VM execution start (only when pipeline timing is enabled)
+        let pipeline_enabled = global_collector().is_enabled();
+        let vm_exec_start = if pipeline_enabled {
+            let txn_count_for_timing = transactions.len() + transactions2.len();
+            global_collector().record_vm_exec_start(block_id, header.number(), txn_count_for_timing);
+            Some((std::time::Instant::now(), txn_count_for_timing))
+        } else {
+            None
+        };
 
         watch(CHAIN_WATCH_NAME, "n21");
         let executed_data = starcoin_executor::block_execute(
@@ -628,9 +633,9 @@ impl BlockChain {
         watch(CHAIN_WATCH_NAME, "n22");
 
         // Record VM execution end
-        global_collector().record_vm_exec_end(block_id);
-        let vm_exec_duration_ms = vm_exec_start.elapsed().as_secs_f64() * 1000.0;
-        if global_collector().is_enabled() {
+        if let Some((start, txn_count)) = vm_exec_start {
+            global_collector().record_vm_exec_end(block_id);
+            let vm_exec_duration_ms = start.elapsed().as_secs_f64() * 1000.0;
             info!(
                 "[Pipeline] VM Execute block {} ({} txns) took {:.3} ms",
                 block_id, txn_count, vm_exec_duration_ms
@@ -726,9 +731,14 @@ impl BlockChain {
         );
 
         watch(CHAIN_WATCH_NAME, "n23");
-        // Record state commit timing
-        let commit_start = std::time::Instant::now();
-        global_collector().record_state_commit_start(block_id, header.number(), txn_count);
+        // Record state commit timing (only when pipeline timing is enabled)
+        let commit_start = if pipeline_enabled {
+            let txn_count = vm_exec_start.map(|(_, c)| c).unwrap_or(0);
+            global_collector().record_state_commit_start(block_id, header.number(), txn_count);
+            Some((std::time::Instant::now(), txn_count))
+        } else {
+            None
+        };
 
         statedb2
             .flush()
@@ -738,9 +748,9 @@ impl BlockChain {
             .map_err(BlockExecutorError::BlockChainStateErr)?;
 
         // Record state commit end
-        global_collector().record_state_commit_end(block_id);
-        let commit_duration_ms = commit_start.elapsed().as_secs_f64() * 1000.0;
-        if global_collector().is_enabled() {
+        if let Some((start, txn_count)) = commit_start {
+            global_collector().record_state_commit_end(block_id);
+            let commit_duration_ms = start.elapsed().as_secs_f64() * 1000.0;
             info!(
                 "[Pipeline] State Commit block {} ({} txns) took {:.3} ms",
                 block_id, txn_count, commit_duration_ms
@@ -2359,10 +2369,15 @@ impl BlockChain {
         let state_cache = global_block_state_cache();
         let cached_state = state_cache.remove(header.txn_accumulator_root());
 
-        // Record VM Execute timing for DAG path
-        let dag_txn_count_for_exec = transactions.len() + transactions2.len();
-        let dag_vm_exec_start = std::time::Instant::now();
-        global_collector().record_vm_exec_start(block_id, header.number(), dag_txn_count_for_exec);
+        // Record VM Execute timing for DAG path (only when pipeline timing is enabled)
+        let dag_pipeline_enabled = global_collector().is_enabled();
+        let dag_vm_exec_start = if dag_pipeline_enabled {
+            let txn_count = transactions.len() + transactions2.len();
+            global_collector().record_vm_exec_start(block_id, header.number(), txn_count);
+            Some((std::time::Instant::now(), txn_count))
+        } else {
+            None
+        };
 
         // Execute or use cached data
         let (executed_data, executed_data2, cached_statedb, cached_statedb2) =
@@ -2404,20 +2419,24 @@ impl BlockChain {
             };
 
         // Record VM Execute end
-        global_collector().record_vm_exec_end(block_id);
-        let dag_vm_exec_duration_ms = dag_vm_exec_start.elapsed().as_secs_f64() * 1000.0;
-        if global_collector().is_enabled() {
+        if let Some((start, txn_count)) = dag_vm_exec_start {
+            global_collector().record_vm_exec_end(block_id);
+            let dag_vm_exec_duration_ms = start.elapsed().as_secs_f64() * 1000.0;
             info!(
                 "[Pipeline] DAG VM Execute block {} ({} txns) took {:.3} ms",
-                block_id, dag_txn_count_for_exec, dag_vm_exec_duration_ms
+                block_id, txn_count, dag_vm_exec_duration_ms
             );
         }
 
         // If we used cached statedb, we need to flush the cached ones
         // Otherwise, we only need to flush self.statedb (executor already applied write_sets)
-        let dag_txn_count = transactions.len() + transactions2.len();
-        let dag_commit_start = std::time::Instant::now();
-        global_collector().record_state_commit_start(block_id, header.number(), dag_txn_count);
+        let dag_commit_start = if dag_pipeline_enabled {
+            let txn_count = transactions.len() + transactions2.len();
+            global_collector().record_state_commit_start(block_id, header.number(), txn_count);
+            Some((std::time::Instant::now(), txn_count))
+        } else {
+            None
+        };
 
         if cached_statedb.is_some() && cached_statedb2.is_some() {
             // Flush cached statedbs
@@ -2432,12 +2451,12 @@ impl BlockChain {
             statedb2.flush()?;
         }
 
-        global_collector().record_state_commit_end(block_id);
-        let dag_commit_duration_ms = dag_commit_start.elapsed().as_secs_f64() * 1000.0;
-        if global_collector().is_enabled() {
+        if let Some((start, txn_count)) = dag_commit_start {
+            global_collector().record_state_commit_end(block_id);
+            let dag_commit_duration_ms = start.elapsed().as_secs_f64() * 1000.0;
             info!(
                 "[Pipeline] DAG State Commit block {} ({} txns) took {:.3} ms",
-                block_id, dag_txn_count, dag_commit_duration_ms
+                block_id, txn_count, dag_commit_duration_ms
             );
         }
 

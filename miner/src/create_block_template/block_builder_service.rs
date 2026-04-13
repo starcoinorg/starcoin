@@ -588,7 +588,11 @@ where
             >= vm1_offline_height(previous_header.chain_id().id().into());
 
         RAYON_EXEC_POOL.spawn(move || {
-            let build_start = std::time::Instant::now();
+            let build_start = if global_collector().is_enabled() {
+                Some(std::time::Instant::now())
+            } else {
+                None
+            };
             if is_node_shutting_down() {
                 return;
             }
@@ -832,20 +836,22 @@ where
             );
 
             // Record block build timing using txn_accumulator_root as temporary block ID
-            let build_duration_ms = build_start.elapsed().as_secs_f64() * 1000.0;
-            let txn_count = template.body.transactions.len() + template.body.transactions2.len();
-            global_collector().record_block_build_start(
-                template.txn_accumulator_root,
-                previous_header.number() + 1,
-                txn_count,
-            );
-            global_collector().update_block_timing(template.txn_accumulator_root, |timing| {
-                timing.build_end_ms = Some(global_collector().now_epoch_ms());
-                // Adjust build_start_ms to be build_duration_ms before end
-                if let Some(end) = timing.build_end_ms {
-                    timing.build_start_ms = Some(end - build_duration_ms);
-                }
-            });
+            if let Some(start) = build_start {
+                let build_duration_ms = start.elapsed().as_secs_f64() * 1000.0;
+                let txn_count = template.body.transactions.len() + template.body.transactions2.len();
+                global_collector().record_block_build_start(
+                    template.txn_accumulator_root,
+                    previous_header.number() + 1,
+                    txn_count,
+                );
+                global_collector().update_block_timing(template.txn_accumulator_root, |timing| {
+                    timing.build_end_ms = Some(global_collector().now_epoch_ms());
+                    // Adjust build_start_ms to be build_duration_ms before end
+                    if let Some(end) = timing.build_end_ms {
+                        timing.build_start_ms = Some(end - build_duration_ms);
+                    }
+                });
+            }
 
             if let Err(e) =
                 block_template_call_back.block_template_callback(previous_header, template)
