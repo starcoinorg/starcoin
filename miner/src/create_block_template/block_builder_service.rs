@@ -838,7 +838,8 @@ where
             // Record block build timing using txn_accumulator_root as temporary block ID
             if let Some(start) = build_start {
                 let build_duration_ms = start.elapsed().as_secs_f64() * 1000.0;
-                let txn_count = template.body.transactions.len() + template.body.transactions2.len();
+                let txn_count =
+                    template.body.transactions.len() + template.body.transactions2.len();
                 global_collector().record_block_build_start(
                     template.txn_accumulator_root,
                     previous_header.number() + 1,

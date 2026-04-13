@@ -610,7 +610,11 @@ impl BlockChain {
         let pipeline_enabled = global_collector().is_enabled();
         let vm_exec_start = if pipeline_enabled {
             let txn_count_for_timing = transactions.len() + transactions2.len();
-            global_collector().record_vm_exec_start(block_id, header.number(), txn_count_for_timing);
+            global_collector().record_vm_exec_start(
+                block_id,
+                header.number(),
+                txn_count_for_timing,
+            );
             Some((std::time::Instant::now(), txn_count_for_timing))
         } else {
             None
