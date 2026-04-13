@@ -134,7 +134,7 @@ fn test_distribute_transaction_fee() -> Result<()> {
     for _ in 0..total_accounts {
         let numbers: Vec<u32> = (0..total_accounts).map(|x| x as u32).collect();
         let mut rng = rand::rng();
-        let selected: Vec<_> = numbers.choose_multiple(&mut rng, 2).cloned().collect();
+        let selected: Vec<_> = numbers.sample(&mut rng, 2).cloned().collect();
         let sender_idx = selected[0];
         let receiver_idx = selected[1];
         let sender = &accounts[sender_idx as usize];
