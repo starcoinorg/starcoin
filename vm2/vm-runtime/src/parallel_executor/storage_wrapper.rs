@@ -64,6 +64,7 @@ impl CachedWriteOp {
 pub(crate) struct DelayedFieldCache {
     base_values: DashMap<StateKey, CachedWriteOp>,
     group_member_values: DashMap<(StateKey, StructTag), Bytes>,
+    group_member_layouts: DashMap<StateKey, BTreeMap<StructTag, Arc<MoveTypeLayout>>>,
 }
 
 impl DelayedFieldCache {
@@ -147,6 +148,59 @@ impl DelayedFieldCache {
             .group_member_values
             .remove(&(group_key.clone(), tag.clone()));
     }
+
+    pub fn clear_group_member_values(&self, group_key: &StateKey) {
+        let keys: Vec<_> = self
+            .group_member_values
+            .iter()
+            .filter(|entry| &entry.key().0 == group_key)
+            .map(|entry| entry.key().clone())
+            .collect();
+        for key in keys {
+            let _ = self.group_member_values.remove(&key);
+        }
+    }
+
+    pub fn insert_group_member_layout(
+        &self,
+        group_key: StateKey,
+        tag: StructTag,
+        layout: Arc<MoveTypeLayout>,
+    ) {
+        match self.group_member_layouts.entry(group_key) {
+            dashmap::mapref::entry::Entry::Occupied(mut entry) => {
+                entry.get_mut().insert(tag, layout);
+            }
+            dashmap::mapref::entry::Entry::Vacant(entry) => {
+                let mut layouts = BTreeMap::new();
+                layouts.insert(tag, layout);
+                entry.insert(layouts);
+            }
+        }
+    }
+
+    pub fn get_group_member_layouts(
+        &self,
+        group_key: &StateKey,
+    ) -> Option<BTreeMap<StructTag, Arc<MoveTypeLayout>>> {
+        self.group_member_layouts
+            .get(group_key)
+            .map(|entry| entry.clone())
+    }
+
+    pub fn remove_group_member_layout(&self, group_key: &StateKey, tag: &StructTag) {
+        if let Some(mut layouts) = self.group_member_layouts.get_mut(group_key) {
+            layouts.remove(tag);
+            if layouts.is_empty() {
+                drop(layouts);
+                let _ = self.group_member_layouts.remove(group_key);
+            }
+        }
+    }
+
+    pub fn clear_group_member_layouts(&self, group_key: &StateKey) {
+        let _ = self.group_member_layouts.remove(group_key);
+    }
 }
 
 #[derive(Clone)]
@@ -162,7 +216,6 @@ struct GroupReadInfo {
     metadata: StateValueMetadata,
     size: u64,
     delayed_ids: HashSet<DelayedFieldID>,
-    layouts: BTreeMap<StructTag, Arc<MoveTypeLayout>>,
 }
 
 pub(crate) struct VersionedView<'a, S: StateView> {
@@ -229,16 +282,6 @@ impl<'a, S: StateView> VersionedView<'a, S> {
             .and_then(|value| value.as_group_size())
     }
 
-    pub fn take_group_read_layouts(
-        &self,
-    ) -> HashMap<StateKey, BTreeMap<StructTag, Arc<MoveTypeLayout>>> {
-        self.group_reads
-            .borrow_mut()
-            .drain()
-            .map(|(k, v)| (k, v.layouts))
-            .collect()
-    }
-
     fn record_resource_read(
         &self,
         key: &StateKey,
@@ -278,24 +321,21 @@ impl<'a, S: StateView> VersionedView<'a, S> {
         if delayed_ids.is_empty() {
             return;
         }
+        self.delayed_field_cache.insert_group_member_layout(
+            group_key.clone(),
+            tag.clone(),
+            Arc::new(layout.clone()),
+        );
         self.group_reads
             .borrow_mut()
             .entry(group_key.clone())
             .and_modify(|existing| {
                 existing.delayed_ids.extend(delayed_ids.iter().cloned());
-                existing
-                    .layouts
-                    .insert(tag.clone(), Arc::new(layout.clone()));
             })
-            .or_insert_with(|| {
-                let mut layouts = BTreeMap::new();
-                layouts.insert(tag.clone(), Arc::new(layout.clone()));
-                GroupReadInfo {
-                    metadata,
-                    size,
-                    delayed_ids,
-                    layouts,
-                }
+            .or_insert_with(|| GroupReadInfo {
+                metadata,
+                size,
+                delayed_ids,
             });
     }
 

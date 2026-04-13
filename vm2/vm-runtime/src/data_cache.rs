@@ -155,7 +155,6 @@ struct GroupReadInfo {
     metadata: StateValueMetadata,
     size: u64,
     delayed_ids: HashSet<DelayedFieldID>,
-    layouts: BTreeMap<StructTag, Arc<MoveTypeLayout>>,
 }
 
 /// Adapter to convert a `ExecutorView` into a `MoveResolver`.
@@ -303,16 +302,6 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
         &self.delayed_fields
     }
 
-    pub fn take_group_read_layouts(
-        &self,
-    ) -> HashMap<StateKey, BTreeMap<StructTag, Arc<MoveTypeLayout>>> {
-        self.group_reads
-            .borrow_mut()
-            .drain()
-            .map(|(k, v)| (k, v.layouts))
-            .collect()
-    }
-
     fn generate_delayed_field_id(&self, width: u32) -> DelayedFieldID {
         let index = self.delayed_field_id_counter.fetch_add(1, Ordering::SeqCst);
         DelayedFieldID::new_with_width(index, width)
@@ -381,24 +370,21 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
         if delayed_ids.is_empty() {
             return;
         }
+        self.delayed_field_cache.insert_group_member_layout(
+            group_key.clone(),
+            tag.clone(),
+            Arc::new(layout.clone()),
+        );
         self.group_reads
             .borrow_mut()
             .entry(group_key.clone())
             .and_modify(|existing| {
                 existing.delayed_ids.extend(delayed_ids.iter().cloned());
-                existing
-                    .layouts
-                    .insert(tag.clone(), Arc::new(layout.clone()));
             })
-            .or_insert_with(|| {
-                let mut layouts = BTreeMap::new();
-                layouts.insert(tag.clone(), Arc::new(layout.clone()));
-                GroupReadInfo {
-                    metadata,
-                    size,
-                    delayed_ids,
-                    layouts,
-                }
+            .or_insert_with(|| GroupReadInfo {
+                metadata,
+                size,
+                delayed_ids,
             });
     }
 
@@ -528,13 +514,11 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
             delayed_fields: &self.delayed_fields,
             txn_idx: 0,
         };
-        let group_read_layouts = self.take_group_read_layouts();
         let mut group_cache: HashMap<StateKey, BTreeMap<StructTag, Bytes>> = HashMap::new();
         let patched_resource_write_set = materialize_resource_write_set(
             &output,
             &mapping,
             &self.delayed_field_cache,
-            &group_read_layouts,
             self.executor_view,
             &mut group_cache,
             has_delayed,

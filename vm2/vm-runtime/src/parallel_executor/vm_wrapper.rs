@@ -82,17 +82,10 @@ impl<'a, S: 'a + StateView + Sync> ExecutorTask for StarcoinVMWrapper<'a, S> {
                         }
                     };
                 }
-                let group_read_layouts = versioned_view.take_group_read_layouts();
                 if StarcoinVM::should_restart_execution(&output) {
-                    ExecutionStatus::SkipRest(StarcoinTransactionOutput::new(
-                        output,
-                        group_read_layouts,
-                    ))
+                    ExecutionStatus::SkipRest(StarcoinTransactionOutput::new(output))
                 } else {
-                    ExecutionStatus::Success(StarcoinTransactionOutput::new(
-                        output,
-                        group_read_layouts,
-                    ))
+                    ExecutionStatus::Success(StarcoinTransactionOutput::new(output))
                 }
             }
             Err(err) => ExecutionStatus::Abort(err),
