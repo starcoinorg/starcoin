@@ -31,6 +31,14 @@ pub struct NewBranch(pub Arc<ExecutedBlock>);
 #[derive(Clone, Debug)]
 pub struct MinedBlock(pub Arc<Block>);
 
+/// Fired when block template construction collects transactions from blue blocks
+/// (blocks in mergeset_blues excluding selected parent).
+#[derive(Clone, Debug)]
+pub struct BlockTemplateBlueTxns {
+    pub template_time_ms: u64,
+    pub txn_hashes: Arc<[HashValue]>,
+}
+
 ///Fire this event on System start and all service is init.
 #[derive(Clone, Debug)]
 pub struct SystemStarted;

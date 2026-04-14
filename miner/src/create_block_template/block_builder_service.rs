@@ -20,6 +20,7 @@ use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::{error, info};
 use starcoin_open_block::OpenedBlock;
 use starcoin_pipeline_timing::global_collector;
+use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceRef,
 };
@@ -32,7 +33,7 @@ use starcoin_txpool::{NonceCache, PoolClient, TxPoolService};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::blockhash::BlockHashSet;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
-use starcoin_types::system_events::GenerateBlockEvent;
+use starcoin_types::system_events::{BlockTemplateBlueTxns, GenerateBlockEvent};
 use starcoin_types::{
     block::{Block, BlockHeader, BlockTemplate, Version},
     transaction::SignedUserTransaction,
@@ -85,6 +86,7 @@ pub struct BlockTemplateResponse {
 pub struct BlockBuilderService {
     inner: Inner<TxPoolService>,
     new_header_channel: NewHeaderChannel,
+    bus: ServiceRef<BusService>,
 }
 
 enum ReceiveHeader {
@@ -166,9 +168,11 @@ impl ServiceFactory<Self> for BlockBuilderService {
             vm_metrics,
         )?;
         let new_header_channel = ctx.get_shared::<NewHeaderChannel>()?;
+        let bus = ctx.service_ref::<BusService>()?.clone();
         Ok(Self {
             inner,
             new_header_channel,
+            bus,
         })
     }
 }
@@ -249,7 +253,7 @@ impl EventHandler<Self, BlockTemplateRequest> for BlockBuilderService {
         let callback = BlockBuilderTemplateNotify::new(miner_service, msg.event);
         if let Err(e) = self
             .inner
-            .create_block_template(header_version, Box::new(callback))
+            .create_block_template(header_version, Box::new(callback), self.bus.clone())
         {
             error!("Failed to create block template: {}", e);
         }
@@ -505,6 +509,7 @@ where
         &mut self,
         version: Version,
         mut block_template_call_back: Box<dyn BlockTemplateCallBack + Send + Sync>,
+        bus: ServiceRef<BusService>,
         // miner_service: Option<ServiceRef<MinerService>>,
         // event: Option<GenerateBlockEvent>,
     ) -> Result<()> {
@@ -573,6 +578,24 @@ where
         );
 
         let (blue_txns, blue_txns2, seen_hashes) = collect_blue_transactions(&blue_blocks);
+        let blue_txn_hashes: Vec<HashValue> = blue_txns
+            .iter()
+            .map(|txn| txn.id())
+            .chain(
+                blue_txns2
+                    .iter()
+                    .map(|txn| HashValue::new(txn.id().to_inner())),
+            )
+            .collect();
+        if !blue_txn_hashes.is_empty() {
+            let event = BlockTemplateBlueTxns {
+                template_time_ms: now_millis,
+                txn_hashes: blue_txn_hashes.into(),
+            };
+            if let Err(e) = bus.broadcast(event) {
+                error!("[BlockProcess] broadcast BlockTemplateBlueTxns failed: {:?}", e);
+            }
+        }
         info!(
             "[BlockProcess] Blue VM1 txns len: {}, Blue VM2 txns len: {}",
             blue_txns.len(),

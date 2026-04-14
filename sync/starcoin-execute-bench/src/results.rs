@@ -16,6 +16,8 @@ pub enum TransactionExecutionResult {
     Culled(String),
     /// Mined(mined_time_ms, block_number, block_id) - epoch ms when MinedBlock event received
     Mined(u64, u64, HashValue),
+    /// BlueTemplateSelected(timestamp_ms) - epoch ms when tx appears in blue_txns during create_block_template
+    BlueTemplateSelected(u64),
     /// Executed(connected_time_ms, block_number, block_id, block_timestamp_ms) - epoch ms from NewHeadBlock
     /// block_timestamp_ms is the block's timestamp (when it was created)
     Executed(u64, u64, HashValue, u64),
@@ -79,6 +81,28 @@ fn calculate_trimmed_mean(values: &[f64], trim_pct: f64) -> f64 {
     trimmed.iter().sum::<f64>() / trimmed.len() as f64
 }
 
+#[derive(Debug, Clone, Default)]
+pub struct PhaseLatencyStats {
+    pub sample_count: usize,
+    pub min_ms: f64,
+    pub max_ms: f64,
+    pub avg_ms: f64,
+    pub median_ms: f64,
+}
+
+impl PhaseLatencyStats {
+    fn from_samples(samples: &[f64]) -> Self {
+        let (min_ms, max_ms, avg_ms, median_ms) = calculate_statistics(samples);
+        Self {
+            sample_count: samples.len(),
+            min_ms: if min_ms.is_finite() { min_ms } else { 0.0 },
+            max_ms,
+            avg_ms,
+            median_ms,
+        }
+    }
+}
+
 impl std::fmt::Debug for TransactionExecutionResult {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -99,6 +123,9 @@ impl std::fmt::Debug for TransactionExecutionResult {
                     block_number,
                     block_id
                 )
+            }
+            TransactionExecutionResult::BlueTemplateSelected(ts_ms) => {
+                write!(f, "BlueTemplateSelected({})", format_epoch_ms(*ts_ms))
             }
             TransactionExecutionResult::Executed(ts_ms, block_number, block_id, block_ts) => {
                 write!(
@@ -148,6 +175,16 @@ pub struct BenchmarkStats {
     pub unique_txn_count: usize,
     pub duplicate_exec_count: usize,
     pub duplicate_pct: f64,
+    pub txpool_to_mined_latency: PhaseLatencyStats,
+    pub txpool_to_mined_excluding_target_latency: Option<PhaseLatencyStats>,
+    pub mined_to_executed_latency: PhaseLatencyStats,
+    pub txpool_to_final_executed_latency: PhaseLatencyStats,
+    pub txpool_to_final_executed_excluding_target_latency: Option<PhaseLatencyStats>,
+    pub mining_target_ms: Option<u64>,
+    pub blue_template_unique_txn_count: usize,
+    pub blue_template_final_executed_count: usize,
+    pub blue_template_duplicate_exec_count: usize,
+    pub blue_template_final_latency: PhaseLatencyStats,
     pub min_latency_ms: f64,
     pub max_latency_ms: f64,
     pub avg_latency_ms: f64,
@@ -177,8 +214,81 @@ impl std::fmt::Display for BenchmarkStats {
         )?;
         writeln!(
             f,
-            "Latency - Min: {:.2}ms | Max: {:.2}ms | Avg: {:.2}ms | Median: {:.2}ms",
+            "Txpool->Final Executed Latency - Min: {:.2}ms | Max: {:.2}ms | Avg: {:.2}ms | Median: {:.2}ms",
             self.min_latency_ms, self.max_latency_ms, self.avg_latency_ms, self.median_latency_ms
+        )?;
+        writeln!(
+            f,
+            "Stage Latency [TxpoolWrite->BlockMined] (n={}) - Min: {:.2}ms | Max: {:.2}ms | Avg: {:.2}ms | Median: {:.2}ms",
+            self.txpool_to_mined_latency.sample_count,
+            self.txpool_to_mined_latency.min_ms,
+            self.txpool_to_mined_latency.max_ms,
+            self.txpool_to_mined_latency.avg_ms,
+            self.txpool_to_mined_latency.median_ms
+        )?;
+        if let (Some(target_ms), Some(adjusted)) = (
+            self.mining_target_ms,
+            self.txpool_to_mined_excluding_target_latency.as_ref(),
+        ) {
+            writeln!(
+                f,
+                "Stage Latency [TxpoolWrite->BlockMined, minus target mining {}ms] (n={}) - Min: {:.2}ms | Max: {:.2}ms | Avg: {:.2}ms | Median: {:.2}ms",
+                target_ms,
+                adjusted.sample_count,
+                adjusted.min_ms,
+                adjusted.max_ms,
+                adjusted.avg_ms,
+                adjusted.median_ms
+            )?;
+        }
+        writeln!(
+            f,
+            "Stage Latency [BlockMined->FinalExecuted] (n={}) - Min: {:.2}ms | Max: {:.2}ms | Avg: {:.2}ms | Median: {:.2}ms",
+            self.mined_to_executed_latency.sample_count,
+            self.mined_to_executed_latency.min_ms,
+            self.mined_to_executed_latency.max_ms,
+            self.mined_to_executed_latency.avg_ms,
+            self.mined_to_executed_latency.median_ms
+        )?;
+        writeln!(
+            f,
+            "Stage Latency [TxpoolWrite->FinalExecuted] (n={}) - Min: {:.2}ms | Max: {:.2}ms | Avg: {:.2}ms | Median: {:.2}ms",
+            self.txpool_to_final_executed_latency.sample_count,
+            self.txpool_to_final_executed_latency.min_ms,
+            self.txpool_to_final_executed_latency.max_ms,
+            self.txpool_to_final_executed_latency.avg_ms,
+            self.txpool_to_final_executed_latency.median_ms
+        )?;
+        if let (Some(target_ms), Some(adjusted)) = (
+            self.mining_target_ms,
+            self.txpool_to_final_executed_excluding_target_latency.as_ref(),
+        ) {
+            writeln!(
+                f,
+                "Stage Latency [TxpoolWrite->FinalExecuted, minus target mining {}ms] (n={}) - Min: {:.2}ms | Max: {:.2}ms | Avg: {:.2}ms | Median: {:.2}ms",
+                target_ms,
+                adjusted.sample_count,
+                adjusted.min_ms,
+                adjusted.max_ms,
+                adjusted.avg_ms,
+                adjusted.median_ms
+            )?;
+        }
+        writeln!(
+            f,
+            "Blue Txns (from create_block_template blue_txns) - Unique: {} | Final Executed: {} | Duplicate Executions: {}",
+            self.blue_template_unique_txn_count,
+            self.blue_template_final_executed_count,
+            self.blue_template_duplicate_exec_count
+        )?;
+        writeln!(
+            f,
+            "Blue Txns Final Latency [Added->FinalExecuted] (n={}) - Min: {:.2}ms | Max: {:.2}ms | Avg: {:.2}ms | Median: {:.2}ms",
+            self.blue_template_final_latency.sample_count,
+            self.blue_template_final_latency.min_ms,
+            self.blue_template_final_latency.max_ms,
+            self.blue_template_final_latency.avg_ms,
+            self.blue_template_final_latency.median_ms
         )?;
         writeln!(f, "========================================")?;
         Ok(())
@@ -210,11 +320,18 @@ pub struct TopLatencyBlock {
 
 pub struct ResultsDumper<'a> {
     transaction_data: &'a HashMap<HashValue, Vec<TransactionExecutionResult>>,
+    mining_target_ms: Option<u64>,
 }
 
 impl<'a> ResultsDumper<'a> {
-    pub fn new(transaction_data: &'a HashMap<HashValue, Vec<TransactionExecutionResult>>) -> Self {
-        Self { transaction_data }
+    pub fn with_mining_target(
+        transaction_data: &'a HashMap<HashValue, Vec<TransactionExecutionResult>>,
+        mining_target_ms: Option<u64>,
+    ) -> Self {
+        Self {
+            transaction_data,
+            mining_target_ms,
+        }
     }
 
     /// Calculate and return benchmark statistics
@@ -248,7 +365,34 @@ impl<'a> ResultsDumper<'a> {
         info!("DEBUG: total_txn_entries={}, added_events={}, executed_events={}, unique_with_added={}, matched_with_latency={}",
             total_txn_entries, added_count, executed_count, unique_txn_count, total_txns);
 
-        let (min_delay, max_delay, avg_delay, median_delay) = calculate_statistics(&all_delays);
+        let (txpool_to_mined_samples, mined_to_executed_samples) =
+            self.collect_stage_latency_samples();
+        let txpool_to_mined_latency = PhaseLatencyStats::from_samples(&txpool_to_mined_samples);
+        let txpool_to_mined_excluding_target_latency = self.mining_target_ms.map(|v| {
+            let target_ms = v as f64;
+            let adjusted: Vec<f64> = txpool_to_mined_samples
+                .iter()
+                .map(|latency_ms| (latency_ms - target_ms).max(0.0))
+                .collect();
+            PhaseLatencyStats::from_samples(&adjusted)
+        });
+        let mined_to_executed_latency =
+            PhaseLatencyStats::from_samples(&mined_to_executed_samples);
+        let txpool_to_final_executed_latency = PhaseLatencyStats::from_samples(&all_delays);
+        let txpool_to_final_executed_excluding_target_latency = self.mining_target_ms.map(|v| {
+            let target_ms = v as f64;
+            let adjusted: Vec<f64> = all_delays
+                .iter()
+                .map(|latency_ms| (latency_ms - target_ms).max(0.0))
+                .collect();
+            PhaseLatencyStats::from_samples(&adjusted)
+        });
+        let (
+            blue_template_unique_txn_count,
+            blue_template_final_executed_count,
+            blue_template_duplicate_exec_count,
+            blue_template_final_latency,
+        ) = self.collect_blue_template_stats();
 
         // Calculate TPS based on executed times (OLD - affected by event queue delays)
         let tps = self.calculate_tps_from_executed();
@@ -299,15 +443,136 @@ impl<'a> ResultsDumper<'a> {
             unique_txn_count,
             duplicate_exec_count,
             duplicate_pct,
-            min_latency_ms: if min_delay.is_finite() {
-                min_delay
-            } else {
-                0.0
-            },
-            max_latency_ms: max_delay,
-            avg_latency_ms: avg_delay,
-            median_latency_ms: median_delay,
+            txpool_to_mined_latency,
+            txpool_to_mined_excluding_target_latency,
+            mined_to_executed_latency,
+            txpool_to_final_executed_latency: txpool_to_final_executed_latency.clone(),
+            txpool_to_final_executed_excluding_target_latency,
+            mining_target_ms: self.mining_target_ms,
+            blue_template_unique_txn_count,
+            blue_template_final_executed_count,
+            blue_template_duplicate_exec_count,
+            blue_template_final_latency,
+            min_latency_ms: txpool_to_final_executed_latency.min_ms,
+            max_latency_ms: txpool_to_final_executed_latency.max_ms,
+            avg_latency_ms: txpool_to_final_executed_latency.avg_ms,
+            median_latency_ms: txpool_to_final_executed_latency.median_ms,
         }
+    }
+
+    fn collect_blue_template_stats(&self) -> (usize, usize, usize, PhaseLatencyStats) {
+        let mut unique_txn_count = 0usize;
+        let mut final_executed_count = 0usize;
+        let mut duplicate_exec_count = 0usize;
+        let mut latencies: Vec<f64> = Vec::new();
+
+        for events in self.transaction_data.values() {
+            let mut has_blue_template = false;
+            let mut added_times: Vec<u64> = Vec::new();
+            let mut executed_times: Vec<u64> = Vec::new();
+
+            for ev in events {
+                match ev {
+                    TransactionExecutionResult::BlueTemplateSelected(_) => {
+                        has_blue_template = true;
+                    }
+                    TransactionExecutionResult::Added(ts_ms) => {
+                        added_times.push(*ts_ms);
+                    }
+                    TransactionExecutionResult::Executed(ts_ms, _, _, _) => {
+                        executed_times.push(*ts_ms);
+                    }
+                    _ => {}
+                }
+            }
+
+            if !has_blue_template || added_times.is_empty() {
+                continue;
+            }
+
+            unique_txn_count += 1;
+            if executed_times.is_empty() {
+                continue;
+            }
+
+            final_executed_count += 1;
+            if executed_times.len() > 1 {
+                duplicate_exec_count += executed_times.len() - 1;
+            }
+
+            let first_add = *added_times.iter().min().unwrap();
+            let last_exec = *executed_times.iter().max().unwrap();
+            if last_exec >= first_add {
+                latencies.push((last_exec - first_add) as f64);
+            } else {
+                latencies.push(0.0);
+            }
+        }
+
+        (
+            unique_txn_count,
+            final_executed_count,
+            duplicate_exec_count,
+            PhaseLatencyStats::from_samples(&latencies),
+        )
+    }
+
+    fn collect_stage_latency_samples(&self) -> (Vec<f64>, Vec<f64>) {
+        let mut txpool_to_mined_samples: Vec<f64> = Vec::new();
+        let mut mined_to_executed_samples: Vec<f64> = Vec::new();
+
+        for events in self.transaction_data.values() {
+            let mut added_times: Vec<u64> = Vec::new();
+            let mut mined_infos: Vec<(u64, HashValue)> = Vec::new();
+            let mut executed_infos: Vec<(u64, HashValue)> = Vec::new();
+
+            for ev in events {
+                match ev {
+                    TransactionExecutionResult::Added(ts_ms) => {
+                        added_times.push(*ts_ms);
+                    }
+                    TransactionExecutionResult::Mined(ts_ms, _block_number, block_id) => {
+                        mined_infos.push((*ts_ms, *block_id));
+                    }
+                    TransactionExecutionResult::Executed(ts_ms, _block_number, block_id, _block_ts) => {
+                        executed_infos.push((*ts_ms, *block_id));
+                    }
+                    _ => {}
+                }
+            }
+
+            let first_add = added_times.iter().min().copied();
+            let first_mined = mined_infos.iter().map(|(ts, _)| *ts).min();
+            if let (Some(add_ts), Some(mined_ts)) = (first_add, first_mined) {
+                if mined_ts >= add_ts {
+                    txpool_to_mined_samples.push((mined_ts - add_ts) as f64);
+                }
+            }
+
+            if let Some((final_exec_ts, final_exec_block_id)) =
+                executed_infos.iter().max_by_key(|(ts, _)| *ts).copied()
+            {
+                let mined_for_final_block = mined_infos
+                    .iter()
+                    .filter(|(_, block_id)| *block_id == final_exec_block_id)
+                    .map(|(ts, _)| *ts)
+                    .min()
+                    .or_else(|| {
+                        mined_infos
+                            .iter()
+                            .map(|(ts, _)| *ts)
+                            .filter(|ts| *ts <= final_exec_ts)
+                            .max()
+                    });
+                if let Some(mined_ts) = mined_for_final_block {
+                    if final_exec_ts >= mined_ts {
+                        mined_to_executed_samples.push((final_exec_ts - mined_ts) as f64);
+                    }
+                }
+            }
+        }
+
+        (txpool_to_mined_samples, mined_to_executed_samples)
     }
 
     /// Get top N blocks with highest latency transactions (deduplicated by block_id)
@@ -660,7 +925,7 @@ impl<'a> ResultsDumper<'a> {
         Ok(())
     }
 
-    /// Collect execution latency for each transaction
+    /// Collect txpool->final-executed latency for each transaction.
     /// Returns: (transaction latency data list, unique transaction count, duplicate execution count)
     /// Each element is (transaction ID, Added time in epoch ms, latency in milliseconds)
     fn collect_executions(&self) -> (Vec<(HashValue, u64, f64)>, usize, usize) {
@@ -690,6 +955,7 @@ impl<'a> ResultsDumper<'a> {
 
             unique_txn_count += 1;
 
+            // Earliest Added event approximates txpool insertion time.
             let first_add = *added_times.iter().min().unwrap();
 
             if executed_times.is_empty() {
@@ -701,8 +967,9 @@ impl<'a> ResultsDumper<'a> {
                 duplicate_exec_count += executed_times.len() - 1;
             }
 
+            // Use latest execution as final execution time when duplicates exist.
             let last_exec = *executed_times.iter().max().unwrap();
-            // Calculate latency: executed_time - added_time
+            // Calculate latency: final_executed_time - added_time
             let delay_ms = if last_exec >= first_add {
                 (last_exec - first_add) as f64
             } else {
@@ -785,7 +1052,7 @@ impl<'a> ResultsDumper<'a> {
 
         let mut chart = ChartBuilder::on(area)
             .caption(
-                "Transaction Latency (Added to Executed)",
+                "Txpool to Final Executed Latency",
                 ("sans-serif", 28),
             )
             .margin(20)
@@ -868,7 +1135,7 @@ impl<'a> ResultsDumper<'a> {
                 total_txns, unique_txn_count, duplicate_exec_count, duplicate_pct
             ),
             format!(
-                "Latency - Min: {:.2}ms | Max: {:.2}ms | Avg: {:.2}ms | Median: {:.2}ms",
+                "Txpool->Final Executed Latency - Min: {:.2}ms | Max: {:.2}ms | Avg: {:.2}ms | Median: {:.2}ms",
                 min_delay, max_delay_stat, avg_delay, median_delay
             ),
         ];

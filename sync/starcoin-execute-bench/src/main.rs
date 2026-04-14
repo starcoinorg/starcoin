@@ -41,7 +41,7 @@ use starcoin_types::{
     block::{Block, BlockHeader},
     genesis_config::ChainId,
     multi_transaction::MultiSignedUserTransaction,
-    system_events::{MinedBlock, NewHeadBlock},
+    system_events::{BlockTemplateBlueTxns, MinedBlock, NewHeadBlock},
     transaction::StcTransactionInfo,
 };
 use starcoin_vm2_account_api::{
@@ -2358,22 +2358,26 @@ impl ObserverService {
     }
 
     fn dump_results(&self) -> Result<()> {
-        let dumper = ResultsDumper::new(&self.transaction_data);
+        let mining_target_ms = self
+            .config
+            .as_ref()
+            .map(|cfg| cfg.net().genesis_config2().consensus_config.base_block_time_target);
+        let dumper = ResultsDumper::with_mining_target(&self.transaction_data, mining_target_ms);
 
         // Calculate and log statistics
         let stats = dumper.calculate_stats();
         info!("\n{}", stats);
 
-        // Print top 10 blocks with highest latency
+        // Print top 10 blocks with highest txpool->final-executed latency
         let top_latency_blocks = dumper.get_top_latency_blocks(10);
         if !top_latency_blocks.is_empty() {
             info!(
-                "Top {} blocks with highest latency (deduplicated by block_id):",
+                "Top {} blocks with highest txpool->final-executed latency (deduplicated by block_id):",
                 top_latency_blocks.len()
             );
             for (i, (block_id, block_number, latency_ms)) in top_latency_blocks.iter().enumerate() {
                 info!(
-                    "  #{}: block_number={}, latency={:.2}ms, block_id={}",
+                    "  #{}: block_number={}, txpool->final-executed latency={:.2}ms, block_id={}",
                     i + 1,
                     block_number,
                     latency_ms,
@@ -2405,6 +2409,7 @@ impl ActorService for ObserverService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         // ctx.subscribe::<NewDagBlock>();
         // ctx.subscribe::<NewDagBlockFromPeer>();
+        ctx.subscribe::<BlockTemplateBlueTxns>();
         ctx.subscribe::<MinedBlock>();
         ctx.subscribe::<NewHeadBlock>();
         Ok(())
@@ -2413,6 +2418,7 @@ impl ActorService for ObserverService {
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         // ctx.unsubscribe::<NewDagBlock>();
         // ctx.unsubscribe::<NewDagBlockFromPeer>();
+        ctx.unsubscribe::<BlockTemplateBlueTxns>();
         ctx.unsubscribe::<MinedBlock>();
         ctx.unsubscribe::<NewHeadBlock>();
 
@@ -2420,6 +2426,19 @@ impl ActorService for ObserverService {
             error!("failed to dump the results: {:?}", e);
         }
         Ok(())
+    }
+}
+
+impl EventHandler<Self, BlockTemplateBlueTxns> for ObserverService {
+    fn handle_event(&mut self, msg: BlockTemplateBlueTxns, _ctx: &mut ServiceContext<Self>) {
+        for txn_hash in msg.txn_hashes.iter() {
+            self.transaction_data
+                .entry(*txn_hash)
+                .or_default()
+                .push(TransactionExecutionResult::BlueTemplateSelected(
+                    msg.template_time_ms,
+                ));
+        }
     }
 }
 
