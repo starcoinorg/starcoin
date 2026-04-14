@@ -9,7 +9,7 @@ use crate::{
 use rand::{rngs::StdRng, RngExt, SeedableRng};
 use starcoin_vm_types::{transaction::SignedUserTransaction, vm_status::VMStatus};
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct RandomizedStrategy {
     gen: StdRng,
 }
