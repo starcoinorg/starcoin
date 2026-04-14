@@ -1,14 +1,14 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::module::to_invalid_param_err;
 use crate::module::txfactory_rpc::TxFactoryStatusHandle;
-use jsonrpc_core::Result;
+use crate::module::{to_invalid_param_err, to_invalid_request_err};
+use jsonrpsee::core::RpcResult;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::LevelFilter;
 use starcoin_logger::structured_log::set_slog_level;
 use starcoin_logger::{LogPattern, LoggerHandle};
-use starcoin_rpc_api::debug::DebugApi;
+use starcoin_rpc_api::debug::DebugApiServer;
 use starcoin_rpc_api::types::FactoryAction;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::ServiceRef;
@@ -37,8 +37,8 @@ impl DebugRpcImpl {
     }
 }
 
-impl DebugApi for DebugRpcImpl {
-    fn set_log_level(&self, logger_name: Option<String>, level: String) -> Result<()> {
+impl DebugApiServer for DebugRpcImpl {
+    fn set_log_level(&self, logger_name: Option<String>, level: String) -> RpcResult<()> {
         let logger_name = logger_name.and_then(|s| {
             let s = s.trim();
             if s.is_empty() {
@@ -47,7 +47,9 @@ impl DebugApi for DebugRpcImpl {
                 Some(s.to_string())
             }
         });
-        let level = LevelFilter::from_str(level.as_str()).map_err(to_invalid_param_err)?;
+        let level = LevelFilter::from_str(level.as_str())
+            .map_err(to_invalid_param_err)
+            .map_err(crate::module::map_jsonrpc_err)?;
         set_slog_level(level.as_str());
         match logger_name {
             None => self.log_handle.update_level(level),
@@ -57,48 +59,52 @@ impl DebugApi for DebugRpcImpl {
         Ok(())
     }
 
-    fn set_log_pattern(&self, pattern: LogPattern) -> Result<()> {
+    fn set_log_pattern(&self, pattern: LogPattern) -> RpcResult<()> {
         self.log_handle.set_log_pattern(pattern);
         Ok(())
     }
 
-    fn panic(&self) -> Result<()> {
+    fn panic(&self) -> RpcResult<()> {
         if !self.config.net().is_test() || self.config.net().is_dev() {
-            return Err(jsonrpc_core::Error::invalid_request());
+            return Err(crate::module::map_jsonrpc_err(to_invalid_request_err(
+                anyhow::anyhow!("invalid request"),
+            )));
         }
         panic!("DebugApi.panic")
     }
 
-    fn sleep(&self, time: u64) -> Result<()> {
+    fn sleep(&self, time: u64) -> RpcResult<()> {
         if !self.config.net().is_test() && !self.config.net().is_dev() {
-            return Err(jsonrpc_core::Error::invalid_request());
+            return Err(crate::module::map_jsonrpc_err(to_invalid_request_err(
+                anyhow::anyhow!("invalid request"),
+            )));
         }
         self.config.net().time_service().sleep(time);
         self.bus
             .broadcast(GenerateBlockEvent::new(true, true))
-            .map_err(|_e| jsonrpc_core::Error::internal_error())?;
+            .map_err(|_e| crate::module::map_jsonrpc_err(anyhow::anyhow!("internal error")))?;
         Ok(())
     }
 
-    fn txfactory_status(&self, action: FactoryAction) -> Result<bool> {
+    fn txfactory_status(&self, action: FactoryAction) -> RpcResult<bool> {
         Ok(TxFactoryStatusHandle::handle_action(action))
     }
 
-    fn set_concurrency_level(&self, level: usize) -> Result<()> {
+    fn set_concurrency_level(&self, level: usize) -> RpcResult<()> {
         StarcoinVM2::set_concurrency_level(level);
         Ok(())
     }
 
-    fn get_concurrency_level(&self) -> Result<usize> {
+    fn get_concurrency_level(&self) -> RpcResult<usize> {
         Ok(StarcoinVM2::get_concurrency_level())
     }
 
-    fn set_logger_balance_amount(&self, balance_amount: u64) -> Result<()> {
+    fn set_logger_balance_amount(&self, balance_amount: u64) -> RpcResult<()> {
         starcoin_executor::set_logger_balance_amount_once(balance_amount);
         Ok(())
     }
 
-    fn get_logger_balance_amount(&self) -> Result<u64> {
+    fn get_logger_balance_amount(&self) -> RpcResult<u64> {
         Ok(starcoin_executor::get_logger_balance_amount())
     }
 }

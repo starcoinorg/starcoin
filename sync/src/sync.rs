@@ -63,6 +63,93 @@ fn global_sync_runtime() -> &'static Runtime {
 
 const REPUTATION_THRESHOLD: i32 = -1000;
 const WATCHDOG_RESTART_DELAY: Duration = Duration::from_secs(120); // maybe wait for some time before restart sync.
+const FRESH_PEER_SYNC_DEBOUNCE: Duration = Duration::from_millis(500);
+
+async fn restart_sync_if_prepare<S>(sync_ref: &S)
+where
+    S: SyncAsyncService,
+{
+    match sync_ref.status().await {
+        Ok(status) if status.is_prepare() => {
+            if let Err(e) = sync_ref.start(true, vec![], false, None).await {
+                warn!("[sync] Watchdog restart sync failed: {:?}", e);
+            }
+        }
+        Ok(status) => {
+            info!(
+                "[sync] Watchdog restart skipped because sync already transitioned to {:?}.",
+                status.sync_status()
+            );
+        }
+        Err(e) => {
+            warn!(
+                "[sync] Watchdog failed to get sync status after cancel, skip restart: {:?}",
+                e
+            );
+        }
+    }
+}
+
+async fn run_watchdog_once<S>(
+    sync_ref: S,
+    watchdog_state: Arc<Mutex<Option<SyncWatchdogSnapshot>>>,
+    watchdog_stall_secs: u64,
+    restart_delay: Duration,
+) -> bool
+where
+    S: SyncAsyncService,
+{
+    let report = match sync_ref.progress().await {
+        Ok(report) => report,
+        Err(e) => {
+            warn!("[sync] Watchdog failed to get progress: {:?}", e);
+            return false;
+        }
+    };
+    let Some(report) = report else {
+        return false;
+    };
+    let now = Instant::now();
+    let task_name = report.current.task_name.clone();
+    let processed = report.current.processed_items;
+    let ok = report.current.ok;
+
+    let snapshot = {
+        let mut state = watchdog_state.lock().expect("watchdog lock poisoned");
+        let should_restart = update_watchdog_state(
+            &mut state,
+            task_name,
+            processed,
+            ok,
+            now,
+            watchdog_stall_secs,
+        );
+        if should_restart {
+            state
+                .as_ref()
+                .map(|snapshot| (snapshot.task_name.clone(), snapshot.processed, snapshot.ok))
+        } else {
+            None
+        }
+    };
+    if let Some((task_name, processed, ok)) = snapshot {
+        warn!(
+            "[sync] Watchdog detected stalled sync (task: {}, processed: {}, ok: {}, stalled: {}s).",
+            task_name,
+            processed,
+            ok,
+            watchdog_stall_secs
+        );
+        if let Err(e) = sync_ref.cancel().await {
+            warn!("[sync] Watchdog cancel sync failed: {:?}", e);
+            return false;
+        }
+        tokio::time::sleep(restart_delay).await;
+        restart_sync_if_prepare(&sync_ref).await;
+        return true;
+    }
+    false
+}
 
 //TODO combine task_handle and task_event_handle in stream_task
 pub struct SyncTaskHandle {
@@ -93,6 +180,7 @@ pub struct SyncService {
     metrics: Option<SyncMetrics>,
     peer_score_metrics: Option<PeerScoreMetrics>,
     vm_metrics: Option<VMMetrics>,
+    pending_peer_sync_checks: Arc<Mutex<HashSet<PeerId>>>,
 }
 
 impl SyncService {
@@ -140,6 +228,7 @@ impl SyncService {
             metrics,
             peer_score_metrics,
             vm_metrics,
+            pending_peer_sync_checks: Arc::new(Mutex::new(HashSet::new())),
         })
     }
 
@@ -760,60 +849,13 @@ impl ActorService for SyncService {
             let watchdog_state = watchdog_state_clone.clone();
             let watchdog_stall_secs = watchdog_stall_secs;
             ctx.spawn(async move {
-                let report = match sync_ref.progress().await {
-                    Ok(report) => report,
-                    Err(e) => {
-                        warn!("[sync] Watchdog failed to get progress: {:?}", e);
-                        return;
-                    }
-                };
-                let Some(report) = report else {
-                    return;
-                };
-                let now = Instant::now();
-                let task_name = report.current.task_name.clone();
-                let processed = report.current.processed_items;
-                let ok = report.current.ok;
-
-                let snapshot = {
-                    let mut state = watchdog_state.lock().expect("watchdog lock poisoned");
-                    let should_restart = update_watchdog_state(
-                        &mut state,
-                        task_name,
-                        processed,
-                        ok,
-                        now,
-                        watchdog_stall_secs,
-                    );
-                    if should_restart {
-                        state.as_ref().map(|snapshot| {
-                            (
-                                snapshot.task_name.clone(),
-                                snapshot.processed,
-                                snapshot.ok,
-                            )
-                        })
-                    } else {
-                        None
-                    }
-                };
-                if let Some((task_name, processed, ok)) = snapshot {
-                    warn!(
-                        "[sync] Watchdog detected stalled sync (task: {}, processed: {}, ok: {}, stalled: {}s).",
-                        task_name,
-                        processed,
-                        ok,
-                        watchdog_stall_secs
-                    );
-                    if let Err(e) = sync_ref.cancel().await {
-                        warn!("[sync] Watchdog cancel sync failed: {:?}", e);
-                        return;
-                    }
-                    tokio::time::sleep(WATCHDOG_RESTART_DELAY).await;
-                    if let Err(e) = sync_ref.start(true, vec![], false, None).await {
-                        warn!("[sync] Watchdog restart sync failed: {:?}", e);
-                    }
-                }
+                let _ = run_watchdog_once(
+                    sync_ref,
+                    watchdog_state,
+                    watchdog_stall_secs,
+                    WATCHDOG_RESTART_DELAY,
+                )
+                .await;
             });
         });
         Ok(())
@@ -850,10 +892,31 @@ impl EventHandler<Self, PeerEvent> for SyncService {
         match msg {
             PeerEvent::Open(open_peer_id, _) => {
                 debug!("[sync] connect new peer:{:?}", open_peer_id);
-                ctx.notify(CheckSyncEvent::default());
+                let should_schedule = {
+                    let mut pending = self
+                        .pending_peer_sync_checks
+                        .lock()
+                        .expect("pending peer sync checks lock poisoned");
+                    pending.insert(open_peer_id.clone())
+                };
+                if should_schedule {
+                    let pending_checks = self.pending_peer_sync_checks.clone();
+                    ctx.run_later(FRESH_PEER_SYNC_DEBOUNCE, move |ctx| {
+                        let mut pending = pending_checks
+                            .lock()
+                            .expect("pending peer sync checks lock poisoned");
+                        if pending.remove(&open_peer_id) {
+                            ctx.notify(CheckSyncEvent::default());
+                        }
+                    });
+                }
             }
             PeerEvent::Close(close_peer_id) => {
                 debug!("[sync] disconnect peer: {:?}", close_peer_id);
+                self.pending_peer_sync_checks
+                    .lock()
+                    .expect("pending peer sync checks lock poisoned")
+                    .remove(&close_peer_id);
                 if let Some(task_handle) = self.task_handle() {
                     if task_handle
                         .target
@@ -1156,3 +1219,313 @@ impl ServiceHandler<Self, SyncStartRequest> for SyncService {
 }
 
 impl SyncServiceHandler for SyncService {}
+
+#[cfg(test)]
+mod tests {
+    use super::{run_watchdog_once, SyncWatchdogSnapshot};
+    use anyhow::{format_err, Result};
+    use network_api::{PeerId, PeerStrategy};
+    use starcoin_crypto::HashValue;
+    use starcoin_sync_api::{
+        PeerScoreResponse, SyncAsyncService, SyncProgressReport, TaskProgressReport,
+    };
+    use starcoin_types::block::BlockIdAndNumber;
+    use starcoin_types::startup_info::ChainStatus;
+    use starcoin_types::sync_status::{SyncState, SyncStatus};
+    use starcoin_types::U256;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::{Arc, Mutex};
+    use std::time::Duration;
+
+    #[derive(Clone)]
+    struct MockWatchdogSync {
+        reports: Arc<Mutex<Vec<Option<SyncProgressReport>>>>,
+        status: Arc<Mutex<SyncStatus>>,
+        cancel_sets_prepare: bool,
+        cancel_should_fail: bool,
+        start_should_fail: bool,
+        cancel_calls: Arc<AtomicUsize>,
+        start_calls: Arc<AtomicUsize>,
+        start_force_flags: Arc<Mutex<Vec<bool>>>,
+        states_after_cancel: Arc<Mutex<Vec<SyncState>>>,
+    }
+
+    impl MockWatchdogSync {
+        fn new(reports: Vec<Option<SyncProgressReport>>, cancel_sets_prepare: bool) -> Self {
+            Self::new_with_failures(reports, cancel_sets_prepare, false, false)
+        }
+
+        fn new_with_failures(
+            reports: Vec<Option<SyncProgressReport>>,
+            cancel_sets_prepare: bool,
+            cancel_should_fail: bool,
+            start_should_fail: bool,
+        ) -> Self {
+            let mut status = SyncStatus::new(ChainStatus::random());
+            status.sync_begin(
+                BlockIdAndNumber::new(HashValue::random(), 10),
+                U256::from(100u64),
+            );
+            Self {
+                reports: Arc::new(Mutex::new(reports)),
+                status: Arc::new(Mutex::new(status)),
+                cancel_sets_prepare,
+                cancel_should_fail,
+                start_should_fail,
+                cancel_calls: Arc::new(AtomicUsize::new(0)),
+                start_calls: Arc::new(AtomicUsize::new(0)),
+                start_force_flags: Arc::new(Mutex::new(vec![])),
+                states_after_cancel: Arc::new(Mutex::new(vec![])),
+            }
+        }
+    }
+
+    impl SyncAsyncService for MockWatchdogSync {
+        async fn status(&self) -> Result<SyncStatus> {
+            Ok(self.status.lock().expect("status lock poisoned").clone())
+        }
+
+        async fn progress(&self) -> Result<Option<SyncProgressReport>> {
+            let mut reports = self.reports.lock().expect("report lock poisoned");
+            if reports.is_empty() {
+                return Ok(None);
+            }
+            Ok(reports.remove(0))
+        }
+
+        async fn cancel(&self) -> Result<()> {
+            self.cancel_calls.fetch_add(1, Ordering::SeqCst);
+            if self.cancel_should_fail {
+                return Err(format_err!("mock cancel failure"));
+            }
+            let mut status = self.status.lock().expect("status lock poisoned");
+            if self.cancel_sets_prepare {
+                status.sync_cancel();
+            }
+            self.states_after_cancel
+                .lock()
+                .expect("states lock poisoned")
+                .push(status.sync_status().clone());
+            Ok(())
+        }
+
+        async fn start(
+            &self,
+            force: bool,
+            _peers: Vec<PeerId>,
+            _skip_pow_verify: bool,
+            _strategy: Option<PeerStrategy>,
+        ) -> Result<()> {
+            self.start_calls.fetch_add(1, Ordering::SeqCst);
+            if self.start_should_fail {
+                return Err(format_err!("mock start failure"));
+            }
+            self.start_force_flags
+                .lock()
+                .expect("start flags lock poisoned")
+                .push(force);
+            Ok(())
+        }
+
+        async fn sync_peer_score(&self) -> Result<PeerScoreResponse> {
+            Ok(None.into())
+        }
+    }
+
+    fn mock_progress_report(task_name: &str, processed_items: u64, ok: u64) -> SyncProgressReport {
+        SyncProgressReport {
+            target_id: HashValue::random(),
+            begin_number: None,
+            target_number: 100,
+            target_difficulty: U256::from(100u64),
+            target_peers: vec![],
+            current: TaskProgressReport {
+                task_name: task_name.to_string(),
+                sub_task: 1,
+                error: 0,
+                ok,
+                retry: 0,
+                total_items: Some(100),
+                processed_items,
+                use_seconds: 0,
+                percent: Some((processed_items as f64 / 100f64) * 100f64),
+            },
+            parallel: None,
+        }
+    }
+
+    #[stest::test]
+    async fn test_watchdog_restarts_when_cancel_leaves_prepare() {
+        let sync_ref = MockWatchdogSync::new(
+            vec![
+                Some(mock_progress_report("block_sync", 10, 8)),
+                Some(mock_progress_report("block_sync", 10, 8)),
+            ],
+            true,
+        );
+        let watchdog_state = Arc::new(Mutex::new(None::<SyncWatchdogSnapshot>));
+
+        let first_tick = run_watchdog_once(
+            sync_ref.clone(),
+            watchdog_state.clone(),
+            0,
+            Duration::from_millis(1),
+        )
+        .await;
+        assert!(!first_tick);
+
+        let second_tick = run_watchdog_once(
+            sync_ref.clone(),
+            watchdog_state,
+            0,
+            Duration::from_millis(1),
+        )
+        .await;
+        assert!(second_tick);
+        assert_eq!(sync_ref.cancel_calls.load(Ordering::SeqCst), 1);
+        assert_eq!(sync_ref.start_calls.load(Ordering::SeqCst), 1);
+        assert_eq!(
+            sync_ref
+                .start_force_flags
+                .lock()
+                .expect("start flags lock poisoned")
+                .as_slice(),
+            &[true]
+        );
+        let states = sync_ref
+            .states_after_cancel
+            .lock()
+            .expect("states lock poisoned");
+        assert_eq!(states.len(), 1);
+        assert!(matches!(states[0], SyncState::Prepare));
+    }
+
+    #[stest::test]
+    async fn test_watchdog_skips_restart_when_sync_already_restarted() {
+        let sync_ref = MockWatchdogSync::new(
+            vec![
+                Some(mock_progress_report("block_sync", 10, 8)),
+                Some(mock_progress_report("block_sync", 10, 8)),
+            ],
+            false,
+        );
+        let watchdog_state = Arc::new(Mutex::new(None::<SyncWatchdogSnapshot>));
+
+        let first_tick = run_watchdog_once(
+            sync_ref.clone(),
+            watchdog_state.clone(),
+            0,
+            Duration::from_millis(1),
+        )
+        .await;
+        assert!(!first_tick);
+
+        let second_tick = run_watchdog_once(
+            sync_ref.clone(),
+            watchdog_state,
+            0,
+            Duration::from_millis(1),
+        )
+        .await;
+        assert!(second_tick);
+        assert_eq!(sync_ref.cancel_calls.load(Ordering::SeqCst), 1);
+        assert_eq!(sync_ref.start_calls.load(Ordering::SeqCst), 0);
+        assert!(sync_ref
+            .status()
+            .await
+            .expect("status query should succeed")
+            .is_syncing());
+        let states = sync_ref
+            .states_after_cancel
+            .lock()
+            .expect("states lock poisoned");
+        assert_eq!(states.len(), 1);
+        assert!(matches!(states[0], SyncState::Synchronizing { .. }));
+    }
+
+    #[stest::test]
+    async fn test_watchdog_skip_when_no_progress_report() {
+        let sync_ref = MockWatchdogSync::new(vec![None], true);
+        let watchdog_state = Arc::new(Mutex::new(None::<SyncWatchdogSnapshot>));
+
+        let triggered =
+            run_watchdog_once(sync_ref.clone(), watchdog_state, 0, Duration::ZERO).await;
+        assert!(!triggered);
+        assert_eq!(sync_ref.cancel_calls.load(Ordering::SeqCst), 0);
+        assert_eq!(sync_ref.start_calls.load(Ordering::SeqCst), 0);
+    }
+
+    #[stest::test]
+    async fn test_watchdog_no_repeated_restart_within_same_stall_window() {
+        let sync_ref = MockWatchdogSync::new(
+            vec![
+                Some(mock_progress_report("block_sync", 10, 8)),
+                Some(mock_progress_report("block_sync", 10, 8)),
+                Some(mock_progress_report("block_sync", 10, 8)),
+            ],
+            true,
+        );
+        let watchdog_state = Arc::new(Mutex::new(None::<SyncWatchdogSnapshot>));
+
+        let first_tick =
+            run_watchdog_once(sync_ref.clone(), watchdog_state.clone(), 1, Duration::ZERO).await;
+        assert!(!first_tick);
+
+        tokio::time::sleep(Duration::from_millis(1100)).await;
+        let second_tick =
+            run_watchdog_once(sync_ref.clone(), watchdog_state.clone(), 1, Duration::ZERO).await;
+        assert!(second_tick);
+
+        let third_tick =
+            run_watchdog_once(sync_ref.clone(), watchdog_state, 1, Duration::ZERO).await;
+        assert!(!third_tick);
+        assert_eq!(sync_ref.cancel_calls.load(Ordering::SeqCst), 1);
+        assert_eq!(sync_ref.start_calls.load(Ordering::SeqCst), 1);
+    }
+
+    #[stest::test]
+    async fn test_watchdog_cancel_failure_stops_restart() {
+        let sync_ref = MockWatchdogSync::new_with_failures(
+            vec![
+                Some(mock_progress_report("block_sync", 10, 8)),
+                Some(mock_progress_report("block_sync", 10, 8)),
+            ],
+            true,
+            true,
+            false,
+        );
+        let watchdog_state = Arc::new(Mutex::new(None::<SyncWatchdogSnapshot>));
+
+        let first_tick =
+            run_watchdog_once(sync_ref.clone(), watchdog_state.clone(), 0, Duration::ZERO).await;
+        assert!(!first_tick);
+        let second_tick =
+            run_watchdog_once(sync_ref.clone(), watchdog_state, 0, Duration::ZERO).await;
+        assert!(!second_tick);
+        assert_eq!(sync_ref.cancel_calls.load(Ordering::SeqCst), 1);
+        assert_eq!(sync_ref.start_calls.load(Ordering::SeqCst), 0);
+    }
+
+    #[stest::test]
+    async fn test_watchdog_start_failure_still_marks_triggered() {
+        let sync_ref = MockWatchdogSync::new_with_failures(
+            vec![
+                Some(mock_progress_report("block_sync", 10, 8)),
+                Some(mock_progress_report("block_sync", 10, 8)),
+            ],
+            true,
+            false,
+            true,
+        );
+        let watchdog_state = Arc::new(Mutex::new(None::<SyncWatchdogSnapshot>));
+
+        let first_tick =
+            run_watchdog_once(sync_ref.clone(), watchdog_state.clone(), 0, Duration::ZERO).await;
+        assert!(!first_tick);
+        let second_tick =
+            run_watchdog_once(sync_ref.clone(), watchdog_state, 0, Duration::ZERO).await;
+        assert!(second_tick);
+        assert_eq!(sync_ref.cancel_calls.load(Ordering::SeqCst), 1);
+        assert_eq!(sync_ref.start_calls.load(Ordering::SeqCst), 1);
+    }
+}

@@ -2,8 +2,7 @@ use crate::{ConsensusStrategy, SealEvent};
 use futures::executor::block_on;
 use futures::{SinkExt, StreamExt};
 use futures_channel::mpsc;
-use futures_channel::mpsc::TryRecvError;
-use futures_channel::mpsc::{unbounded, UnboundedSender};
+use futures_channel::mpsc::{unbounded, TryRecvError, UnboundedSender};
 use rand::Rng;
 use starcoin_config::{MinerClientConfig, TimeService};
 use starcoin_consensus::{difficult_to_target, Consensus};
@@ -80,10 +79,9 @@ impl Solver for CpuSolver {
                         let start = Instant::now();
 
                         loop {
-                            match rx.try_recv() {
-                                Ok(_) | Err(TryRecvError::Closed) => break,
-                                Err(TryRecvError::Empty) => {}
-                            };
+                            if !matches!(rx.try_recv(), Err(TryRecvError::Empty)) {
+                                break;
+                            }
                             match strategy {
                                 ConsensusStrategy::Dummy => {
                                     let nonce = strategy.solve_consensus_nonce(

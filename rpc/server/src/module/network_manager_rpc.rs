@@ -1,20 +1,15 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::module::map_err;
-use futures::future::TryFutureExt;
-use futures::FutureExt;
-use jsonrpc_core::Result;
-use network_api::{PeerProvider, ReputationChange, BANNED_THRESHOLD};
+use jsonrpsee::core::{async_trait, RpcResult};
+use network_api::{PeerProvider, ReputationChange};
 use network_p2p_core::RawRpcClient;
 use network_p2p_types::network_state::NetworkState;
 use network_p2p_types::peer_id::PeerId;
 use network_types::peer_info::Multiaddr;
 use starcoin_network::NetworkServiceRef;
-use starcoin_rpc_api::network_manager::NetworkManagerApi;
+use starcoin_rpc_api::network_manager::NetworkManagerApiServer;
 use starcoin_rpc_api::types::StrView;
-use starcoin_rpc_api::FutureResult;
-use std::borrow::Cow;
 use std::str::FromStr;
 
 pub struct NetworkManagerRpcImpl {
@@ -27,87 +22,78 @@ impl NetworkManagerRpcImpl {
     }
 }
 
-impl NetworkManagerApi for NetworkManagerRpcImpl {
-    fn state(&self) -> FutureResult<NetworkState> {
+#[async_trait]
+impl NetworkManagerApiServer for NetworkManagerRpcImpl {
+    async fn state(&self) -> RpcResult<NetworkState> {
         let service = self.service.clone();
-        let fut = async move { service.network_state().await }.map_err(map_err);
-        Box::pin(fut.boxed())
+        service
+            .network_state()
+            .await
+            .map_err(crate::module::map_jsonrpc_err)
     }
 
-    fn known_peers(&self) -> FutureResult<Vec<PeerId>> {
+    async fn known_peers(&self) -> RpcResult<Vec<PeerId>> {
         let service = self.service.clone();
-        let fut = async move {
-            let result = service.known_peers().await;
-            Ok(result)
-        }
-        .map_err(map_err);
-        Box::pin(fut.boxed())
+        let result = service.known_peers().await;
+        Ok(result)
     }
 
-    fn get_address(&self, peer_id: String) -> FutureResult<Vec<Multiaddr>> {
+    async fn get_address(&self, peer_id: String) -> RpcResult<Vec<Multiaddr>> {
         let service = self.service.clone();
-        let fut = async move {
-            let peer_id = PeerId::from_str(peer_id.as_str())?;
-            let result = service.get_address(peer_id).await;
-            Ok(result)
-        }
-        .map_err(map_err);
-        Box::pin(fut.boxed())
+        let peer_id = PeerId::from_str(peer_id.as_str()).map_err(crate::module::map_jsonrpc_err)?;
+        let result = service.get_address(peer_id).await;
+        Ok(result)
     }
 
-    fn add_peer(&self, peer: String) -> FutureResult<()> {
+    async fn add_peer(&self, peer: String) -> RpcResult<()> {
         let service = self.service.clone();
-        let fut = async move { service.add_peer(peer) }.map_err(map_err);
-        Box::pin(fut.boxed())
+        service
+            .add_peer(peer)
+            .map_err(crate::module::map_jsonrpc_err)
     }
 
-    fn call_peer(
+    async fn call_peer(
         &self,
         peer_id: String,
-        rpc_method: Cow<'static, str>,
+        rpc_method: String,
         message: StrView<Vec<u8>>,
-    ) -> FutureResult<StrView<Vec<u8>>> {
+    ) -> RpcResult<StrView<Vec<u8>>> {
         let service = self.service.clone();
-        let fut = async move {
-            let peer_id = PeerId::from_str(peer_id.as_str())?;
-            let response = service
-                .send_raw_request(peer_id, rpc_method, message.0)
-                .await?;
-            Ok(StrView(response))
-        }
-        .map_err(map_err);
-        Box::pin(fut.boxed())
+        let peer_id = PeerId::from_str(peer_id.as_str()).map_err(crate::module::map_jsonrpc_err)?;
+        let response = service
+            .send_raw_request(peer_id, rpc_method.into(), message.0)
+            .await
+            .map_err(crate::module::map_jsonrpc_err)?;
+        Ok(StrView(response))
     }
 
-    fn set_peer_reputation(&self, peer_id: String, reputation: i32) -> FutureResult<()> {
+    async fn set_peer_reputation(&self, peer_id: String, reputation: i32) -> RpcResult<()> {
         let service = self.service.clone();
-        let fut = async move {
-            let peer_id = PeerId::from_str(peer_id.as_str())?;
-            let old_reput = service
-                .reputations(BANNED_THRESHOLD)
-                .await?
-                .await?
-                .iter()
-                .find(|(p, _)| p == &peer_id)
-                .ok_or_else(|| anyhow::anyhow!("Invalid peer id"))?
-                .1;
-            let reputation_change = reputation.saturating_sub(old_reput);
-            service.report_peer(
-                peer_id,
-                ReputationChange {
-                    value: reputation_change,
-                    reason: "Report peer manual",
-                },
-            );
-            Ok(())
-        }
-        .map_err(map_err);
-        Box::pin(fut.boxed())
+        let peer_id = PeerId::from_str(peer_id.as_str()).map_err(crate::module::map_jsonrpc_err)?;
+        let old_reput = service
+            .reputations(i32::MIN)
+            .await
+            .map_err(crate::module::map_jsonrpc_err)?
+            .await
+            .map_err(|e| crate::module::map_jsonrpc_err(e.into()))?
+            .iter()
+            .find(|(p, _)| p == &peer_id)
+            .ok_or_else(|| crate::module::map_jsonrpc_err(anyhow::anyhow!("Invalid peer id")))?
+            .1;
+        let reputation_change = reputation.saturating_sub(old_reput);
+        service.report_peer(
+            peer_id,
+            ReputationChange {
+                value: reputation_change,
+                reason: "Report peer manual",
+            },
+        );
+        Ok(())
     }
 
-    fn ban_peer(&self, peer_id: String, ban: bool) -> Result<()> {
+    fn ban_peer(&self, peer_id: String, ban: bool) -> RpcResult<()> {
         let service = self.service.clone();
-        let peer_id = PeerId::from_str(peer_id.as_str()).map_err(map_err)?;
+        let peer_id = PeerId::from_str(peer_id.as_str()).map_err(crate::module::map_jsonrpc_err)?;
         service.ban_peer(peer_id, ban);
         Ok(())
     }

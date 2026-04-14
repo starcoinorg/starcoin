@@ -77,7 +77,6 @@ pub(crate) use expand_get_for_gas_parameters;
 mod tests {
     use crate::gas_meter::FromOnChainGasSchedule;
 
-    use super::*;
     use move_core_types::gas_algebra::InternalGas;
 
     define_gas_parameters!(

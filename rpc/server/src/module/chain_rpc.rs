@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::module::map_err;
-use futures::future::{FutureExt, TryFutureExt};
+use anyhow::Result;
+use futures::future::TryFutureExt;
+use jsonrpsee::core::{async_trait, RpcResult};
 use starcoin_abi_decoder::decode_txn_payload;
 use starcoin_chain_service::ChainAsyncService;
 use starcoin_config::NodeConfig;
@@ -11,7 +13,7 @@ use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_logger::prelude::*;
 use starcoin_resource_viewer::MoveValueAnnotator;
 use starcoin_rpc_api::chain::{
-    ChainApi, GetBlockOption, GetBlocksOption, GetEventOption, GetTransactionOption,
+    ChainApiServer, GetBlockOption, GetBlocksOption, GetEventOption, GetTransactionOption,
 };
 use starcoin_rpc_api::multi_types::MultiSignedUserTransactionView;
 use starcoin_rpc_api::types::pubsub::EventFilter;
@@ -20,7 +22,6 @@ use starcoin_rpc_api::types::{
     ChainInfoView, MultiStateView, StrView, TransactionEventResponse, TransactionInfoView,
     TransactionInfoWithProofView, TransactionView,
 };
-use starcoin_rpc_api::FutureResult;
 use starcoin_state_api::StateView;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Storage2;
@@ -77,15 +78,16 @@ where
     }
 }
 
-impl<S> ChainApi for ChainRpcImpl<S>
+#[async_trait]
+impl<S> ChainApiServer for ChainRpcImpl<S>
 where
     S: ChainAsyncService,
 {
-    fn id(&self) -> jsonrpc_core::Result<ChainId> {
+    async fn id(&self) -> RpcResult<ChainId> {
         Ok(self.config.net().id().into())
     }
 
-    fn info(&self) -> FutureResult<ChainInfoView> {
+    async fn info(&self) -> RpcResult<ChainInfoView> {
         let service = self.service.clone();
         let chain_id = self.config.net().chain_id();
         let genesis_hash = self.genesis_hash;
@@ -94,14 +96,16 @@ where
             //TODO get chain info from chain service.
             Ok(ChainInfo::new(chain_id, genesis_hash, chain_status).into())
         };
-        Box::pin(fut.boxed().map_err(map_err))
+        fut.await
+            .map_err(map_err)
+            .map_err(crate::module::map_jsonrpc_err)
     }
 
-    fn get_block_by_hash(
+    async fn get_block_by_hash(
         &self,
         hash: HashValue,
         option: Option<GetBlockOption>,
-    ) -> FutureResult<Option<BlockView>> {
+    ) -> RpcResult<Option<BlockView>> {
         let service = self.service.clone();
         let decode = option.unwrap_or_default().decode;
         let raw = option.unwrap_or_default().raw;
@@ -125,14 +129,14 @@ where
         }
         .map_err(map_err);
 
-        Box::pin(fut.boxed())
+        fut.await.map_err(crate::module::map_jsonrpc_err)
     }
 
-    fn get_block_by_number(
+    async fn get_block_by_number(
         &self,
         number: u64,
         option: Option<GetBlockOption>,
-    ) -> FutureResult<Option<BlockView>> {
+    ) -> RpcResult<Option<BlockView>> {
         let service = self.service.clone();
         let decode = option.unwrap_or_default().decode;
         let raw = option.unwrap_or_default().raw;
@@ -157,15 +161,15 @@ where
         }
         .map_err(map_err);
 
-        Box::pin(fut.boxed())
+        fut.await.map_err(crate::module::map_jsonrpc_err)
     }
 
-    fn get_blocks_by_number(
+    async fn get_blocks_by_number(
         &self,
         number: Option<BlockNumber>,
         count: u64,
         option: Option<GetBlocksOption>,
-    ) -> FutureResult<Vec<BlockView>> {
+    ) -> RpcResult<Vec<BlockView>> {
         let service = self.service.clone();
         let config = self.config.clone();
         let fut = async move {
@@ -189,10 +193,10 @@ where
         }
         .map_err(map_err);
 
-        Box::pin(fut.boxed())
+        fut.await.map_err(crate::module::map_jsonrpc_err)
     }
 
-    fn get_block_info_by_number(&self, number: u64) -> FutureResult<Option<BlockInfoView>> {
+    async fn get_block_info_by_number(&self, number: u64) -> RpcResult<Option<BlockInfoView>> {
         let service = self.service.clone();
 
         let fut = async move {
@@ -204,10 +208,10 @@ where
         }
         .map_err(map_err);
 
-        Box::pin(fut.boxed())
+        fut.await.map_err(crate::module::map_jsonrpc_err)
     }
 
-    fn get_block_info_by_hash(&self, id: HashValue) -> FutureResult<Option<BlockInfoView>> {
+    async fn get_block_info_by_hash(&self, id: HashValue) -> RpcResult<Option<BlockInfoView>> {
         let service = self.service.clone();
 
         let fut = async move {
@@ -216,10 +220,10 @@ where
         }
         .map_err(map_err);
 
-        Box::pin(fut.boxed())
+        fut.await.map_err(crate::module::map_jsonrpc_err)
     }
 
-    fn get_block_info_by_number2(&self, number: u64) -> FutureResult<Option<BlockInfoView2>> {
+    async fn get_block_info_by_number2(&self, number: u64) -> RpcResult<Option<BlockInfoView2>> {
         let service = self.service.clone();
 
         let fut = async move {
@@ -231,14 +235,14 @@ where
         }
         .map_err(map_err);
 
-        Box::pin(fut.boxed())
+        fut.await.map_err(crate::module::map_jsonrpc_err)
     }
 
-    fn get_transaction(
+    async fn get_transaction(
         &self,
         transaction_hash: HashValue,
         option: Option<GetTransactionOption>,
-    ) -> FutureResult<Option<TransactionView>> {
+    ) -> RpcResult<Option<TransactionView>> {
         let service = self.service.clone();
         let decode_payload = option.unwrap_or_default().decode;
         let storage = self.storage.clone();
@@ -278,14 +282,14 @@ where
         }
         .map_err(map_err);
 
-        Box::pin(fut.boxed())
+        fut.await.map_err(crate::module::map_jsonrpc_err)
     }
 
-    fn get_transaction2(
+    async fn get_transaction2(
         &self,
         transaction_hash: HashValue,
         option: Option<GetTransactionOption>,
-    ) -> FutureResult<Option<TransactionView2>> {
+    ) -> RpcResult<Option<TransactionView2>> {
         let service = self.service.clone();
         let decode_payload = option.unwrap_or_default().decode;
         let storage = self.storage.clone();
@@ -329,13 +333,13 @@ where
         }
         .map_err(map_err);
 
-        Box::pin(fut.boxed())
+        fut.await.map_err(crate::module::map_jsonrpc_err)
     }
 
-    fn get_transaction_info(
+    async fn get_transaction_info(
         &self,
         transaction_hash: HashValue,
-    ) -> FutureResult<Option<TransactionInfoView>> {
+    ) -> RpcResult<Option<TransactionInfoView>> {
         let service = self.service.clone();
         let fut = async move {
             Ok(service
@@ -346,13 +350,13 @@ where
         }
         .map_err(map_err);
 
-        Box::pin(fut.boxed())
+        fut.await.map_err(crate::module::map_jsonrpc_err)
     }
 
-    fn get_transaction_info2(
+    async fn get_transaction_info2(
         &self,
         transaction_hash: HashValue,
-    ) -> FutureResult<Option<TransactionInfoView2>> {
+    ) -> RpcResult<Option<TransactionInfoView2>> {
         let service = self.service.clone();
         let fut = async move {
             Ok(service
@@ -363,10 +367,13 @@ where
         }
         .map_err(map_err);
 
-        Box::pin(fut.boxed())
+        fut.await.map_err(crate::module::map_jsonrpc_err)
     }
 
-    fn get_block_txn_infos(&self, block_hash: HashValue) -> FutureResult<Vec<TransactionInfoView>> {
+    async fn get_block_txn_infos(
+        &self,
+        block_hash: HashValue,
+    ) -> RpcResult<Vec<TransactionInfoView>> {
         let service = self.service.clone();
         let fut = async move {
             Ok(service
@@ -379,13 +386,13 @@ where
         }
         .map_err(map_err);
 
-        Box::pin(fut.boxed())
+        fut.await.map_err(crate::module::map_jsonrpc_err)
     }
 
-    fn get_block_txn_infos2(
+    async fn get_block_txn_infos2(
         &self,
         block_hash: HashValue,
-    ) -> FutureResult<Vec<TransactionInfoView2>> {
+    ) -> RpcResult<Vec<TransactionInfoView2>> {
         let service = self.service.clone();
         let fut = async move {
             Ok(service
@@ -398,13 +405,13 @@ where
         }
         .map_err(map_err);
 
-        Box::pin(fut.boxed())
+        fut.await.map_err(crate::module::map_jsonrpc_err)
     }
 
-    fn get_block_txn_infos_in_seq(
+    async fn get_block_txn_infos_in_seq(
         &self,
         block_hash: HashValue,
-    ) -> FutureResult<Vec<starcoin_rpc_api::types::TransactionInfoViewEnum>> {
+    ) -> RpcResult<Vec<starcoin_rpc_api::types::TransactionInfoViewEnum>> {
         let service = self.service.clone();
         let fut = async move {
             use starcoin_rpc_api::types::TransactionInfoViewEnum;
@@ -425,14 +432,14 @@ where
         }
         .map_err(map_err);
 
-        Box::pin(fut.boxed())
+        fut.await.map_err(crate::module::map_jsonrpc_err)
     }
 
-    fn get_txn_info_by_block_and_index(
+    async fn get_txn_info_by_block_and_index(
         &self,
         block_hash: HashValue,
         idx: u64,
-    ) -> FutureResult<Option<TransactionInfoView>> {
+    ) -> RpcResult<Option<TransactionInfoView>> {
         let service = self.service.clone();
         let fut = async move {
             Ok(service
@@ -443,14 +450,14 @@ where
         }
         .map_err(map_err);
 
-        Box::pin(fut.boxed())
+        fut.await.map_err(crate::module::map_jsonrpc_err)
     }
 
-    fn get_txn_info_by_block_and_index2(
+    async fn get_txn_info_by_block_and_index2(
         &self,
         block_hash: HashValue,
         idx: u64,
-    ) -> FutureResult<Option<TransactionInfoView2>> {
+    ) -> RpcResult<Option<TransactionInfoView2>> {
         let service = self.service.clone();
         let fut = async move {
             Ok(service
@@ -461,14 +468,14 @@ where
         }
         .map_err(map_err);
 
-        Box::pin(fut.boxed())
+        fut.await.map_err(crate::module::map_jsonrpc_err)
     }
 
-    fn get_events_by_txn_hash(
+    async fn get_events_by_txn_hash(
         &self,
         txn_hash: HashValue,
         option: Option<GetEventOption>,
-    ) -> FutureResult<Vec<TransactionEventResponse>> {
+    ) -> RpcResult<Vec<TransactionEventResponse>> {
         let event_option = option.unwrap_or_default();
         let service = self.service.clone();
         let storage = self.storage.clone();
@@ -509,14 +516,14 @@ where
         }
         .map_err(map_err);
 
-        Box::pin(fut.boxed())
+        fut.await.map_err(crate::module::map_jsonrpc_err)
     }
 
-    fn get_events_by_txn_hash2(
+    async fn get_events_by_txn_hash2(
         &self,
         txn_hash: HashValue,
         option: Option<GetEventOption>,
-    ) -> FutureResult<Vec<TransactionEventResponse2>> {
+    ) -> RpcResult<Vec<TransactionEventResponse2>> {
         let event_option = option.unwrap_or_default();
         let service = self.service.clone();
         let storage = self.storage.clone();
@@ -557,14 +564,14 @@ where
             Ok(resp_data)
         }
         .map_err(map_err);
-        Box::pin(fut.boxed())
+        fut.await.map_err(crate::module::map_jsonrpc_err)
     }
 
-    fn get_events(
+    async fn get_events(
         &self,
         mut filter: EventFilter,
         option: Option<GetEventOption>,
-    ) -> FutureResult<Vec<TransactionEventResponse>> {
+    ) -> RpcResult<Vec<TransactionEventResponse>> {
         let event_option = option.unwrap_or_default();
         let service = self.service.clone();
         let config = self.config.clone();
@@ -586,11 +593,12 @@ where
                 .filter(|r| *r > max_block_range)
                 .is_some()
             {
-                return Err(jsonrpc_core::Error::invalid_params(format!(
-                    "from_block is too far, max block range is {} ",
-                    max_block_range
-                ))
-                .into());
+                return Err(crate::module::to_invalid_param_err(anyhow::anyhow!(
+                    format!(
+                        "from_block is too far, max block range is {} ",
+                        max_block_range
+                    )
+                )));
             }
 
             let state_root = if event_option.decode {
@@ -628,10 +636,10 @@ where
         }
         .map_err(map_err);
 
-        Box::pin(fut.boxed())
+        fut.await.map_err(crate::module::map_jsonrpc_err)
     }
 
-    fn get_headers(&self, block_hashes: Vec<HashValue>) -> FutureResult<Vec<BlockHeaderView>> {
+    async fn get_headers(&self, block_hashes: Vec<HashValue>) -> RpcResult<Vec<BlockHeaderView>> {
         let service = self.service.clone();
         let fut = async move {
             let headers = service.get_headers(block_hashes).await?;
@@ -639,15 +647,15 @@ where
         }
         .map_err(map_err);
 
-        Box::pin(fut.boxed())
+        fut.await.map_err(crate::module::map_jsonrpc_err)
     }
 
-    fn get_transaction_infos(
+    async fn get_transaction_infos(
         &self,
         start_global_index: u64,
         reverse: bool,
         max_size: u64,
-    ) -> FutureResult<Vec<TransactionInfoView>> {
+    ) -> RpcResult<Vec<TransactionInfoView>> {
         let service = self.service.clone();
         let config = self.config.clone();
         let fut = async move {
@@ -662,15 +670,15 @@ where
         }
         .map_err(map_err);
 
-        Box::pin(fut.boxed())
+        fut.await.map_err(crate::module::map_jsonrpc_err)
     }
 
-    fn get_transaction_infos2(
+    async fn get_transaction_infos2(
         &self,
         start_global_index: u64,
         reverse: bool,
         max_size: u64,
-    ) -> FutureResult<Vec<TransactionInfoView2>> {
+    ) -> RpcResult<Vec<TransactionInfoView2>> {
         let service = self.service.clone();
         let config = self.config.clone();
         let fut = async move {
@@ -685,17 +693,17 @@ where
         }
         .map_err(map_err);
 
-        Box::pin(fut.boxed())
+        fut.await.map_err(crate::module::map_jsonrpc_err)
     }
 
     #[allow(deprecated)]
-    fn get_transaction_proof(
+    async fn get_transaction_proof(
         &self,
         block_hash: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
         access_path: Option<StrView<AccessPath>>,
-    ) -> FutureResult<Option<TransactionInfoWithProofView>> {
+    ) -> RpcResult<Option<TransactionInfoWithProofView>> {
         let service = self.service.clone();
         let fut = async move {
             Ok(service
@@ -710,17 +718,17 @@ where
         }
         .map_err(map_err);
 
-        Box::pin(fut.boxed())
+        fut.await.map_err(crate::module::map_jsonrpc_err)
     }
 
     #[allow(deprecated)]
-    fn get_transaction_proof_raw(
+    async fn get_transaction_proof_raw(
         &self,
         block_hash: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
         access_path: Option<StrView<AccessPath>>,
-    ) -> FutureResult<Option<StrView<Vec<u8>>>> {
+    ) -> RpcResult<Option<StrView<Vec<u8>>>> {
         let service = self.service.clone();
         let fut = async move {
             let proof = service
@@ -741,16 +749,16 @@ where
         }
         .map_err(map_err);
 
-        Box::pin(fut.boxed())
+        fut.await.map_err(crate::module::map_jsonrpc_err)
     }
 
-    fn get_transaction_proof2(
+    async fn get_transaction_proof2(
         &self,
         block_hash: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
         access_path: Option<MultiAccessPath>,
-    ) -> FutureResult<Option<TransactionInfoWithProofView>> {
+    ) -> RpcResult<Option<TransactionInfoWithProofView>> {
         let service = self.service.clone();
         let fut = async move {
             Ok(service
@@ -765,16 +773,16 @@ where
         }
         .map_err(map_err);
 
-        Box::pin(fut.boxed())
+        fut.await.map_err(crate::module::map_jsonrpc_err)
     }
 
-    fn get_transaction_proof2_raw(
+    async fn get_transaction_proof2_raw(
         &self,
         block_hash: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
         access_path: Option<MultiAccessPath>,
-    ) -> FutureResult<Option<StrView2<Vec<u8>>>> {
+    ) -> RpcResult<Option<StrView2<Vec<u8>>>> {
         let service = self.service.clone();
         let fut = async move {
             let proof = service
@@ -795,36 +803,36 @@ where
         }
         .map_err(map_err);
 
-        Box::pin(fut.boxed())
+        fut.await.map_err(crate::module::map_jsonrpc_err)
     }
 
-    fn get_vm_multi_state(&self, block_hash: HashValue) -> FutureResult<Option<MultiStateView>> {
+    async fn get_vm_multi_state(&self, block_hash: HashValue) -> RpcResult<Option<MultiStateView>> {
         let service = self.service.clone();
         let fut = async move {
             let multi_state = service.get_multi_state_by_hash(block_hash).await?;
             Ok(multi_state.map(Into::into))
         }
         .map_err(map_err);
-        Box::pin(fut.boxed())
+        fut.await.map_err(crate::module::map_jsonrpc_err)
     }
 
-    fn get_ghostdagdata(&self, ids: Vec<HashValue>) -> FutureResult<Vec<Option<GhostdagData>>> {
+    async fn get_ghostdagdata(&self, ids: Vec<HashValue>) -> RpcResult<Vec<Option<GhostdagData>>> {
         let service = self.service.clone();
         let fut = async move { service.get_ghostdagdata(ids).await }.map_err(map_err);
-        Box::pin(fut.boxed())
+        fut.await.map_err(crate::module::map_jsonrpc_err)
     }
 
-    fn get_current_block_color(
+    async fn get_current_block_color(
         &self,
         block_hash: HashValue,
-    ) -> FutureResult<Option<BlockColorView>> {
+    ) -> RpcResult<Option<BlockColorView>> {
         let service = self.service.clone();
         let fut = async move {
             let color = service.get_current_block_color(block_hash).await?;
             Ok(color.map(Into::into))
         }
         .map_err(map_err);
-        Box::pin(fut.boxed())
+        fut.await.map_err(crate::module::map_jsonrpc_err)
     }
 }
 

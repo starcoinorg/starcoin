@@ -10,10 +10,9 @@ pub use crate::protocol::generic_proto::GenericProtoOut;
 pub use crate::service::{NetworkService, NetworkWorker};
 pub use config::{NetworkConfiguration, NodeKeyConfig, Params, ProtocolId, Secret};
 pub use libp2p::{
-    core::{
-        ConnectedPoint, {identity, multiaddr, Multiaddr, PeerId, PublicKey},
-    },
-    multiaddr as build_multiaddr,
+    core::ConnectedPoint,
+    identity::{self, PublicKey},
+    multiaddr, multiaddr as build_multiaddr, Multiaddr, PeerId,
 };
 
 //TODO change to private
@@ -41,8 +40,6 @@ mod transport;
 mod utils;
 
 const MAX_CONNECTIONS_PER_PEER: usize = 2;
-/// The maximum number of concurrent established connections that were incoming.
-const MAX_CONNECTIONS_ESTABLISHED_INCOMING: u32 = 10_000;
 
 #[allow(dead_code)]
 trait DiscoveryNetBehaviour {

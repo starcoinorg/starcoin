@@ -29,8 +29,8 @@ impl AccountPrivateKeyProvider {
         let storage = AccountStorage::mock();
         let manager = AccountManager::new(storage, chain_id)?;
 
-        let data = if secret_file.is_some() {
-            std::fs::read_to_string(secret_file.unwrap())?
+        let data = if let Some(secret_file) = secret_file {
+            std::fs::read_to_string(secret_file)?
         } else {
             match env::var_os(env_private_key) {
                 Some(value) => value.into_string().unwrap_or_else(|_| String::from("")),

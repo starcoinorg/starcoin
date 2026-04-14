@@ -334,7 +334,7 @@ pub enum StarcoinSubcommands {
 
 fn parse_params(params: &str) -> Result<Params> {
     let params = match params.trim() {
-        "" => Params::None,
+        "" => Params::Null,
         param => serde_json::from_str(param)?,
     };
     Ok(params)

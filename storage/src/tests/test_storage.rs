@@ -277,7 +277,7 @@ pub fn test_cache_evict_multi_get() -> Result<()> {
         vec![id1.to_vec(), id2.to_vec(), id3.to_vec()],
     )?;
     let mut retained_count = 0;
-    let transaction_infos = vec![
+    let transaction_infos = [
         transaction_info1.clone(),
         transaction_info2.clone(),
         transaction_info3.clone(),

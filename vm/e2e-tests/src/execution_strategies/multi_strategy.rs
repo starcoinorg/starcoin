@@ -8,7 +8,7 @@ use std::{collections::BTreeMap, error::Error, fmt};
 
 #[derive(Debug)]
 pub enum MultiResult<E: Error> {
-    NonMatchingOutput(TransactionOutput, TransactionOutput),
+    NonMatchingOutput(TransactionOutput, Box<TransactionOutput>),
     OtherResult(E),
 }
 
@@ -76,7 +76,7 @@ impl<TxnType: Clone, E: Error> Executor for MultiExecutor<TxnType, E> {
                         if &output != previous_output {
                             return Err(MultiResult::NonMatchingOutput(
                                 output,
-                                previous_output.clone(),
+                                Box::new(previous_output.clone()),
                             ));
                         }
                     }

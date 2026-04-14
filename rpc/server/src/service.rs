@@ -2,56 +2,81 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::api_registry::ApiRegistry;
-use crate::extractors::{RpcExtractor, WsExtractor};
-use anyhow::Result;
-use futures::stream::*;
-use futures::{FutureExt, StreamExt};
-use jsonrpc_core::futures::channel::mpsc;
-use jsonrpc_core::MetaIoHandler;
-use jsonrpc_core_client::{
-    transports::{duplex, local::LocalRpc},
-    RpcChannel, RpcError,
-};
-use jsonrpc_pubsub::Session;
-use jsonrpc_server_utils::cors::AccessControlAllowOrigin;
-use jsonrpc_server_utils::hosts::DomainsValidation;
+use crate::metadata_middleware::HttpMetadataLayer;
+use crate::module::{pubsub_methods, PubSubImpl};
+use crate::rate_limit_middleware::JsonApiRateLimitLayer;
+use anyhow::{anyhow, Result};
+use futures::FutureExt;
+use jsonrpsee::async_client::Client;
+use jsonrpsee::core::middleware::RpcServiceBuilder;
+use jsonrpsee::server::{Extensions, ServerBuilder, ServerConfigBuilder, ServerHandle};
 use starcoin_config::{Api, ApiSet, NodeConfig};
 use starcoin_logger::prelude::*;
-use starcoin_rpc_api::contract_api::ContractApi;
 use starcoin_rpc_api::metadata::Metadata;
-use starcoin_rpc_api::network_manager::NetworkManagerApi;
-use starcoin_rpc_api::node_manager::NodeManagerApi;
-use starcoin_rpc_api::sync_manager::SyncManagerApi;
 use starcoin_rpc_api::types::ConnectLocal;
 use starcoin_rpc_api::{
-    account::AccountApi, chain::ChainApi, debug::DebugApi, miner::MinerApi, node::NodeApi,
-    pubsub::StarcoinPubSub, state::StateApi, txpool::TxPoolApi,
+    account::{account_methods, AccountApiServer},
+    chain::{chain_methods, ChainApiServer},
+    contract_api::{contract_methods, ContractApiServer},
+    debug::{debug_methods, DebugApiServer},
+    miner::{miner_methods, MinerApiServer},
+    network_manager::{network_manager_methods, NetworkManagerApiServer},
+    node::{node_methods, NodeApiServer},
+    node_manager::{node_manager_methods, NodeManagerApiServer},
+    state::{state_methods, StateApiServer},
+    sync_manager::{sync_manager_methods, SyncManagerApiServer},
+    txpool::{txpool_methods, TxPoolApiServer},
 };
-use starcoin_rpc_middleware::RpcMetrics;
+use starcoin_rpc_middleware::{MetricMiddleware, RpcMetrics};
 use starcoin_service_registry::{ActorService, ServiceContext, ServiceHandler};
 use starcoin_vm2_rpc_api::{
-    account_api::AccountApi as AccountApi2, contract_api::ContractApi as ContractApi2,
-    state_api::StateApi as StateApi2,
+    account_api::{account_methods as account2_methods, AccountApiServer as AccountApiServer2},
+    contract_api::{
+        contract_methods as contract2_methods, ContractApiServer as ContractApiServer2,
+    },
+    state_api::{state_methods as state2_methods, StateApiServer as StateApiServer2},
 };
 use std::collections::HashSet;
-use std::ops::Deref;
+use std::future::Future;
+use std::net::SocketAddr;
+use std::sync::mpsc::sync_channel;
 use std::sync::Arc;
 
 pub struct RpcService {
     config: Arc<NodeConfig>,
     api_registry: ApiRegistry,
-    ipc: Option<jsonrpc_ipc_server::Server>,
-    http: Option<jsonrpc_http_server::Server>,
-    tcp: Option<jsonrpc_tcp_server::Server>,
-    ws: Option<jsonrpc_ws_server::Server>,
+    ipc: Option<ServerHandle>,
+    http: Option<ServerHandle>,
+    tcp: Option<ServerHandle>,
+    ws: Option<ServerHandle>,
+    rpc_runtime: tokio::runtime::Runtime,
 }
 
 impl ActorService for RpcService {
     fn started(&mut self, _ctx: &mut ServiceContext<Self>) -> Result<()> {
-        self.ipc = self.start_ipc()?;
-        self.http = self.start_http()?;
-        self.tcp = self.start_tcp()?;
-        self.ws = self.start_ws()?;
+        info!(
+            "RpcService endpoint config: http={:?}, ws={:?}, tcp={:?}, ipc_disable={}",
+            self.config.rpc.get_http_address(),
+            self.config.rpc.get_ws_address(),
+            self.config.rpc.get_tcp_address(),
+            self.config.rpc.ipc.disable
+        );
+        self.http = self.start_http().map_err(|e| {
+            error!("Failed to start rpc http endpoint: {:?}", e);
+            e
+        })?;
+        self.tcp = self.start_tcp().map_err(|e| {
+            error!("Failed to start rpc tcp endpoint: {:?}", e);
+            e
+        })?;
+        self.ws = self.start_ws().map_err(|e| {
+            error!("Failed to start rpc websocket endpoint: {:?}", e);
+            e
+        })?;
+        self.ipc = self.start_ipc().map_err(|e| {
+            error!("Failed to start rpc ipc endpoint: {:?}", e);
+            e
+        })?;
         Ok(())
     }
 
@@ -63,6 +88,12 @@ impl ActorService for RpcService {
 
 impl RpcService {
     pub fn new(config: Arc<NodeConfig>, api_registry: ApiRegistry) -> Self {
+        let rpc_runtime = tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(1)
+            .enable_all()
+            .thread_name("starcoin-rpc-runtime")
+            .build()
+            .expect("failed to build rpc runtime");
         Self {
             config,
             api_registry,
@@ -70,11 +101,12 @@ impl RpcService {
             http: None,
             tcp: None,
             ws: None,
+            rpc_runtime,
         }
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn new_with_api<C, N, NM, SM, NWM, T, A, A2, S, S2, D, P, M, Contract, Contract2>(
+    pub fn new_with_api<C, N, NM, SM, NWM, T, A, A2, S, S2, D, M, Contract, Contract2>(
         config: Arc<NodeConfig>,
         node_api: N,
         node_manager_api: Option<NM>,
@@ -84,7 +116,7 @@ impl RpcService {
         txpool_api: Option<T>,
         account_api: Option<A>,
         state_api: Option<S>,
-        pubsub_api: Option<P>,
+        pubsub_api: Option<PubSubImpl>,
         debug_api: Option<D>,
         miner_api: Option<M>,
         contract_api: Option<Contract>,
@@ -93,21 +125,20 @@ impl RpcService {
         contract_api2: Option<Contract2>,
     ) -> Self
     where
-        N: NodeApi,
-        NM: NodeManagerApi,
-        SM: SyncManagerApi,
-        NWM: NetworkManagerApi,
-        C: ChainApi,
-        T: TxPoolApi,
-        A: AccountApi,
-        A2: AccountApi2,
-        S: StateApi,
-        S2: StateApi2,
-        P: StarcoinPubSub<Metadata = Metadata>,
-        D: DebugApi,
-        M: MinerApi,
-        Contract: ContractApi,
-        Contract2: ContractApi2,
+        N: NodeApiServer + Send + Sync + 'static,
+        NM: NodeManagerApiServer + Send + Sync + 'static,
+        SM: SyncManagerApiServer + Send + Sync + 'static,
+        NWM: NetworkManagerApiServer + Send + Sync + 'static,
+        C: ChainApiServer + Send + Sync + 'static,
+        T: TxPoolApiServer + Send + Sync + 'static,
+        A: AccountApiServer + Send + Sync + 'static,
+        A2: AccountApiServer2 + Send + Sync + 'static,
+        S: StateApiServer + Send + Sync + 'static,
+        S2: StateApiServer2 + Send + Sync + 'static,
+        D: DebugApiServer + Send + Sync + 'static,
+        M: MinerApiServer + Send + Sync + 'static,
+        Contract: ContractApiServer + Send + Sync + 'static,
+        Contract2: ContractApiServer2 + Send + Sync + 'static,
     {
         let metrics = config
             .metrics
@@ -116,189 +147,356 @@ impl RpcService {
 
         let mut api_registry = ApiRegistry::new(config.rpc.api_quotas.clone(), metrics);
 
-        api_registry.register(Api::Node, NodeApi::to_delegate(node_api));
-        if let Some(node_manager_api) = node_manager_api {
-            api_registry.register(
-                Api::NodeManager,
-                NodeManagerApi::to_delegate(node_manager_api),
-            );
-        }
-        if let Some(sync_manager_api) = sync_manager_api {
-            api_registry.register(
-                Api::SyncManager,
-                SyncManagerApi::to_delegate(sync_manager_api),
+        api_registry
+            .register(
+                Api::Node,
+                node_methods(node_api).expect("register node methods"),
             )
+            .expect("merge node methods");
+
+        if let Some(api) = node_manager_api {
+            api_registry
+                .register(
+                    Api::NodeManager,
+                    node_manager_methods(api).expect("register node_manager methods"),
+                )
+                .expect("merge node_manager methods");
         }
-        if let Some(network_manager_api) = network_manager_api {
-            api_registry.register(
-                Api::NetworkManager,
-                NetworkManagerApi::to_delegate(network_manager_api),
-            )
+        if let Some(api) = sync_manager_api {
+            api_registry
+                .register(
+                    Api::SyncManager,
+                    sync_manager_methods(api).expect("register sync methods"),
+                )
+                .expect("merge sync methods");
         }
-        if let Some(chain_api) = chain_api {
-            api_registry.register(Api::Chain, ChainApi::to_delegate(chain_api));
+        if let Some(api) = network_manager_api {
+            api_registry
+                .register(
+                    Api::NetworkManager,
+                    network_manager_methods(api).expect("register network_manager methods"),
+                )
+                .expect("merge network_manager methods");
         }
-        if let Some(txpool_api) = txpool_api {
-            api_registry.register(Api::TxPool, TxPoolApi::to_delegate(txpool_api));
+        if let Some(api) = chain_api {
+            api_registry
+                .register(
+                    Api::Chain,
+                    chain_methods(api).expect("register chain methods"),
+                )
+                .expect("merge chain methods");
         }
-        if let Some(account_api) = account_api {
-            api_registry.register(Api::Account, AccountApi::to_delegate(account_api));
+        if let Some(api) = txpool_api {
+            api_registry
+                .register(
+                    Api::TxPool,
+                    txpool_methods(api).expect("register txpool methods"),
+                )
+                .expect("merge txpool methods");
         }
-        if let Some(state_api) = state_api {
-            api_registry.register(Api::State, StateApi::to_delegate(state_api));
+        if let Some(api) = account_api {
+            api_registry
+                .register(
+                    Api::Account,
+                    account_methods(api).expect("register account methods"),
+                )
+                .expect("merge account methods");
         }
-        if let Some(pubsub_api) = pubsub_api {
-            api_registry.register(Api::PubSub, StarcoinPubSub::to_delegate(pubsub_api));
+        if let Some(api) = state_api {
+            api_registry
+                .register(
+                    Api::State,
+                    state_methods(api).expect("register state methods"),
+                )
+                .expect("merge state methods");
         }
-        if let Some(debug_api) = debug_api {
-            api_registry.register(Api::Debug, DebugApi::to_delegate(debug_api));
+        if let Some(api) = pubsub_api {
+            api_registry
+                .register(
+                    Api::PubSub,
+                    pubsub_methods(api).expect("register pubsub methods"),
+                )
+                .expect("merge pubsub methods");
         }
-        if let Some(miner_api) = miner_api {
-            api_registry.register(Api::Miner, MinerApi::to_delegate(miner_api));
+        if let Some(api) = debug_api {
+            api_registry
+                .register(
+                    Api::Debug,
+                    debug_methods(api).expect("register debug methods"),
+                )
+                .expect("merge debug methods");
         }
-        if let Some(contract_api) = contract_api {
-            api_registry.register(Api::Contract, ContractApi::to_delegate(contract_api));
+        if let Some(api) = miner_api {
+            api_registry
+                .register(
+                    Api::Miner,
+                    miner_methods(api).expect("register miner methods"),
+                )
+                .expect("merge miner methods");
         }
-        if let Some(account_api) = account_api2 {
-            api_registry.register(Api::Account2, AccountApi2::to_delegate(account_api));
+        if let Some(api) = contract_api {
+            api_registry
+                .register(
+                    Api::Contract,
+                    contract_methods(api).expect("register contract methods"),
+                )
+                .expect("merge contract methods");
         }
-        if let Some(state_api) = state_api2 {
-            api_registry.register(Api::State2, StateApi2::to_delegate(state_api));
+        if let Some(api) = account_api2 {
+            api_registry
+                .register(
+                    Api::Account2,
+                    account2_methods(api).expect("register account2 methods"),
+                )
+                .expect("merge account2 methods");
         }
-        if let Some(contract_api) = contract_api2 {
-            api_registry.register(Api::Contract2, ContractApi2::to_delegate(contract_api));
+        if let Some(api) = state_api2 {
+            api_registry
+                .register(
+                    Api::State2,
+                    state2_methods(api).expect("register state2 methods"),
+                )
+                .expect("merge state2 methods");
         }
+        if let Some(api) = contract_api2 {
+            api_registry
+                .register(
+                    Api::Contract2,
+                    contract2_methods(api).expect("register contract2 methods"),
+                )
+                .expect("merge contract2 methods");
+        }
+
         Self::new(config, api_registry)
     }
 
-    fn start_ipc(&self) -> Result<Option<jsonrpc_ipc_server::Server>> {
+    fn start_ipc(&self) -> Result<Option<ServerHandle>> {
         Ok(if self.config.rpc.ipc.disable {
             None
         } else {
             let ipc_file = self.config.rpc.get_ipc_file();
             let apis: HashSet<Api> = self.config.rpc.ipc.apis().list_apis();
-            let io_handler = self.api_registry.get_apis(apis);
+            let methods = self.api_registry.get_apis(apis)?;
+            let rpc_middleware = starcoin_rpc_ipc::server::RpcServiceBuilder::new()
+                .layer_fn({
+                    let metrics = self.api_registry.metrics();
+                    move |service| MetricMiddleware::new(service, metrics.clone())
+                })
+                .layer(JsonApiRateLimitLayer::from_config(
+                    self.api_registry.quotas(),
+                ));
 
             info!("Ipc rpc server start at :{:?}", ipc_file);
-            Some(
-                jsonrpc_ipc_server::ServerBuilder::new(io_handler)
-                    .session_meta_extractor(RpcExtractor::default())
-                    .start(ipc_file.to_str().expect("Path to string should success."))?,
-            )
+            let server = starcoin_rpc_ipc::server::Builder::default()
+                .set_rpc_middleware(rpc_middleware)
+                .custom_tokio_runtime(self.rpc_runtime.handle().clone())
+                .build(
+                    ipc_file
+                        .to_str()
+                        .expect("Path to string should success.")
+                        .to_string(),
+                );
+            Some(self.run_on_rpc_runtime(async move {
+                server.start(methods).await.map_err(anyhow::Error::from)
+            })?)
         })
     }
 
-    fn start_http(&self) -> Result<Option<jsonrpc_http_server::Server>> {
+    fn start_http(&self) -> Result<Option<ServerHandle>> {
         Ok(if let Some(addr) = self.config.rpc.get_http_address() {
-            let address = addr.into();
-            let apis = self.config.rpc.http.apis().list_apis();
-            let io_handler = self.api_registry.get_apis(apis);
-            let http = jsonrpc_http_server::ServerBuilder::new(io_handler)
-                .meta_extractor(RpcExtractor {
-                    http_ip_headers: self.config.rpc.http.ip_headers(),
+            let apis: HashSet<Api> = self.config.rpc.http.apis().list_apis();
+            let methods = self.api_registry.get_apis(apis)?;
+            let socket_addr: SocketAddr = addr.clone().into();
+            let rpc_middleware = RpcServiceBuilder::new()
+                .layer_fn({
+                    let metrics = self.api_registry.metrics();
+                    move |service| MetricMiddleware::new(service, metrics.clone())
                 })
-                .cors(DomainsValidation::AllowOnly(vec![
-                    AccessControlAllowOrigin::Null,
-                    AccessControlAllowOrigin::Any,
-                ]))
-                .threads(self.config.rpc.http.threads())
-                .max_request_body_size(self.config.rpc.http.max_request_body_size())
-                .health_api(("/status", "status"))
-                .start_http(&address)?;
-            info!("Rpc: http server start at :{}", address);
-            Some(http)
+                .layer(JsonApiRateLimitLayer::from_config(
+                    self.api_registry.quotas(),
+                ));
+            let http_middleware = tower::ServiceBuilder::new().layer(HttpMetadataLayer::new(
+                self.config.rpc.http.ip_headers(),
+                self.config.rpc.http.trust_forwarded_ip_headers(),
+            ));
+
+            if self.config.rpc.http.threads.is_some() {
+                warn!("jsonrpsee http server ignores rpc.http.threads setting");
+            }
+            if self.config.rpc.http._unsupported_rpc_protocols().is_some() {
+                warn!("jsonrpsee http server ignores rpc.http.unsupported_rpc_protocols");
+            }
+
+            let cfg = ServerConfigBuilder::default()
+                .http_only()
+                .max_request_body_size(
+                    self.config
+                        .rpc
+                        .http
+                        .max_request_body_size()
+                        .min(u32::MAX as usize) as u32,
+                )
+                .build();
+            let server = self.run_on_rpc_runtime(async move {
+                ServerBuilder::with_config(cfg)
+                    .set_http_middleware(http_middleware)
+                    .set_rpc_middleware(rpc_middleware)
+                    .build(socket_addr)
+                    .await
+                    .map_err(anyhow::Error::from)
+            })?;
+
+            info!("Rpc: http server start at: {}", addr);
+            Some(server.start(methods))
         } else {
             None
         })
     }
 
-    fn start_tcp(&self) -> Result<Option<jsonrpc_tcp_server::Server>> {
-        Ok(if let Some(addr) = self.config.rpc.get_tcp_address() {
-            let address = addr.into();
-            let apis = self.config.rpc.tcp.apis().list_apis();
-
-            let io_handler = self.api_registry.get_apis(apis);
-            let tcp_server = jsonrpc_tcp_server::ServerBuilder::new(io_handler)
-                .session_meta_extractor(RpcExtractor::default())
-                .start(&address)?;
-            info!("Rpc: tcp server start at: {}", address);
-            Some(tcp_server)
-        } else {
-            None
-        })
-    }
-
-    fn start_ws(&self) -> Result<Option<jsonrpc_ws_server::Server>> {
+    fn start_ws(&self) -> Result<Option<ServerHandle>> {
         Ok(if let Some(addr) = self.config.rpc.get_ws_address() {
-            let address = addr.into();
-            let apis = self.config.rpc.ws.apis().list_apis();
-            let io_handler = self.api_registry.get_apis(apis);
-            let ws_server = jsonrpc_ws_server::ServerBuilder::new(io_handler)
-                .session_meta_extractor(WsExtractor)
-                .max_payload(self.config.rpc.ws.max_request_body_size())
-                .start(&address)?;
-            info!("Rpc: websocket server start at: {}", address);
-            Some(ws_server)
+            let apis: HashSet<Api> = self.config.rpc.ws.apis().list_apis();
+            let methods = self.api_registry.get_apis(apis)?;
+            let socket_addr: SocketAddr = addr.clone().into();
+            let rpc_middleware = RpcServiceBuilder::new()
+                .layer_fn({
+                    let metrics = self.api_registry.metrics();
+                    move |service| MetricMiddleware::new(service, metrics.clone())
+                })
+                .layer(JsonApiRateLimitLayer::from_config(
+                    self.api_registry.quotas(),
+                ));
+            let cfg = ServerConfigBuilder::default()
+                .ws_only()
+                .max_request_body_size(
+                    self.config
+                        .rpc
+                        .ws
+                        .max_request_body_size()
+                        .min(u32::MAX as usize) as u32,
+                )
+                .build();
+            let server = self.run_on_rpc_runtime(async move {
+                ServerBuilder::with_config(cfg)
+                    .set_rpc_middleware(rpc_middleware)
+                    .build(socket_addr)
+                    .await
+                    .map_err(anyhow::Error::from)
+            })?;
+
+            info!("Rpc: websocket server start at: {}", addr);
+            Some(server.start(methods))
         } else {
             None
         })
+    }
+
+    fn start_tcp(&self) -> Result<Option<ServerHandle>> {
+        Ok(if let Some(addr) = self.config.rpc.get_tcp_address() {
+            let apis: HashSet<Api> = self.config.rpc.tcp.apis().list_apis();
+            let methods = self.api_registry.get_apis(apis)?;
+            let socket_addr: SocketAddr = addr.clone().into();
+            let rpc_middleware = RpcServiceBuilder::new()
+                .layer_fn({
+                    let metrics = self.api_registry.metrics();
+                    move |service| MetricMiddleware::new(service, metrics.clone())
+                })
+                .layer(JsonApiRateLimitLayer::from_config(
+                    self.api_registry.quotas(),
+                ));
+            let listener = self.run_on_rpc_runtime(async move {
+                tokio::net::TcpListener::bind(socket_addr)
+                    .await
+                    .map_err(anyhow::Error::from)
+            })?;
+            let server = starcoin_rpc_tcp::server::Builder::default()
+                .set_rpc_middleware(rpc_middleware)
+                .set_connection_metadata(tcp_connection_metadata)
+                .custom_tokio_runtime(self.rpc_runtime.handle().clone())
+                .build(listener)?;
+            let local_addr = server.local_addr();
+
+            info!("Rpc: tcp server start at: {}", local_addr);
+            Some(server.start(methods))
+        } else {
+            None
+        })
+    }
+
+    fn run_on_rpc_runtime<F, T>(&self, fut: F) -> Result<T>
+    where
+        F: Future<Output = Result<T>> + Send + 'static,
+        T: Send + 'static,
+    {
+        let (tx, rx) = sync_channel(1);
+        self.rpc_runtime.handle().spawn(async move {
+            let _ = tx.send(fut.await);
+        });
+        rx.recv()
+            .map_err(|e| anyhow!("rpc runtime startup task canceled: {e}"))?
     }
 
     pub fn close(&mut self) {
         if let Some(ipc) = self.ipc.take() {
-            ipc.close();
+            if let Err(err) = ipc.stop() {
+                debug!("Rpc ipc server already stopped: {:?}", err);
+            }
         }
         if let Some(http) = self.http.take() {
-            http.close();
+            if let Err(err) = http.stop() {
+                debug!("Rpc http server already stopped: {:?}", err);
+            }
         }
         if let Some(tcp) = self.tcp.take() {
-            tcp.close();
+            if let Err(err) = tcp.stop() {
+                debug!("Rpc tcp server already stopped: {:?}", err);
+            }
         }
         if let Some(ws) = self.ws.take() {
-            ws.close();
+            if let Err(err) = ws.stop() {
+                debug!("Rpc ws server already stopped: {:?}", err);
+            }
         }
         info!("Rpc Sever is closed.");
     }
 }
 
-struct IoHandlerWrap(MetaIoHandler<Metadata>);
-
-impl Deref for IoHandlerWrap {
-    type Target = MetaIoHandler<Metadata>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-/// Connects with pubsub.
-pub fn connect_local(
-    handler: MetaIoHandler<Metadata>,
-) -> (
-    RpcChannel,
-    impl jsonrpc_core::futures::Future<Output = Result<(), RpcError>>,
-) {
-    let (tx, rx) = mpsc::unbounded();
-    let meta = Metadata::new(Arc::new(Session::new(tx)));
-    let (sink, stream) = LocalRpc::with_metadata(IoHandlerWrap(handler), meta).split();
-    let stream = select(stream, rx);
-    let (rpc_client, sender) = duplex(Box::pin(sink), Box::pin(stream));
-    (sender, rpc_client)
+fn tcp_connection_metadata(peer_addr: SocketAddr) -> Extensions {
+    let mut extensions = Extensions::new();
+    extensions.insert(Metadata {
+        user: Some(peer_addr.ip().to_string()),
+    });
+    extensions
 }
 
 impl ServiceHandler<Self, ConnectLocal> for RpcService {
-    fn handle(&mut self, _msg: ConnectLocal, ctx: &mut ServiceContext<RpcService>) -> RpcChannel {
+    fn handle(&mut self, _msg: ConnectLocal, ctx: &mut ServiceContext<RpcService>) -> Client {
         let apis = ApiSet::All.list_apis();
-        let io_handler = self.api_registry.get_apis(apis);
-        //remove middleware.
-        let mut local_io_handler = MetaIoHandler::default();
-        local_io_handler.extend_with(io_handler.iter().map(|(n, f)| (n.clone(), f.clone())));
-        let (rpc_channel, fut) = connect_local(local_io_handler);
+        let methods = self
+            .api_registry
+            .get_apis(apis)
+            .expect("collect local rpc methods");
+        let (client, fut) = starcoin_rpc_local::connect_local(methods);
         ctx.spawn(fut.map(|rs| {
             if let Err(e) = rs {
                 error!("Local connect rpc error: {:?}", e);
             }
         }));
-        rpc_channel
+        client
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::tcp_connection_metadata;
+    use starcoin_rpc_api::metadata::Metadata;
+    use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+
+    #[test]
+    fn tcp_connection_metadata_uses_peer_ip_as_user() {
+        let peer = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 9860);
+        let extensions = tcp_connection_metadata(peer);
+        let metadata = extensions.get::<Metadata>().expect("tcp metadata");
+        assert_eq!(metadata.user.as_deref(), Some("127.0.0.1"));
     }
 }

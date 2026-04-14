@@ -1,6 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+#![allow(mismatched_lifetime_syntaxes)]
+
 use anyhow::Result;
 use futures::future::BoxFuture;
 use network_p2p_core::{NetRpcError, RpcErrorCode};

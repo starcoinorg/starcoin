@@ -1,10 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use jsonrpc_core::{BoxFuture, Error};
+use futures::future::BoxFuture;
 
-pub type FutureResult<T> = BoxFuture<Result<T, Error>>;
-pub use jsonrpc_core::Params;
+pub type FutureResult<T> = BoxFuture<'static, anyhow::Result<T>>;
+pub type Params = serde_json::Value;
 
 pub mod account;
 pub mod chain;

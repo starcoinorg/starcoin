@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use libp2p::core::{
-    identity::PublicKey, multihash::Error, multihash::Multihash, PeerId as Libp2pPeerId,
+use libp2p::{
+    identity::{self, ParseError, PublicKey},
+    PeerId as Libp2pPeerId,
 };
 use schemars::{self, JsonSchema};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
@@ -11,6 +12,8 @@ use starcoin_crypto::ed25519::Ed25519PublicKey;
 use std::convert::TryFrom;
 use std::fmt;
 use std::str::FromStr;
+
+type Multihash = libp2p::multihash::Multihash<64>;
 
 #[derive(Eq, PartialEq, Hash, Clone, Debug, JsonSchema)]
 pub struct PeerId(#[schemars(with = "String")] Libp2pPeerId);
@@ -26,14 +29,14 @@ impl PeerId {
     }
 
     pub fn from_ed25519_public_key(key: Ed25519PublicKey) -> PeerId {
-        let pub_key = libp2p::core::identity::ed25519::PublicKey::decode(key.to_bytes().as_ref())
+        let pub_key = identity::ed25519::PublicKey::try_from_bytes(key.to_bytes().as_ref())
             .expect("Decode pubkey must success.");
-        Self::from_public_key(PublicKey::Ed25519(pub_key))
+        Self::from_public_key(PublicKey::from(pub_key))
     }
 
     /// Checks whether `data` is a valid `PeerId`. If so, returns the `PeerId`. If not, returns
     /// back the data as an error.
-    pub fn from_bytes(data: Vec<u8>) -> Result<PeerId, Error> {
+    pub fn from_bytes(data: Vec<u8>) -> Result<PeerId, ParseError> {
         Ok(Self::new(Libp2pPeerId::from_bytes(&data)?))
     }
 
@@ -61,7 +64,7 @@ impl PeerId {
     /// Returns `None` if this `PeerId`s hash algorithm is not supported when encoding the
     /// given public key, otherwise `Some` boolean as the result of an equality check.
     pub fn is_public_key(&self, public_key: &PublicKey) -> Option<bool> {
-        self.0.is_public_key(public_key)
+        Some(self.0 == Libp2pPeerId::from_public_key(public_key))
     }
 
     pub fn random() -> Self {

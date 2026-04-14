@@ -1,16 +1,17 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-pub use self::gen_client::Client as ChainClient;
 use crate::types::pubsub::EventFilter;
 use crate::types::{
     BlockColorView, BlockHeaderView, BlockInfoView, BlockView, ChainId, ChainInfoView,
     MultiStateView, StrView, TransactionEventResponse, TransactionInfoView,
     TransactionInfoViewEnum, TransactionInfoWithProofView, TransactionView,
 };
-use crate::FutureResult;
-use jsonrpc_core::Result;
-use openrpc_derive::openrpc;
+use jsonrpsee::{
+    core::{RegisterMethodError, RpcResult},
+    proc_macros::rpc,
+    Methods,
+};
 use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
@@ -24,202 +25,230 @@ use starcoin_vm2_types::view::{
 };
 use starcoin_vm_types::access_path::AccessPath;
 
-#[openrpc]
+use starcoin_rpc_schema_derive::rpc_schema;
+
+#[rpc_schema]
+#[rpc(client, server, namespace = "chain", namespace_separator = ".")]
 pub trait ChainApi {
-    #[rpc(name = "chain.id")]
-    fn id(&self) -> Result<ChainId>;
+    #[method(name = "id")]
+    async fn id(&self) -> RpcResult<ChainId>;
 
     /// Get main chain info
-    #[rpc(name = "chain.info")]
-    fn info(&self) -> FutureResult<ChainInfoView>;
+    #[method(name = "info")]
+    async fn info(&self) -> RpcResult<ChainInfoView>;
+
     /// Get chain block info
-    #[rpc(name = "chain.get_block_by_hash")]
-    fn get_block_by_hash(
+    #[method(name = "get_block_by_hash")]
+    async fn get_block_by_hash(
         &self,
         block_hash: HashValue,
         option: Option<GetBlockOption>,
-    ) -> FutureResult<Option<BlockView>>;
+    ) -> RpcResult<Option<BlockView>>;
 
     /// Get chain blocks by number
-    #[rpc(name = "chain.get_block_by_number")]
-    fn get_block_by_number(
+    #[method(name = "get_block_by_number")]
+    async fn get_block_by_number(
         &self,
         number: BlockNumber,
         option: Option<GetBlockOption>,
-    ) -> FutureResult<Option<BlockView>>;
+    ) -> RpcResult<Option<BlockView>>;
+
     /// Get latest `count` blocks before `number`. if `number` is absent, use head block number.
-    #[rpc(name = "chain.get_blocks_by_number")]
-    fn get_blocks_by_number(
+    #[method(name = "get_blocks_by_number")]
+    async fn get_blocks_by_number(
         &self,
         number: Option<BlockNumber>,
         count: u64,
         option: Option<GetBlocksOption>,
-    ) -> FutureResult<Vec<BlockView>>;
-    #[rpc(name = "chain.get_block_info_by_number")]
-    fn get_block_info_by_number(&self, number: BlockNumber) -> FutureResult<Option<BlockInfoView>>;
+    ) -> RpcResult<Vec<BlockView>>;
 
-    #[rpc(name = "chain.get_block_info_by_hash")]
-    fn get_block_info_by_hash(&self, id: HashValue) -> FutureResult<Option<BlockInfoView>>;
-
-    #[rpc(name = "chain.get_block_info_by_number2")]
-    fn get_block_info_by_number2(
+    #[method(name = "get_block_info_by_number")]
+    async fn get_block_info_by_number(
         &self,
         number: BlockNumber,
-    ) -> FutureResult<Option<BlockInfoView2>>;
+    ) -> RpcResult<Option<BlockInfoView>>;
+
+    #[method(name = "get_block_info_by_hash")]
+    async fn get_block_info_by_hash(&self, id: HashValue) -> RpcResult<Option<BlockInfoView>>;
+
+    #[method(name = "get_block_info_by_number2")]
+    async fn get_block_info_by_number2(
+        &self,
+        number: BlockNumber,
+    ) -> RpcResult<Option<BlockInfoView2>>;
 
     /// Get chain transactions
-    #[rpc(name = "chain.get_transaction")]
-    fn get_transaction(
+    #[method(name = "get_transaction")]
+    async fn get_transaction(
         &self,
         transaction_hash: HashValue,
         option: Option<GetTransactionOption>,
-    ) -> FutureResult<Option<TransactionView>>;
+    ) -> RpcResult<Option<TransactionView>>;
+
     /// Get vm2 chain transactions
-    #[rpc(name = "chain.get_transaction2")]
-    fn get_transaction2(
+    #[method(name = "get_transaction2")]
+    async fn get_transaction2(
         &self,
         transaction_hash: HashValue,
         option: Option<GetTransactionOption>,
-    ) -> FutureResult<Option<TransactionView2>>;
+    ) -> RpcResult<Option<TransactionView2>>;
+
     /// Get confirmed transaction info based on current main chain selection.
-    #[rpc(name = "chain.get_transaction_info")]
-    fn get_transaction_info(
+    #[method(name = "get_transaction_info")]
+    async fn get_transaction_info(
         &self,
         transaction_hash: HashValue,
-    ) -> FutureResult<Option<TransactionInfoView>>;
+    ) -> RpcResult<Option<TransactionInfoView>>;
+
     /// Get confirmed VM2 transaction info based on current main chain selection.
-    #[rpc(name = "chain.get_transaction_info2")]
-    fn get_transaction_info2(
+    #[method(name = "get_transaction_info2")]
+    async fn get_transaction_info2(
         &self,
         transaction_hash: HashValue,
-    ) -> FutureResult<Option<TransactionInfoView2>>;
+    ) -> RpcResult<Option<TransactionInfoView2>>;
 
     /// Get chain transactions infos by block id
-    #[rpc(name = "chain.get_block_txn_infos")]
-    fn get_block_txn_infos(&self, block_hash: HashValue) -> FutureResult<Vec<TransactionInfoView>>;
-    /// Get chain vm2 transactions infos by block id
-    #[rpc(name = "chain.get_block_txn_infos2")]
-    fn get_block_txn_infos2(
+    #[method(name = "get_block_txn_infos")]
+    async fn get_block_txn_infos(
         &self,
         block_hash: HashValue,
-    ) -> FutureResult<Vec<TransactionInfoView2>>;
+    ) -> RpcResult<Vec<TransactionInfoView>>;
+
+    /// Get chain vm2 transactions infos by block id
+    #[method(name = "get_block_txn_infos2")]
+    async fn get_block_txn_infos2(
+        &self,
+        block_hash: HashValue,
+    ) -> RpcResult<Vec<TransactionInfoView2>>;
 
     /// Get chain transactions infos by block id in sequence (both VM1 and VM2)
-    #[rpc(name = "chain.get_block_txn_infos_in_seq")]
-    fn get_block_txn_infos_in_seq(
+    #[method(name = "get_block_txn_infos_in_seq")]
+    async fn get_block_txn_infos_in_seq(
         &self,
         block_hash: HashValue,
-    ) -> FutureResult<Vec<TransactionInfoViewEnum>>;
+    ) -> RpcResult<Vec<TransactionInfoViewEnum>>;
 
     /// Get txn info of a txn at `idx` of block `block_id`
-    #[rpc(name = "chain.get_txn_info_by_block_and_index")]
-    fn get_txn_info_by_block_and_index(
+    #[method(name = "get_txn_info_by_block_and_index")]
+    async fn get_txn_info_by_block_and_index(
         &self,
         block_hash: HashValue,
         idx: u64,
-    ) -> FutureResult<Option<TransactionInfoView>>;
+    ) -> RpcResult<Option<TransactionInfoView>>;
+
     /// Get txn info of a vm2 txn at `idx` of block `block_id`
-    #[rpc(name = "chain.get_txn_info_by_block_and_index2")]
-    fn get_txn_info_by_block_and_index2(
+    #[method(name = "get_txn_info_by_block_and_index2")]
+    async fn get_txn_info_by_block_and_index2(
         &self,
         block_hash: HashValue,
         idx: u64,
-    ) -> FutureResult<Option<TransactionInfoView2>>;
+    ) -> RpcResult<Option<TransactionInfoView2>>;
 
-    #[rpc(name = "chain.get_events_by_txn_hash")]
-    fn get_events_by_txn_hash(
+    #[method(name = "get_events_by_txn_hash")]
+    async fn get_events_by_txn_hash(
         &self,
         txn_hash: HashValue,
         option: Option<GetEventOption>,
-    ) -> FutureResult<Vec<TransactionEventResponse>>;
+    ) -> RpcResult<Vec<TransactionEventResponse>>;
 
-    #[rpc(name = "chain.get_events_by_txn_hash2")]
-    fn get_events_by_txn_hash2(
+    #[method(name = "get_events_by_txn_hash2")]
+    async fn get_events_by_txn_hash2(
         &self,
         txn_hash: HashValue,
         option: Option<GetEventOption>,
-    ) -> FutureResult<Vec<TransactionEventResponse2>>;
+    ) -> RpcResult<Vec<TransactionEventResponse2>>;
 
-    #[rpc(name = "chain.get_events")]
-    fn get_events(
+    #[method(name = "get_events")]
+    async fn get_events(
         &self,
         filter: EventFilter,
         option: Option<GetEventOption>,
-    ) -> FutureResult<Vec<TransactionEventResponse>>;
+    ) -> RpcResult<Vec<TransactionEventResponse>>;
 
     /// Get headers by ids.
-    #[rpc(name = "chain.get_headers")]
-    fn get_headers(&self, ids: Vec<HashValue>) -> FutureResult<Vec<BlockHeaderView>>;
+    #[method(name = "get_headers")]
+    async fn get_headers(&self, ids: Vec<HashValue>) -> RpcResult<Vec<BlockHeaderView>>;
 
     /// Get transaction info list
     /// `start_global_index` is the transaction global index
-    #[rpc(name = "chain.get_transaction_infos")]
-    fn get_transaction_infos(
+    #[method(name = "get_transaction_infos")]
+    async fn get_transaction_infos(
         &self,
         start_global_index: u64,
         reverse: bool,
         max_size: u64,
-    ) -> FutureResult<Vec<TransactionInfoView>>;
+    ) -> RpcResult<Vec<TransactionInfoView>>;
 
     /// Get vm2 transaction info list
     /// `start_global_index` is the transaction global index
-    #[rpc(name = "chain.get_transaction_infos2")]
-    fn get_transaction_infos2(
+    #[method(name = "get_transaction_infos2")]
+    async fn get_transaction_infos2(
         &self,
         start_global_index: u64,
         reverse: bool,
         max_size: u64,
-    ) -> FutureResult<Vec<TransactionInfoView2>>;
+    ) -> RpcResult<Vec<TransactionInfoView2>>;
 
-    #[rpc(name = "chain.get_transaction_proof")]
-    fn get_transaction_proof(
+    #[method(name = "get_transaction_proof")]
+    async fn get_transaction_proof(
         &self,
         block_hash: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
         access_path: Option<StrView<AccessPath>>,
-    ) -> FutureResult<Option<TransactionInfoWithProofView>>;
+    ) -> RpcResult<Option<TransactionInfoWithProofView>>;
 
-    #[rpc(name = "chain.get_transaction_proof_raw")]
-    fn get_transaction_proof_raw(
+    #[method(name = "get_transaction_proof_raw")]
+    async fn get_transaction_proof_raw(
         &self,
         block_hash: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
         access_path: Option<StrView<AccessPath>>,
-    ) -> FutureResult<Option<StrView<Vec<u8>>>>;
+    ) -> RpcResult<Option<StrView<Vec<u8>>>>;
 
-    #[rpc(name = "chain.get_transaction_proof2")]
-    fn get_transaction_proof2(
+    #[method(name = "get_transaction_proof2")]
+    async fn get_transaction_proof2(
         &self,
         block_hash: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
         access_path: Option<MultiAccessPath>,
-    ) -> FutureResult<Option<TransactionInfoWithProofView>>;
+    ) -> RpcResult<Option<TransactionInfoWithProofView>>;
 
-    #[rpc(name = "chain.get_transaction_proof2_raw")]
-    fn get_transaction_proof2_raw(
+    #[method(name = "get_transaction_proof2_raw")]
+    async fn get_transaction_proof2_raw(
         &self,
         block_hash: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
         access_path: Option<MultiAccessPath>,
-    ) -> FutureResult<Option<StrView2<Vec<u8>>>>;
+    ) -> RpcResult<Option<StrView2<Vec<u8>>>>;
 
-    #[rpc(name = "chain.get_vm_multi_state")]
-    fn get_vm_multi_state(&self, block_hash: HashValue) -> FutureResult<Option<MultiStateView>>;
+    #[method(name = "get_vm_multi_state")]
+    async fn get_vm_multi_state(&self, block_hash: HashValue) -> RpcResult<Option<MultiStateView>>;
 
     /// Get block ghostdag data
-    #[rpc(name = "chain.get_ghostdagdata")]
-    fn get_ghostdagdata(&self, ids: Vec<HashValue>) -> FutureResult<Vec<Option<GhostdagData>>>;
+    #[method(name = "get_ghostdagdata")]
+    async fn get_ghostdagdata(&self, ids: Vec<HashValue>) -> RpcResult<Vec<Option<GhostdagData>>>;
 
     /// Get block color based on the current main chain selection.
-    #[rpc(name = "chain.get_current_block_color")]
-    fn get_current_block_color(
+    #[method(name = "get_current_block_color")]
+    async fn get_current_block_color(
         &self,
         block_hash: HashValue,
-    ) -> FutureResult<Option<BlockColorView>>;
+    ) -> RpcResult<Option<BlockColorView>>;
+}
+
+pub use ChainApiClient as ChainApiRpcClient;
+pub use ChainApiServer as ChainApiRpcServer;
+
+/// Build jsonrpsee methods from legacy `ChainApi`.
+pub fn chain_methods<T>(api: T) -> std::result::Result<Methods, RegisterMethodError>
+where
+    T: ChainApiServer + Send + Sync + 'static,
+{
+    Ok(ChainApiServer::into_rpc(api).into())
 }
 
 #[derive(Copy, Clone, Default, Serialize, Deserialize, JsonSchema)]
@@ -251,11 +280,4 @@ fn defautl_true() -> bool {
 pub struct GetEventOption {
     #[serde(default)]
     pub decode: bool,
-}
-
-#[test]
-fn test() {
-    let schema = self::gen_schema();
-    let j = serde_json::to_string_pretty(&schema).unwrap();
-    println!("{}", j);
 }

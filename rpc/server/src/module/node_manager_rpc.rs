@@ -1,13 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::module::map_err;
-use futures::future::TryFutureExt;
-use futures::FutureExt;
+use jsonrpsee::core::{async_trait, RpcResult};
 use starcoin_crypto::HashValue;
 use starcoin_node_api::node_service::NodeAsyncService;
-use starcoin_rpc_api::node_manager::NodeManagerApi;
-use starcoin_rpc_api::FutureResult;
+use starcoin_rpc_api::node_manager::NodeManagerApiServer;
 use starcoin_service_registry::{ServiceInfo, ServiceStatus};
 
 pub struct NodeManagerRpcImpl<S>
@@ -26,93 +23,87 @@ where
     }
 }
 
-impl<S> NodeManagerApi for NodeManagerRpcImpl<S>
+#[async_trait]
+impl<S> NodeManagerApiServer for NodeManagerRpcImpl<S>
 where
     S: NodeAsyncService,
 {
-    fn list_service(&self) -> FutureResult<Vec<ServiceInfo>> {
+    async fn list_service(&self) -> RpcResult<Vec<ServiceInfo>> {
         let service = self.service.clone();
-        let fut = async move {
-            let result = service.list_service().await?;
-            Ok(result)
-        }
-        .map_err(map_err);
-        Box::pin(fut.boxed())
+        service
+            .list_service()
+            .await
+            .map_err(crate::module::map_jsonrpc_err)
     }
 
-    fn stop_service(&self, service_name: String) -> FutureResult<()> {
+    async fn stop_service(&self, service_name: String) -> RpcResult<()> {
         let service = self.service.clone();
-        let fut = async move {
-            service.stop_service(service_name).await?;
-            Ok(())
-        }
-        .map_err(map_err);
-        Box::pin(fut.boxed())
+        service
+            .stop_service(service_name)
+            .await
+            .map_err(crate::module::map_jsonrpc_err)?;
+        Ok(())
     }
 
-    fn start_service(&self, service_name: String) -> FutureResult<()> {
+    async fn start_service(&self, service_name: String) -> RpcResult<()> {
         let service = self.service.clone();
-        let fut = async move {
-            service.start_service(service_name).await?;
-            Ok(())
-        }
-        .map_err(map_err);
-        Box::pin(fut.boxed())
+        service
+            .start_service(service_name)
+            .await
+            .map_err(crate::module::map_jsonrpc_err)?;
+        Ok(())
     }
 
-    fn check_service(&self, service_name: String) -> FutureResult<ServiceStatus> {
+    async fn check_service(&self, service_name: String) -> RpcResult<ServiceStatus> {
         let service = self.service.clone();
-        let fut = async move { service.check_service(service_name).await }.map_err(map_err);
-        Box::pin(fut.boxed())
+        service
+            .check_service(service_name)
+            .await
+            .map_err(crate::module::map_jsonrpc_err)
     }
 
-    fn shutdown_system(&self) -> FutureResult<()> {
+    async fn shutdown_system(&self) -> RpcResult<()> {
         let service = self.service.clone();
-        let fut = async move {
-            service.shutdown_system().await?;
-            Ok(())
-        }
-        .map_err(map_err);
-        Box::pin(fut.boxed())
+        service
+            .shutdown_system()
+            .await
+            .map_err(crate::module::map_jsonrpc_err)?;
+        Ok(())
     }
 
-    fn reset_to_block(&self, block_hash: HashValue) -> FutureResult<()> {
+    async fn reset_to_block(&self, block_hash: HashValue) -> RpcResult<()> {
         let service = self.service.clone();
-        let fut = async move {
-            service.reset_node(block_hash).await?;
-            Ok(())
-        }
-        .map_err(map_err);
-        Box::pin(fut.boxed())
+        service
+            .reset_node(block_hash)
+            .await
+            .map_err(crate::module::map_jsonrpc_err)?;
+        Ok(())
     }
 
-    fn re_execute_block(&self, block_hash: HashValue) -> FutureResult<()> {
+    async fn re_execute_block(&self, block_hash: HashValue) -> RpcResult<()> {
         let service = self.service.clone();
-        let fut = async move {
-            service.re_execute_block(block_hash).await?;
-            Ok(())
-        }
-        .map_err(map_err);
-        Box::pin(fut.boxed())
+        service
+            .re_execute_block(block_hash)
+            .await
+            .map_err(crate::module::map_jsonrpc_err)?;
+        Ok(())
     }
 
-    fn delete_block(&self, block_id: HashValue) -> FutureResult<()> {
+    async fn delete_block(&self, block_id: HashValue) -> RpcResult<()> {
         let service = self.service.clone();
-        let fut = async move {
-            service.delete_block(block_id).await?;
-            Ok(())
-        }
-        .map_err(map_err);
-        Box::pin(fut.boxed())
+        service
+            .delete_block(block_id)
+            .await
+            .map_err(crate::module::map_jsonrpc_err)?;
+        Ok(())
     }
 
-    fn delete_failed_block(&self, block_id: HashValue) -> FutureResult<()> {
+    async fn delete_failed_block(&self, block_id: HashValue) -> RpcResult<()> {
         let service = self.service.clone();
-        let fut = async move {
-            service.delete_failed_block(block_id).await?;
-            Ok(())
-        }
-        .map_err(map_err);
-        Box::pin(fut.boxed())
+        service
+            .delete_failed_block(block_id)
+            .await
+            .map_err(crate::module::map_jsonrpc_err)?;
+        Ok(())
     }
 }

@@ -45,19 +45,14 @@ pub static G_SCALE_MICROSTC: u32 = 3;
 pub static G_SCALE_MILLISTC: u32 = 6;
 pub static G_SCALE_STC: u32 = 9;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 #[allow(clippy::upper_case_acronyms)]
 pub enum STCUnit {
     NanoSTC,
     MicroSTC,
     MilliSTC,
+    #[default]
     STC,
-}
-
-impl Default for STCUnit {
-    fn default() -> Self {
-        Self::STC
-    }
 }
 
 impl STCUnit {

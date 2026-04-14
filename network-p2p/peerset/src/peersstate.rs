@@ -169,7 +169,7 @@ impl PeersState {
     }
 
     /// Returns an object that grants access to the reputation value of a peer.
-    pub fn peer_reputation(&mut self, peer_id: PeerId) -> Reputation {
+    pub fn peer_reputation(&mut self, peer_id: PeerId) -> Reputation<'_> {
         let sets_len = self.sets.len();
         self.nodes
             .entry(peer_id)
@@ -229,6 +229,11 @@ impl PeersState {
             .map(|(peer_id, node)| (peer_id, node.reputation))
     }
 
+    /// Returns the reputation we know of for a peer, or `0` when the peer is unknown.
+    pub fn reputation(&self, peer_id: &PeerId) -> i32 {
+        self.nodes.get(peer_id).map_or(0, |node| node.reputation)
+    }
+
     /// Returns the list of peers we are connected to in the context of a specific set.
     ///
     /// # Panic
@@ -256,7 +261,7 @@ impl PeersState {
     ///
     /// `set` must be within range of the sets passed to [`PeersState::new`].
     ///
-    pub fn highest_not_connected_peer(&mut self, set: usize) -> Option<NotConnectedPeer> {
+    pub fn highest_not_connected_peer(&mut self, set: usize) -> Option<NotConnectedPeer<'_>> {
         // The code below will panic anyway if this happens to be false, but this earlier assert
         // makes it explicit what is wrong.
         assert!(set < self.sets.len());
@@ -283,6 +288,32 @@ impl PeersState {
                 set,
                 peer_id: Cow::Owned(peer_id),
             })
+    }
+
+    /// Returns the peer id with the highest reputation that is not connected and matches the
+    /// provided predicate.
+    pub fn highest_not_connected_peer_id(
+        &self,
+        set: usize,
+        mut predicate: impl FnMut(&PeerId, i32) -> bool,
+    ) -> Option<PeerId> {
+        assert!(set < self.sets.len());
+
+        self.nodes
+            .iter()
+            .filter(|(peer_id, node)| match node.sets[set] {
+                MembershipState::NotConnected { .. } => predicate(peer_id, node.reputation),
+                MembershipState::NotMember | MembershipState::In | MembershipState::Out => false,
+            })
+            .fold(None::<(&PeerId, &Node)>, |mut cur_node, to_try| {
+                if let Some(cur_node) = cur_node.take() {
+                    if cur_node.1.reputation >= to_try.1.reputation {
+                        return Some(cur_node);
+                    }
+                }
+                Some(to_try)
+            })
+            .map(|(peer_id, _)| *peer_id)
     }
 
     /// Add a node to the list of nodes that don't occupy slots.

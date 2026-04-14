@@ -1,17 +1,15 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{bail, format_err, Result};
+use anyhow::{bail, Result};
 use starcoin_config::ChainNetworkID;
 use starcoin_config::{
     BuiltinNetworkID, FutureBlockParameter, FutureBlockParameterResolver, GenesisBlockParameter,
 };
-use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_rpc_client::{Params, RpcClient, StateRootOption};
+use starcoin_rpc_client::{RpcClient, StateRootOption};
 use starcoin_state_api::StateReaderExt;
 use starcoin_types::block::BlockNumber;
-use starcoin_types::U256;
 use std::fmt::Write;
 use std::time::Duration;
 
@@ -37,46 +35,22 @@ impl RpcFutureBlockParameterResolver {
     ) -> Result<GenesisBlockParameter> {
         match target_network {
             BuiltinNetworkID::Proxima => {
-                //let params = json!({ "number": block_number });
-                let mut map = serde_json::Map::new();
-                map.insert(
-                    "number".to_string(),
-                    serde_json::Value::Number(block_number.into()),
-                );
-                let response = client.call_raw_api(
-                    "chain.get_block_by_number",
-                    Params::Array(vec![serde_json::Value::Number(block_number.into())]),
-                )?;
-                debug!("chain.get_block_by_number api response: {:?}", response);
-                let response = response
-                    .as_object()
-                    .ok_or_else(|| format_err!("api response error:{:?}", response))?;
-                let header = response
-                    .get("header")
-                    .and_then(|header| header.as_object())
-                    .ok_or_else(|| format_err!("api response error:{:?}", response))?;
-                let parent_hash = HashValue::from_hex_literal(
-                    header
-                        .get("block_hash")
-                        .and_then(|v| v.as_str())
-                        .ok_or_else(|| format_err!("api response error:{:?}", response))?,
-                )?;
-                let timestamp: u64 = header
-                    .get("timestamp")
-                    .and_then(|v| v.as_str())
-                    .ok_or_else(|| format_err!("api response error:{:?}", response))?
-                    .parse()?;
-                let difficulty: U256 = header
-                    .get("difficulty")
-                    .and_then(|v| v.as_str())
-                    .ok_or_else(|| format_err!("api response error:{:?}", response))?
-                    .parse()?;
-
-                Ok(GenesisBlockParameter {
-                    parent_hash,
-                    timestamp,
-                    difficulty,
-                })
+                match client.chain_get_block_by_number(block_number, None)? {
+                    Some(block) => {
+                        debug!(
+                            "chain.get_block_by_number typed response: {:?}",
+                            block.header
+                        );
+                        Ok(GenesisBlockParameter {
+                            parent_hash: block.header.block_hash,
+                            timestamp: block.header.timestamp.0,
+                            difficulty: block.header.difficulty,
+                        })
+                    }
+                    None => {
+                        bail!("Can not get block by number:{}, retry.", block_number)
+                    }
+                }
             }
             _ => match client.chain_get_block_by_number(block_number, None)? {
                 Some(block) => Ok(GenesisBlockParameter {

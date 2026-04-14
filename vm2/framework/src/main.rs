@@ -13,7 +13,7 @@ enum Commands {
     /// Creates an Starcoin framework release for the specified target.
     Release(StandardRelease),
     /// Allows to create a custom release package,
-    Custom(CustomRelease),
+    Custom(Box<CustomRelease>),
 }
 
 fn main() {

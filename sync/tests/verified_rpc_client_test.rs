@@ -41,7 +41,7 @@ impl RawRpcClient for MockRpcClient {
         peer_id: PeerId,
         _rpc_path: Cow<'static, str>,
         message: Vec<u8>,
-    ) -> BoxFuture<Result<Vec<u8>>> {
+    ) -> BoxFuture<'_, Result<Vec<u8>>> {
         *self.call_count.lock().unwrap() += 1;
         if peer_id == self.peer_id1 {
             futures::future::ready(Err(format_err!("NotConnected"))).boxed()
@@ -70,7 +70,7 @@ impl RawRpcClient for TimeoutRpcClient {
         _peer_id: PeerId,
         _rpc_path: Cow<'static, str>,
         _message: Vec<u8>,
-    ) -> BoxFuture<Result<Vec<u8>>> {
+    ) -> BoxFuture<'_, Result<Vec<u8>>> {
         futures::future::pending().boxed()
     }
 }
@@ -78,6 +78,7 @@ impl RawRpcClient for TimeoutRpcClient {
 #[derive(Clone, Copy)]
 enum AdaptiveReplyPlan {
     Timeout,
+    NonTimeoutError,
     Success,
 }
 
@@ -106,7 +107,7 @@ impl RawRpcClient for AdaptiveGetBlockIdsRpcClient {
         _peer_id: PeerId,
         _rpc_path: Cow<'static, str>,
         message: Vec<u8>,
-    ) -> BoxFuture<Result<Vec<u8>>> {
+    ) -> BoxFuture<'_, Result<Vec<u8>>> {
         let req: GetBlockIds = bcs_ext::from_bytes(&message).unwrap();
         self.observed_max_sizes.lock().unwrap().push(req.max_size);
 
@@ -117,6 +118,10 @@ impl RawRpcClient for AdaptiveGetBlockIdsRpcClient {
                 OutboundFailure::Timeout,
             )
             .into()))
+            .boxed(),
+            AdaptiveReplyPlan::NonTimeoutError => futures::future::ready(Err(
+                RequestFailure::Network(OutboundFailure::ConnectionClosed).into(),
+            ))
             .boxed(),
             AdaptiveReplyPlan::Success => {
                 let ids = (0..req.max_size)
@@ -343,5 +348,28 @@ fn test_get_block_ids_adaptive_grow_after_stable_success() -> Result<()> {
     assert_eq!(sizes[1], 500);
     assert_eq!(sizes[sizes.len() - 1], 1000);
     assert!(sizes.iter().skip(1).any(|size| *size == 500));
+    Ok(())
+}
+
+#[stest::test]
+fn test_get_block_ids_keeps_size_on_non_timeout_error() -> Result<()> {
+    let peer_id = PeerId::random();
+    let peer_selector = build_single_peer_selector(peer_id);
+    let mock_client = AdaptiveGetBlockIdsRpcClient::new(vec![
+        AdaptiveReplyPlan::NonTimeoutError,
+        AdaptiveReplyPlan::Success,
+    ]);
+
+    let verified_client = VerifiedRpcClient::new(peer_selector, mock_client.clone(), 1)
+        .with_rpc_config(Duration::from_millis(50), 3);
+    let rt = Runtime::new()?;
+    let _ = rt.block_on(async {
+        verified_client
+            .get_block_ids(None, 100, false, 10_000)
+            .await
+    })?;
+
+    let sizes = mock_client.observed_max_sizes();
+    assert_eq!(sizes, vec![1000, 1000]);
     Ok(())
 }

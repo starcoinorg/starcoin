@@ -2,9 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{anyhow, Result};
-use futures::executor::block_on;
+use serde_json::Value;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_crypto::HashValue;
+use starcoin_rpc_api::{chain::chain_methods, Params};
+use starcoin_rpc_client::{RawClient, RpcChannel};
+use starcoin_vm2_rpc_api::state_api::state_methods;
 use starcoin_vm2_rpc_server::state_rpc::StateRpcImpl;
 use starcoin_vm2_types::write_set::WriteSet;
 use std::{
@@ -18,14 +21,10 @@ use crate::{
     fork_state::{MockChainStateAsyncService, MockStateNodeStore},
     remote_state::RemoteRpcAsyncClient,
 };
-use jsonrpc_client_transports::RawClient;
-use jsonrpc_core::{IoHandler, Params, Value};
-use jsonrpc_core_client::transports::local;
 use starcoin_genesis::vm2::{
     build_genesis_transaction, build_genesis_transaction_with_package, execute_genesis_transaction,
 };
-use starcoin_rpc_api::chain::ChainApi;
-use starcoin_vm2_rpc_api::state_api::StateApi;
+use starcoin_vm2_rpc_api::state_api::StateApiServer;
 use starcoin_vm2_state_api::{ChainStateReader, ChainStateWriter, StateNodeStore};
 
 use starcoin_transaction_builder::vm2::build_stdlib_package_with_modules;
@@ -39,20 +38,25 @@ pub struct MockServer {
 impl MockServer {
     pub fn create_and_start(
         chain_api: MockChainApi,
-        state_api: impl StateApi,
+        state_api: impl StateApiServer + 'static,
     ) -> Result<(Self, RawClient)> {
-        let mut io = IoHandler::new();
-        io.extend_with(ChainApi::to_delegate(chain_api));
-        io.extend_with(StateApi::to_delegate(state_api));
+        let mut methods = chain_methods(chain_api)?;
+        methods.merge(state_methods(state_api)?)?;
 
-        let (client, server) = local::connect::<RawClient, _, _>(io);
-        let server_handle = thread::spawn(move || block_on(server).unwrap());
+        let rt = tokio::runtime::Runtime::new().expect("start local rpc runtime");
+        let (client, server) = {
+            let _guard = rt.enter();
+            starcoin_rpc_local::connect_local(methods)
+        };
+        let server_handle = thread::spawn(move || {
+            let _ = rt.block_on(server);
+        });
 
         Ok((
             Self {
                 _server_handle: server_handle,
             },
-            client,
+            RawClient::from(RpcChannel::new_async(client)),
         ))
     }
 }
@@ -111,9 +115,11 @@ impl ForkContext {
         let remote_async_client = Arc::new(
             rt.block_on(async { RemoteRpcAsyncClient::from_url(rpc, block_number).await })?,
         );
-        let state_api_client = Arc::new(remote_async_client.get_state_client().clone());
         let root_hash = remote_async_client.get_fork_state_root();
-        let data_store = Arc::new(MockStateNodeStore::new(state_api_client, rt.clone()));
+        let data_store = Arc::new(MockStateNodeStore::new(
+            remote_async_client.clone(),
+            rt.clone(),
+        ));
         let state_db = ChainStateDB::new(data_store.clone(), Some(root_hash));
 
         let fork_nubmer = remote_async_client.get_fork_block_number();
@@ -151,9 +157,8 @@ impl ForkContext {
     }
 
     pub fn call_api(&self, method: &str, params: Params) -> Result<Value> {
-        let handle = self.rt.handle().clone();
         let client = self.client.clone();
-        handle
+        self.rt
             .block_on(async move { client.call_method(method, params).await })
             .map_err(|e| anyhow!(format!("{}", e)))
     }

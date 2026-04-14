@@ -104,9 +104,6 @@ fn test_example_config_compact() -> Result<()> {
             "chain.info=100/s",
             "--jsonrpc-custom-user-api-quota",
             "chain.get_block_by_hash=100/s",
-            //TCP
-            "--tcp-apis",
-            "safe",
             //Websocket
             "--websocket-apis",
             "pubsub",
@@ -183,4 +180,38 @@ fn test_check_method_in_api_sets() {
     assert!(!ApiSet::UnsafeContext.check_rpc_method("account.unlock"));
     assert!(!ApiSet::UnsafeContext.check_rpc_method("unknown"));
     assert!(!ApiSet::UnsafeContext.check_rpc_method(""));
+}
+
+#[test]
+fn test_tcp_not_explicit_by_default() {
+    let config = NodeConfig::default();
+    assert!(
+        !config.rpc.tcp_is_explicitly_configured(),
+        "default rpc config should not treat tcp as explicitly configured"
+    );
+}
+
+#[test]
+fn test_empty_tcp_table_counts_as_explicit_config() -> Result<()> {
+    let config: NodeConfig = toml::from_str(
+        r#"
+            [rpc.tcp]
+        "#,
+    )?;
+    assert!(
+        !config.rpc.tcp_is_explicitly_configured(),
+        "empty [rpc.tcp] table should not trigger unsupported-tcp startup failure"
+    );
+    Ok(())
+}
+
+#[test]
+fn test_default_toml_omits_empty_tcp_table() -> Result<()> {
+    let config = NodeConfig::default();
+    let toml = to_toml(&config)?;
+    assert!(
+        !toml.contains("[rpc.tcp]"),
+        "default config should not serialize an empty tcp table"
+    );
+    Ok(())
 }

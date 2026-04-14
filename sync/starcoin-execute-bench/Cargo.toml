@@ -15,7 +15,7 @@ chrono = { workspace = true }
 clap = { workspace = true }
 futures = { workspace = true }
 num_cpus = { workspace = true }
-plotters = "0.3"
+plotters = { version = "0.3", default-features = false, features = ["svg_backend"] }
 starcoin-chain-api = { workspace = true }
 starcoin-chain-service = { workspace = true }
 starcoin-config = { workspace = true }

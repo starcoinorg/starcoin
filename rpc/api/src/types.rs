@@ -6,7 +6,7 @@ use crate::types::TransactionStatusView::Retry;
 use anyhow::bail;
 use bcs_ext::BCSCodec;
 use hex::FromHex;
-use jsonrpc_core_client::RpcChannel;
+use jsonrpsee::async_client::Client;
 use move_core_types::u256;
 use network_p2p_types::peer_id::PeerId;
 use network_types::peer_info::PeerInfo;
@@ -2135,7 +2135,7 @@ pub struct ContractCall {
 pub struct ConnectLocal;
 
 impl ServiceRequest for ConnectLocal {
-    type Response = RpcChannel;
+    type Response = Client;
 }
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct AccumulatorInfoView {

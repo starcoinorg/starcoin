@@ -1,8 +1,8 @@
 [dependencies]
 anyhow = { workspace = true }
 hex = { workspace = true }
-move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "7d37ed75c76f34abd2ea71774dcf784408625887" }
-move-core-types = { git = "https://github.com/starcoinorg/move", rev = "7d37ed75c76f34abd2ea71774dcf784408625887" }
+move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "ed9d919d05fedeae9cf433d4f44f6aba526580c3" }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "ed9d919d05fedeae9cf433d4f44f6aba526580c3" }
 serde = { features = ["derive", "rc"], workspace = true }
 serde_json = { workspace = true }
 starcoin-vm-types = { path = "../vm-types" }

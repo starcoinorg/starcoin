@@ -12,11 +12,11 @@ rust-version = { workspace = true }
 [dependencies]
 anyhow = { workspace = true }
 bcs-ext = { workspace = true }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "5417dce574142c3da24adf987194a6931869f588" }
-move-core-types = { git = "https://github.com/starcoinorg/move", rev = "7d37ed75c76f34abd2ea71774dcf784408625887" }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "473da84802cdcddceeab4487b75977181a9e1fed" }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "ed9d919d05fedeae9cf433d4f44f6aba526580c3" }
 once_cell = { workspace = true }
 tracing = { workspace = true }
-move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "7d37ed75c76f34abd2ea71774dcf784408625887" }
+move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "ed9d919d05fedeae9cf433d4f44f6aba526580c3" }
 num_enum = { workspace = true }
 rand = { workspace = true }
 rand_core = { default-features = false, workspace = true }
@@ -27,10 +27,10 @@ starcoin-vm1-types = { path = "../../types" }
 starcoin-vm-types = { path = "../vm-types" }
 starcoin-move-stdlib = { path = "../framework/move-stdlib" }
 starcoin-table-natives = { path = "../framework/table-natives" }
-move-stdlib = { git = "https://github.com/starcoinorg/move", rev = "7d37ed75c76f34abd2ea71774dcf784408625887" }
-move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "7d37ed75c76f34abd2ea71774dcf784408625887" }
-move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "7d37ed75c76f34abd2ea71774dcf784408625887" }
-move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "7d37ed75c76f34abd2ea71774dcf784408625887" }
+move-stdlib = { git = "https://github.com/starcoinorg/move", rev = "ed9d919d05fedeae9cf433d4f44f6aba526580c3" }
+move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "ed9d919d05fedeae9cf433d4f44f6aba526580c3" }
+move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "ed9d919d05fedeae9cf433d4f44f6aba526580c3" }
+move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "ed9d919d05fedeae9cf433d4f44f6aba526580c3" }
 starcoin-metrics = { optional = true, workspace = true }
 starcoin-gas-schedule = { path = "../framework/gas-schedule" }
 starcoin-gas-algebra = { path = "../framework/gas-algebra" }
@@ -47,10 +47,10 @@ bytes = { workspace = true }
 bcs = { workspace = true }
 dashmap = { workspace = true }
 starcoin-mvhashmap = { workspace = true }
-move-bytecode-verifier = { git = "https://github.com/starcoinorg/move", rev = "7d37ed75c76f34abd2ea71774dcf784408625887" }
+move-bytecode-verifier = { git = "https://github.com/starcoinorg/move", rev = "ed9d919d05fedeae9cf433d4f44f6aba526580c3" }
 starcoin-aggregator = { path = "../aggregator" }
-move-bytecode-utils = { git = "https://github.com/starcoinorg/move", rev = "7d37ed75c76f34abd2ea71774dcf784408625887" }
-move-unit-test = { git = "https://github.com/starcoinorg/move", rev = "7d37ed75c76f34abd2ea71774dcf784408625887", optional = true }
+move-bytecode-utils = { git = "https://github.com/starcoinorg/move", rev = "ed9d919d05fedeae9cf433d4f44f6aba526580c3" }
+move-unit-test = { git = "https://github.com/starcoinorg/move", rev = "ed9d919d05fedeae9cf433d4f44f6aba526580c3", optional = true }
 
 [dev-dependencies]
 #stdlib = { workspace = true }

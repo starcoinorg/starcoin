@@ -418,15 +418,15 @@ impl NodeService {
             .await?;
 
         registry.register::<GenerateBlockEventPacemaker>().await?;
+        registry
+            .register_by_factory::<PubSubService, PubSubServiceFactory>()
+            .await?;
 
         // wait for service init.
         Delay::new(Duration::from_millis(1000)).await;
 
         bus.broadcast(SystemStarted)?;
 
-        registry
-            .register_by_factory::<PubSubService, PubSubServiceFactory>()
-            .await?;
         registry
             .register_by_factory::<RpcService, RpcServiceFactory>()
             .await?;
