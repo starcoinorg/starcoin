@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use rand::{rngs::StdRng, Rng, SeedableRng};
+use rand::{rngs::StdRng, RngExt, SeedableRng};
 use starcoin_parallel_executor::errors::Error;
 use starcoin_parallel_executor::executor::ParallelTransactionExecutor;
 use starcoin_parallel_executor::task::{

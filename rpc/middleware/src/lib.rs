@@ -1,24 +1,28 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use futures::{future::Either, Future, FutureExt};
-use jsonrpc_core::{Call, FutureResponse, Id, Middleware, Output, Params, Request, Response};
+use jsonrpsee::{
+    server::middleware::rpc::{Batch, BatchEntry, Extensions, Notification, Request, RpcServiceT},
+    types::Id,
+    BatchResponse, MethodResponse,
+};
+use serde_json::{value::RawValue, Value};
+use starcoin_config::ApiSet;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::metadata::Metadata;
+use std::collections::HashMap;
 use std::fmt;
+use std::future::Future;
 use std::time::Instant;
 
 mod metrics;
 
-use jsonrpc_core::middleware::NoopCallFuture;
 pub use metrics::*;
-use starcoin_config::ApiSet;
 
 #[derive(Clone, Debug)]
 enum CallType {
     MethodCall,
     Notification,
-    Invalid,
 }
 
 impl fmt::Display for CallType {
@@ -26,7 +30,6 @@ impl fmt::Display for CallType {
         let call_type = match self {
             Self::MethodCall => "method",
             Self::Notification => "notification",
-            Self::Invalid => "invalid",
         };
         write!(f, "{}", call_type)
     }
@@ -37,32 +40,35 @@ struct RpcCallRecord {
     method: String,
     call_type: CallType,
     timer: Instant,
-    params: Params,
+    params: Option<String>,
 }
 
 impl RpcCallRecord {
-    pub fn with_call(call: &Call) -> Self {
-        match call {
-            Call::MethodCall(method_call) => Self::new(
-                id_to_string(&method_call.id),
-                Some(method_call.method.clone()),
-                CallType::MethodCall,
-                method_call.params.clone(),
-            ),
-            Call::Notification(notification) => Self::new(
-                "0".to_owned(),
-                Some(notification.method.clone()),
-                CallType::Notification,
-                notification.params.clone(),
-            ),
-            Call::Invalid { id } => {
-                Self::new(id_to_string(id), None, CallType::Invalid, Params::None)
-            }
-        }
+    fn method_call(id: Id<'_>, method: &str, params: Option<&RawValue>) -> Self {
+        Self::new(
+            id_to_string(&id),
+            Some(method.to_owned()),
+            CallType::MethodCall,
+            params.map(|p| p.get().to_owned()),
+        )
     }
 
-    pub fn new(id: String, method: Option<String>, call_type: CallType, params: Params) -> Self {
-        let method = method.unwrap_or_else(|| "".to_owned());
+    fn notification(method: &str, params: Option<&RawValue>) -> Self {
+        Self::new(
+            "0".to_owned(),
+            Some(method.to_owned()),
+            CallType::Notification,
+            params.map(|p| p.get().to_owned()),
+        )
+    }
+
+    fn new(
+        id: String,
+        method: Option<String>,
+        call_type: CallType,
+        params: Option<String>,
+    ) -> Self {
+        let method = method.unwrap_or_default();
         let timer = Instant::now();
         Self {
             id,
@@ -73,12 +79,12 @@ impl RpcCallRecord {
         }
     }
 
-    pub fn end(self, code: i64, user: Option<String>, metrics: Option<RpcMetrics>) {
+    fn end(self, code: i64, user: Option<String>, metrics: Option<RpcMetrics>) {
         let use_time = self.timer.elapsed();
         let params = if ApiSet::UnsafeContext.check_rpc_method(self.method.as_str()) {
-            serde_json::to_string(&self.params).expect("params should be json")
+            self.params.unwrap_or_default()
         } else {
-            "".into()
+            String::new()
         };
 
         info!(
@@ -91,6 +97,7 @@ impl RpcCallRecord {
             use_time.as_millis(),
             params
         );
+
         if let Some(metrics) = metrics {
             metrics
                 .json_rpc_total
@@ -103,74 +110,213 @@ impl RpcCallRecord {
             metrics
                 .json_rpc_time
                 .with_label_values(&[self.method.as_str()])
-                .observe(use_time.as_secs_f64())
+                .observe(use_time.as_secs_f64());
         }
     }
 }
 
-fn id_to_string(id: &Id) -> String {
+fn id_to_string(id: &Id<'_>) -> String {
     match id {
-        Id::Null => "".to_owned(),
-        Id::Num(num) => num.to_string(),
-        Id::Str(str) => str.clone(),
+        Id::Null => String::new(),
+        Id::Number(num) => num.to_string(),
+        Id::Str(s) => s.to_string(),
     }
 }
 
-impl From<&Call> for RpcCallRecord {
-    fn from(call: &Call) -> Self {
-        Self::with_call(call)
+fn user_from_extensions(ext: &Extensions) -> Option<String> {
+    ext.get::<Metadata>().and_then(|m| m.user.clone())
+}
+
+fn output_to_code(response: &MethodResponse) -> i64 {
+    if response.is_notification() {
+        -1
+    } else {
+        response.as_error_code().map(i64::from).unwrap_or(0)
+    }
+}
+
+fn parse_id_from_value(id: &Value) -> Option<String> {
+    match id {
+        Value::Null => Some(String::new()),
+        Value::Number(n) => Some(n.to_string()),
+        Value::String(s) => Some(s.clone()),
+        _ => None,
+    }
+}
+
+fn response_code_by_id(json: &RawValue) -> HashMap<String, i64> {
+    let mut code_by_id = HashMap::new();
+    let value = match serde_json::from_str::<Value>(json.get()) {
+        Ok(v) => v,
+        Err(_) => return code_by_id,
+    };
+
+    let mut collect_one = |obj: &serde_json::Map<String, Value>| {
+        let Some(id) = obj.get("id").and_then(parse_id_from_value) else {
+            return;
+        };
+
+        let code = obj
+            .get("error")
+            .and_then(|e| e.get("code"))
+            .and_then(|c| c.as_i64())
+            .unwrap_or(0);
+        code_by_id.insert(id, code);
+    };
+
+    match value {
+        Value::Object(obj) => collect_one(&obj),
+        Value::Array(items) => {
+            for item in items {
+                if let Value::Object(obj) = item {
+                    collect_one(&obj);
+                }
+            }
+        }
+        _ => {}
+    }
+    code_by_id
+}
+
+trait BatchResponseCodeLookup {
+    fn code_by_id(&self) -> Option<HashMap<String, i64>>;
+}
+
+impl BatchResponseCodeLookup for MethodResponse {
+    fn code_by_id(&self) -> Option<HashMap<String, i64>> {
+        Some(response_code_by_id(self.as_json()))
+    }
+}
+
+impl BatchResponseCodeLookup for BatchResponse {
+    fn code_by_id(&self) -> Option<HashMap<String, i64>> {
+        let response = MethodResponse::from_batch(self.clone());
+        Some(response_code_by_id(response.as_json()))
+    }
+}
+
+trait NotificationResponseCodeLookup {
+    fn code(&self) -> i64;
+}
+
+impl NotificationResponseCodeLookup for MethodResponse {
+    fn code(&self) -> i64 {
+        output_to_code(self)
+    }
+}
+
+impl NotificationResponseCodeLookup for Option<MethodResponse> {
+    fn code(&self) -> i64 {
+        self.as_ref().map(output_to_code).unwrap_or(-1)
     }
 }
 
 #[derive(Clone)]
-pub struct MetricMiddleware {
+pub struct MetricMiddleware<S> {
+    service: S,
     metrics: Option<RpcMetrics>,
 }
 
-impl MetricMiddleware {
-    pub fn new(metrics: Option<RpcMetrics>) -> Self {
-        Self { metrics }
+impl<S> MetricMiddleware<S> {
+    pub fn new(service: S, metrics: Option<RpcMetrics>) -> Self {
+        Self { service, metrics }
     }
 }
 
-impl Middleware<Metadata> for MetricMiddleware {
-    type Future = FutureResponse;
-    type CallFuture = NoopCallFuture;
+impl<S> RpcServiceT for MetricMiddleware<S>
+where
+    S: RpcServiceT<MethodResponse = MethodResponse> + Clone + Send + Sync + 'static,
+    S::BatchResponse: BatchResponseCodeLookup,
+    S::NotificationResponse: NotificationResponseCodeLookup,
+{
+    type MethodResponse = MethodResponse;
+    type NotificationResponse = S::NotificationResponse;
+    type BatchResponse = S::BatchResponse;
 
-    fn on_request<F, X>(&self, request: Request, meta: Metadata, next: F) -> Either<Self::Future, X>
-    where
-        F: Fn(Request, Metadata) -> X + Send + Sync,
-        X: Future<Output = Option<Response>> + Send + 'static,
-    {
-        Either::Right(next(request, meta))
-    }
-
-    fn on_call<F, X>(&self, call: Call, meta: Metadata, next: F) -> Either<Self::CallFuture, X>
-    where
-        F: Fn(Call, Metadata) -> X + Send + Sync,
-        X: Future<Output = Option<Output>> + Send + 'static,
-    {
-        let record: RpcCallRecord = (&call).into();
+    fn call<'a>(
+        &self,
+        request: Request<'a>,
+    ) -> impl Future<Output = Self::MethodResponse> + Send + 'a {
+        let record = RpcCallRecord::method_call(
+            request.id(),
+            request.method_name(),
+            request.params.as_ref().map(|p| p.as_ref()),
+        );
         let metrics = self.metrics.clone();
-        let user_addr = meta.user.clone();
-        let fut = next(call, meta).map(move |output| {
-            record.end(output_to_code(output.as_ref()), user_addr, metrics);
-            output
-        });
-        // must declare type to convert type then wrap with Either.
-        let box_fut: Self::CallFuture = Box::pin(fut);
-        Either::Left(box_fut)
+        let user = user_from_extensions(request.extensions());
+        let service = self.service.clone();
+
+        async move {
+            let response = service.call(request).await;
+            record.end(output_to_code(&response), user, metrics);
+            response
+        }
+    }
+
+    fn notification<'a>(
+        &self,
+        notification: Notification<'a>,
+    ) -> impl Future<Output = Self::NotificationResponse> + Send + 'a {
+        let record = RpcCallRecord::notification(
+            notification.method_name(),
+            notification.params.as_ref().map(|p| p.as_ref()),
+        );
+        let metrics = self.metrics.clone();
+        let user = user_from_extensions(notification.extensions());
+        let service = self.service.clone();
+
+        async move {
+            let response = service.notification(notification).await;
+            record.end(response.code(), user, metrics);
+            response
+        }
+    }
+
+    fn batch<'a>(&self, batch: Batch<'a>) -> impl Future<Output = Self::BatchResponse> + Send + 'a {
+        let mut method_records = Vec::new();
+        let mut notification_records = Vec::new();
+
+        for entry in batch.iter() {
+            match entry {
+                Ok(BatchEntry::Call(req)) => {
+                    method_records.push((
+                        id_to_string(&req.id()),
+                        RpcCallRecord::method_call(
+                            req.id(),
+                            req.method_name(),
+                            req.params.as_ref().map(|p| p.as_ref()),
+                        ),
+                        user_from_extensions(req.extensions()),
+                    ));
+                }
+                Ok(BatchEntry::Notification(n)) => {
+                    notification_records.push((
+                        RpcCallRecord::notification(
+                            n.method_name(),
+                            n.params.as_ref().map(|p| p.as_ref()),
+                        ),
+                        user_from_extensions(n.extensions()),
+                    ));
+                }
+                Err(_) => {}
+            }
+        }
+
+        let service = self.service.clone();
+        let metrics = self.metrics.clone();
+
+        async move {
+            let response = service.batch(batch).await;
+            let code_by_id = response.code_by_id().unwrap_or_default();
+
+            for (id, record, user) in method_records {
+                record.end(*code_by_id.get(&id).unwrap_or(&-1), user, metrics.clone());
+            }
+            for (record, user) in notification_records {
+                record.end(-1, user, metrics.clone());
+            }
+
+            response
+        }
     }
 }
-
-fn output_to_code(output: Option<&Output>) -> i64 {
-    output
-        .map(|output| match output {
-            Output::Failure(f) => f.error.code.code(),
-            Output::Success(_) => 0,
-        })
-        .unwrap_or(-1)
-}
-
-#[cfg(test)]
-mod tests;

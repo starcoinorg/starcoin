@@ -1,12 +1,11 @@
 use crate::{BlockData, TransactionData};
-use anyhow::Result;
-use jsonrpc_core_client::RpcError;
+use anyhow::{anyhow, Result};
 use starcoin_crypto::HashValue;
-use starcoin_rpc_api::chain::ChainClient;
 use starcoin_rpc_api::types::{
     BlockHeaderView, BlockTransactionsView, BlockView, ChainInfoView, TransactionEventView,
     TransactionInfoView, TransactionView,
 };
+use starcoin_rpc_client::ChainClient;
 
 pub struct BlockClient {
     node_client: ChainClient,
@@ -18,26 +17,30 @@ impl BlockClient {
             node_client: chain_client,
         }
     }
-    pub async fn get_block_whole_by_hash(
-        &self,
-        block_hash: HashValue,
-    ) -> Result<BlockData, RpcError> {
-        let block: Option<BlockView> = self.node_client.get_block_by_hash(block_hash, None).await?;
-        let block = block
-            .ok_or_else(|| RpcError::Client(format!("cannot find block of hash {}", block_hash)))?;
+    pub async fn get_block_whole_by_hash(&self, block_hash: HashValue) -> Result<BlockData> {
+        let block: Option<BlockView> = self
+            .node_client
+            .clone()
+            .get_block_by_hash(block_hash, None)
+            .await?;
+        let block = block.ok_or_else(|| anyhow!("cannot find block of hash {}", block_hash))?;
         self.get_block_data(block).await
     }
 
-    pub async fn get_block_whole_by_height(&self, height: u64) -> Result<BlockData, RpcError> {
-        let block: Option<BlockView> = self.node_client.get_block_by_number(height, None).await?;
-        let block = block
-            .ok_or_else(|| RpcError::Client(format!("cannot find block of height {}", height)))?;
+    pub async fn get_block_whole_by_height(&self, height: u64) -> Result<BlockData> {
+        let block: Option<BlockView> = self
+            .node_client
+            .clone()
+            .get_block_by_number(height, None)
+            .await?;
+        let block = block.ok_or_else(|| anyhow!("cannot find block of height {}", height))?;
         self.get_block_data(block).await
     }
 
-    pub async fn get_block_data(&self, block: BlockView) -> Result<BlockData, RpcError> {
+    pub async fn get_block_data(&self, block: BlockView) -> Result<BlockData> {
         let mut txn_infos: Vec<TransactionInfoView> = self
             .node_client
+            .clone()
             .get_block_txn_infos(block.header.block_hash)
             .await?;
         let mut txns_data = vec![];
@@ -46,17 +49,15 @@ impl BlockClient {
             let txn_info = txn_infos.remove(0);
             let txn: Option<TransactionView> = self
                 .node_client
+                .clone()
                 .get_transaction(txn_info.transaction_hash, None)
                 .await?;
-            let txn = txn.ok_or_else(|| {
-                RpcError::Client(format!(
-                    "cannot find txn with id {}",
-                    txn_info.transaction_hash
-                ))
-            })?;
+            let txn = txn
+                .ok_or_else(|| anyhow!("cannot find txn with id {}", txn_info.transaction_hash))?;
 
             let events: Vec<TransactionEventView> = self
                 .node_client
+                .clone()
                 .get_events_by_txn_hash(txn_info.transaction_hash, None)
                 .await?
                 .into_iter()
@@ -77,7 +78,11 @@ impl BlockClient {
         let fetch_events_tasks = txn_infos
             .iter()
             .map(|txn_info| txn_info.transaction_hash)
-            .map(|txn_hash| self.node_client.get_events_by_txn_hash(txn_hash, None));
+            .map(|txn_hash| {
+                self.node_client
+                    .clone()
+                    .get_events_by_txn_hash(txn_hash, None)
+            });
 
         let events = futures_util::future::try_join_all(fetch_events_tasks).await?;
 
@@ -97,8 +102,8 @@ impl BlockClient {
         }
         Ok(BlockData { block, txns_data })
     }
-    pub async fn get_chain_head(&self) -> Result<BlockHeaderView, RpcError> {
-        let chain_info: ChainInfoView = self.node_client.info().await?;
+    pub async fn get_chain_head(&self) -> Result<BlockHeaderView> {
+        let chain_info: ChainInfoView = self.node_client.clone().info().await?;
         Ok(chain_info.head)
     }
 }

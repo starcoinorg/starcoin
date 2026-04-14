@@ -158,7 +158,7 @@ mod tests {
     use super::*;
     use hex::FromHex;
     use libsecp256k1::{PublicKey, SecretKey};
-    use rand::Rng;
+    use rand::RngExt;
     use starcoin_crypto::HashValue;
 
     #[test]

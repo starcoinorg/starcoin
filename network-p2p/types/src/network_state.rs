@@ -21,7 +21,12 @@
 //! **Warning**: These APIs are not stable.
 
 use libp2p::{core::ConnectedPoint, Multiaddr};
-use schemars::{self, JsonSchema};
+use schemars::{
+    self,
+    gen::SchemaGenerator,
+    schema::{InstanceType, Schema, SchemaObject},
+    JsonSchema,
+};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
@@ -39,8 +44,10 @@ pub struct NetworkState {
     /// PeerId of the local node.
     pub peer_id: String,
     /// List of addresses the node is currently listening on.
+    #[schemars(with = "HashSet<MultiaddrSchema>")]
     pub listened_addresses: HashSet<Multiaddr>,
     /// List of addresses the node knows it can be reached as.
+    #[schemars(with = "HashSet<MultiaddrSchema>")]
     pub external_addresses: HashSet<Multiaddr>,
     /// List of node we're connected to.
     pub connected_peers: HashMap<String, Peer>,
@@ -61,6 +68,7 @@ pub struct Peer {
     /// Latest ping duration with this node.
     pub latest_ping_time: Option<Duration>,
     /// List of addresses known for this node.
+    #[schemars(with = "HashSet<MultiaddrSchema>")]
     pub known_addresses: HashSet<Multiaddr>,
 }
 
@@ -69,6 +77,7 @@ pub struct Peer {
 #[serde(rename_all = "camelCase")]
 pub struct NotConnectedPeer {
     /// List of addresses known for this node.
+    #[schemars(with = "HashSet<MultiaddrSchema>")]
     pub known_addresses: HashSet<Multiaddr>,
     /// Node information, as provided by the node itself, if we were ever connected to this node.
     pub version_string: Option<String>,
@@ -81,14 +90,33 @@ pub struct NotConnectedPeer {
 #[serde(rename_all = "camelCase")]
 pub enum PeerEndpoint {
     /// We are dialing the given address.
-    Dialing(Multiaddr),
+    Dialing(#[schemars(with = "MultiaddrSchema")] Multiaddr),
     /// We are listening.
     Listening {
         /// Local address of the connection.
+        #[schemars(with = "MultiaddrSchema")]
         local_addr: Multiaddr,
         /// Address data is sent back to.
+        #[schemars(with = "MultiaddrSchema")]
         send_back_addr: Multiaddr,
     },
+}
+
+struct MultiaddrSchema;
+
+impl JsonSchema for MultiaddrSchema {
+    fn schema_name() -> String {
+        "Multiaddr".to_string()
+    }
+
+    fn json_schema(_gen: &mut SchemaGenerator) -> Schema {
+        SchemaObject {
+            instance_type: Some(InstanceType::String.into()),
+            format: Some("Multiaddr".to_string()),
+            ..Default::default()
+        }
+        .into()
+    }
 }
 
 impl From<ConnectedPoint> for PeerEndpoint {
@@ -97,6 +125,7 @@ impl From<ConnectedPoint> for PeerEndpoint {
             ConnectedPoint::Dialer {
                 address,
                 role_override: _,
+                ..
             } => PeerEndpoint::Dialing(address),
             ConnectedPoint::Listener {
                 local_addr,

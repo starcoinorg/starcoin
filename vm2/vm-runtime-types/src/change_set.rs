@@ -13,7 +13,7 @@ use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::{ModuleId, CORE_CODE_ADDRESS};
 use move_core_types::vm_status::StatusCode;
 use move_vm_types::delayed_values::delayed_field_id::DelayedFieldID;
-use rand::Rng;
+use rand::RngExt;
 use starcoin_aggregator::delta_change_set::serialize;
 use starcoin_aggregator::resolver::AggregatorV1Resolver;
 use starcoin_aggregator::types::code_invariant_error;

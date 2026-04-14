@@ -7,8 +7,8 @@ use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::multi_types::MultiSignedUserTransactionView;
 use starcoin_rpc_api::types::{
-    BlockHeaderView, BlockMetadataView, BlockView, SignedUserTransactionView, StrView,
-    TransactionEventView, TransactionInfoView, TransactionStatusView, TypeTagView,
+    BlockHeaderView, BlockMetadataView, BlockView, StrView, TransactionEventView,
+    TransactionInfoView, TransactionStatusView, TypeTagView,
 };
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::BlockNumber;
@@ -66,7 +66,7 @@ pub struct TransactionInfoEsView {
     pub transaction_index: u32,
     /// The root hash of Sparse Merkle Tree describing the world state at the end of this
     /// transaction.
-    pub state_root_hash: HashValue,
+    pub state_root_hash: Option<HashValue>,
 
     /// The root hash of Merkle Accumulator storing all events emitted during this transaction.
     pub event_root_hash: HashValue,
@@ -239,7 +239,7 @@ mod tests {
             block_number: StrView(1),
             transaction_hash: Default::default(),
             transaction_index: 0,
-            state_root_hash: Default::default(),
+            state_root_hash: Some(Default::default()),
             event_root_hash: Default::default(),
             gas_used: StrView(0),
             status: TransactionVMStatusEsView::Executed,
@@ -254,7 +254,7 @@ mod tests {
             block_number: StrView(1),
             transaction_hash: Default::default(),
             transaction_index: 0,
-            state_root_hash: Default::default(),
+            state_root_hash: Some(Default::default()),
             event_root_hash: Default::default(),
             gas_used: StrView(0),
             status: TransactionVMStatusEsView::Discard {

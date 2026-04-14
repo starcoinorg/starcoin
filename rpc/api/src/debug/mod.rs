@@ -1,53 +1,63 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use jsonrpc_core::Result;
-use openrpc_derive::openrpc;
+use jsonrpsee::{
+    core::{RegisterMethodError, RpcResult},
+    proc_macros::rpc,
+    Methods,
+};
 use starcoin_logger::LogPattern;
 
-pub use self::gen_client::Client as DebugClient;
 use crate::types::FactoryAction;
-#[openrpc]
+use starcoin_rpc_schema_derive::rpc_schema;
+
+#[rpc_schema]
+#[rpc(client, server)]
 pub trait DebugApi {
     /// Update log level, if logger_name is none, update global log level.
-    #[rpc(name = "debug.set_log_level")]
-    fn set_log_level(&self, logger_name: Option<String>, level: String) -> Result<()>;
+    #[method(name = "debug.set_log_level")]
+    fn set_log_level(&self, logger_name: Option<String>, level: String) -> RpcResult<()>;
 
     /// Set log pattern
-    #[rpc(name = "debug.set_log_pattern")]
-    fn set_log_pattern(&self, pattern: LogPattern) -> Result<()>;
+    #[method(name = "debug.set_log_pattern")]
+    fn set_log_pattern(&self, pattern: LogPattern) -> RpcResult<()>;
 
     ///Trigger the node panic, only work for dev network.
-    #[rpc(name = "debug.panic")]
-    fn panic(&self) -> Result<()>;
+    #[method(name = "debug.panic")]
+    fn panic(&self) -> RpcResult<()>;
 
     ///Only can used under dev net.
-    #[rpc(name = "debug.sleep")]
-    fn sleep(&self, time: u64) -> Result<()>;
+    #[method(name = "debug.sleep")]
+    fn sleep(&self, time: u64) -> RpcResult<()>;
 
     /// Get and set txn factory status.
-    #[rpc(name = "txfactory.status")]
-    fn txfactory_status(&self, action: FactoryAction) -> Result<bool>;
+    #[method(name = "txfactory.status")]
+    fn txfactory_status(&self, action: FactoryAction) -> RpcResult<bool>;
 
     /// Update vm concurrency level, level = min(level, num_cpus::get)
-    #[rpc(name = "debug.set_concurrency_level")]
-    fn set_concurrency_level(&self, level: usize) -> Result<()>;
+    #[method(name = "debug.set_concurrency_level")]
+    fn set_concurrency_level(&self, level: usize) -> RpcResult<()>;
 
     /// Get vm concurrency level
-    #[rpc(name = "debug.get_concurrency_level")]
-    fn get_concurrency_level(&self) -> Result<usize>;
+    #[method(name = "debug.get_concurrency_level")]
+    fn get_concurrency_level(&self) -> RpcResult<usize>;
 
     /// Update logger balance amount
-    #[rpc(name = "debug.set_logger_balance_amount")]
-    fn set_logger_balance_amount(&self, balance_amount: u64) -> Result<()>;
+    #[method(name = "debug.set_logger_balance_amount")]
+    fn set_logger_balance_amount(&self, balance_amount: u64) -> RpcResult<()>;
 
     /// Get logger balance amount
-    #[rpc(name = "debug.get_logger_balance_amount")]
-    fn get_logger_balance_amount(&self) -> Result<u64>;
+    #[method(name = "debug.get_logger_balance_amount")]
+    fn get_logger_balance_amount(&self) -> RpcResult<u64>;
 }
-#[test]
-fn test() {
-    let schema = self::gen_schema();
-    let j = serde_json::to_string_pretty(&schema).unwrap();
-    println!("{}", j);
+
+pub use DebugApiClient as DebugApiRpcClient;
+pub use DebugApiServer as DebugApiRpcServer;
+
+/// Build jsonrpsee methods from legacy `DebugApi`.
+pub fn debug_methods<T>(api: T) -> std::result::Result<Methods, RegisterMethodError>
+where
+    T: DebugApiServer + Send + Sync + 'static,
+{
+    Ok(DebugApiServer::into_rpc(api).into())
 }

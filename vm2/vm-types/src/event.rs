@@ -7,7 +7,7 @@
 use crate::account_address::AccountAddress;
 use anyhow::ensure;
 #[cfg(any(test, feature = "fuzzing"))]
-use rand::Rng;
+use rand::RngExt;
 use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;

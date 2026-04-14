@@ -21,23 +21,16 @@
 use crate::protocol::generic_proto::{GenericProto, GenericProtoOut};
 
 use futures::prelude::*;
-use libp2p::core::{connection::ConnectionId, transport::MemoryTransport, upgrade};
-use libp2p::swarm::behaviour::FromSwarm;
-use libp2p::swarm::{
-    ConnectionHandler, IntoConnectionHandler, NetworkBehaviour, NetworkBehaviourAction,
-    PollParameters, Swarm, SwarmEvent,
-};
+use libp2p::core::{transport::MemoryTransport, upgrade, Endpoint};
+use libp2p::swarm::behaviour::{FromSwarm, NewExternalAddrOfPeer};
+use libp2p::swarm::{Config as SwarmConfig, ConnectionId, NetworkBehaviour, Swarm, SwarmEvent};
 use libp2p::{identity, noise, yamux};
-use libp2p::{Multiaddr, PeerId, Transport};
-use std::{
-    iter,
-    task::{Context, Poll},
-    time::Duration,
-};
+use libp2p::{Multiaddr, Transport};
+use std::{iter, time::Duration};
 
 /// Builds two nodes that have each other as bootstrap nodes.
 /// This is to be used only for testing, and a panic will happen if something goes wrong.
-fn build_nodes() -> (Swarm<CustomProtoWithAddr>, Swarm<CustomProtoWithAddr>) {
+fn build_nodes() -> (Swarm<GenericProto>, Swarm<GenericProto>) {
     let mut out = Vec::with_capacity(2);
 
     let keypairs: Vec<_> = (0..2)
@@ -54,14 +47,10 @@ fn build_nodes() -> (Swarm<CustomProtoWithAddr>, Swarm<CustomProtoWithAddr>) {
     for index in 0..2 {
         let keypair = keypairs[index].clone();
 
-        let noise_keys = noise::Keypair::<noise::X25519Spec>::new()
-            .into_authentic(&keypair)
-            .unwrap();
-
         let transport = MemoryTransport::new()
             .upgrade(upgrade::Version::V1)
-            .authenticate(noise::NoiseConfig::xx(noise_keys).into_authenticated())
-            .multiplex(yamux::YamuxConfig::default())
+            .authenticate(noise::Config::new(&keypair).unwrap())
+            .multiplex(yamux::Config::default())
             .timeout(Duration::from_secs(20))
             .boxed();
 
@@ -83,31 +72,28 @@ fn build_nodes() -> (Swarm<CustomProtoWithAddr>, Swarm<CustomProtoWithAddr>) {
             }],
         });
 
-        let behaviour = CustomProtoWithAddr {
-            inner: GenericProto::new(
-                peerset,
-                iter::once(("/foo".into(), Vec::new(), 1024 * 1024)),
-            ),
-            addrs: addrs
-                .iter()
-                .enumerate()
-                .filter_map(|(n, a)| {
-                    if n != index {
-                        Some((keypairs[n].public().to_peer_id(), a.clone()))
-                    } else {
-                        None
-                    }
-                })
-                .collect(),
-        };
-
-        let mut swarm = Swarm::with_threadpool_executor(
+        let behaviour = GenericProto::new(
+            peerset,
+            iter::once(("/foo".into(), Vec::new(), 1024 * 1024)),
+        );
+        let mut swarm = Swarm::new(
             transport,
             behaviour,
             keypairs[index].public().to_peer_id(),
+            SwarmConfig::with_executor(futures::executor::ThreadPool::new().unwrap()),
         );
         Swarm::listen_on(&mut swarm, addrs[index].clone()).unwrap();
         out.push(swarm);
+    }
+
+    // Add hardcoded addresses for all peers.
+    for index in 0..out.len() {
+        for other in 0..out.len() {
+            if other != index {
+                out[index]
+                    .add_peer_address(keypairs[other].public().to_peer_id(), addrs[other].clone());
+            }
+        }
     }
 
     // Final output
@@ -115,67 +101,6 @@ fn build_nodes() -> (Swarm<CustomProtoWithAddr>, Swarm<CustomProtoWithAddr>) {
     let first = out_iter.next().unwrap();
     let second = out_iter.next().unwrap();
     (first, second)
-}
-
-/// Wraps around the `CustomBehaviour` network behaviour, and adds hardcoded node addresses to it.
-struct CustomProtoWithAddr {
-    inner: GenericProto,
-    addrs: Vec<(PeerId, Multiaddr)>,
-}
-
-impl std::ops::Deref for CustomProtoWithAddr {
-    type Target = GenericProto;
-
-    fn deref(&self) -> &Self::Target {
-        &self.inner
-    }
-}
-
-impl std::ops::DerefMut for CustomProtoWithAddr {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.inner
-    }
-}
-
-impl NetworkBehaviour for CustomProtoWithAddr {
-    type ConnectionHandler = <GenericProto as NetworkBehaviour>::ConnectionHandler;
-    type OutEvent = <GenericProto as NetworkBehaviour>::OutEvent;
-
-    fn new_handler(&mut self) -> Self::ConnectionHandler {
-        self.inner.new_handler()
-    }
-
-    fn addresses_of_peer(&mut self, peer_id: &PeerId) -> Vec<Multiaddr> {
-        let mut list = self.inner.addresses_of_peer(peer_id);
-        for (p, a) in self.addrs.iter() {
-            if p == peer_id {
-                list.push(a.clone());
-            }
-        }
-        list
-    }
-    fn on_swarm_event(&mut self, event: FromSwarm<Self::ConnectionHandler>) {
-        self.inner.on_swarm_event(event);
-    }
-
-    fn on_connection_handler_event(
-        &mut self,
-        peer_id: PeerId,
-        connection_id: ConnectionId,
-        event: <<Self::ConnectionHandler as IntoConnectionHandler>::Handler as
-        ConnectionHandler>::OutEvent,
-    ) {
-        self.inner
-            .on_connection_handler_event(peer_id, connection_id, event);
-    }
-
-    fn poll(
-        &mut self,
-        cx: &mut Context,
-        params: &mut impl PollParameters,
-    ) -> Poll<NetworkBehaviourAction<Self::OutEvent, Self::ConnectionHandler>> {
-        self.inner.poll(cx, params)
-    }
 }
 
 #[test]
@@ -260,7 +185,10 @@ fn reconnect_after_disconnect() {
             }
 
             if service1_state == ServiceState::ConnectedAgain
-                && service2_state == ServiceState::ConnectedAgain
+                && matches!(
+                    service2_state,
+                    ServiceState::FirstConnec | ServiceState::ConnectedAgain
+                )
             {
                 break;
             }
@@ -290,4 +218,118 @@ fn reconnect_after_disconnect() {
             }
         }
     });
+}
+
+#[test]
+fn fallback_to_cached_external_address_for_pending_outbound() {
+    let (peerset, _) = sc_peerset::Peerset::from_config(sc_peerset::PeersetConfig {
+        sets: vec![sc_peerset::SetConfig {
+            in_peers: 25,
+            out_peers: 25,
+            bootnodes: vec![],
+            reserved_nodes: Default::default(),
+            reserved_only: false,
+        }],
+    });
+
+    let mut behaviour = GenericProto::new(
+        peerset,
+        iter::once(("/foo".into(), Vec::new(), 1024 * 1024)),
+    );
+    let peer_id = identity::Keypair::generate_ed25519().public().to_peer_id();
+    let cached_addr: Multiaddr = "/memory/4242".parse().expect("valid memory addr");
+
+    NetworkBehaviour::on_swarm_event(
+        &mut behaviour,
+        FromSwarm::NewExternalAddrOfPeer(NewExternalAddrOfPeer {
+            peer_id,
+            addr: &cached_addr,
+        }),
+    );
+
+    let fallback = NetworkBehaviour::handle_pending_outbound_connection(
+        &mut behaviour,
+        ConnectionId::new_unchecked(1),
+        Some(peer_id),
+        &[],
+        Endpoint::Dialer,
+    )
+    .expect("pending outbound should not fail");
+    assert_eq!(fallback, vec![cached_addr.clone()]);
+
+    let existing_addr: Multiaddr = "/memory/5252".parse().expect("valid memory addr");
+    let passthrough = NetworkBehaviour::handle_pending_outbound_connection(
+        &mut behaviour,
+        ConnectionId::new_unchecked(2),
+        Some(peer_id),
+        std::slice::from_ref(&existing_addr),
+        Endpoint::Dialer,
+    )
+    .expect("pending outbound should not fail");
+    assert_eq!(passthrough, vec![existing_addr]);
+}
+
+#[test]
+fn cached_external_addresses_are_bounded_and_keep_recent_entries() {
+    let (peerset, _) = sc_peerset::Peerset::from_config(sc_peerset::PeersetConfig {
+        sets: vec![sc_peerset::SetConfig {
+            in_peers: 25,
+            out_peers: 25,
+            bootnodes: vec![],
+            reserved_nodes: Default::default(),
+            reserved_only: false,
+        }],
+    });
+
+    let mut behaviour = GenericProto::new(
+        peerset,
+        iter::once(("/foo".into(), Vec::new(), 1024 * 1024)),
+    );
+    let peer_id = identity::Keypair::generate_ed25519().public().to_peer_id();
+    let cached_addrs: Vec<Multiaddr> = (0..40)
+        .map(|idx| {
+            format!("/memory/{}", 4100 + idx)
+                .parse()
+                .expect("valid memory addr")
+        })
+        .collect();
+
+    for addr in &cached_addrs {
+        NetworkBehaviour::on_swarm_event(
+            &mut behaviour,
+            FromSwarm::NewExternalAddrOfPeer(NewExternalAddrOfPeer { peer_id, addr }),
+        );
+    }
+
+    let bounded = NetworkBehaviour::handle_pending_outbound_connection(
+        &mut behaviour,
+        ConnectionId::new_unchecked(3),
+        Some(peer_id),
+        &[],
+        Endpoint::Dialer,
+    )
+    .expect("pending outbound should not fail");
+    assert_eq!(bounded, cached_addrs[8..].to_vec());
+
+    let repeated = cached_addrs[20].clone();
+    NetworkBehaviour::on_swarm_event(
+        &mut behaviour,
+        FromSwarm::NewExternalAddrOfPeer(NewExternalAddrOfPeer {
+            peer_id,
+            addr: &repeated,
+        }),
+    );
+
+    let deduped = NetworkBehaviour::handle_pending_outbound_connection(
+        &mut behaviour,
+        ConnectionId::new_unchecked(4),
+        Some(peer_id),
+        &[],
+        Endpoint::Dialer,
+    )
+    .expect("pending outbound should not fail");
+    let mut expected = cached_addrs[8..].to_vec();
+    expected.retain(|addr| addr != &repeated);
+    expected.push(repeated);
+    assert_eq!(deduped, expected);
 }

@@ -3,7 +3,7 @@ anyhow = { workspace = true }
 starcoin-account = { path = "../../account", package = "starcoin-vm2-account" }
 starcoin-account-api = { features = ["mock"], path = "../../account/api", package = "starcoin-vm2-account-api" }
 starcoin-config = { workspace = true }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "5417dce574142c3da24adf987194a6931869f588" }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "473da84802cdcddceeab4487b75977181a9e1fed" }
 #starcoin-rpc-client = { workspace = true }
 starcoin-types = { path = "../../types" }
 

@@ -4,7 +4,7 @@ use std::{cmp::min, sync::Arc};
 use anyhow::{format_err, Result};
 use futures::executor::block_on;
 use rand::seq::SliceRandom;
-use rand::Rng;
+use rand::RngExt;
 use starcoin_chain::{
     get_merge_bound_hash, global_block_state_cache, is_node_shutting_down, BlockChain,
     CachedBlockState, ChainReader,

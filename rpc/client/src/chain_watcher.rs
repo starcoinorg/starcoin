@@ -1,11 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use crate::pubsub_client::PubSubClient;
+use crate::rpc_clients::PubSubClient;
 use actix::prelude::*;
 use actix::AsyncContext;
 use futures::channel::oneshot;
-use jsonrpc_core_client::RpcError;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
@@ -134,7 +133,7 @@ impl Handler<WatchTxn> for ChainWatcher {
     }
 }
 
-type BlockEvent = Result<BlockView, RpcError>;
+type BlockEvent = Result<BlockView, serde_json::Error>;
 impl actix::StreamHandler<BlockEvent> for ChainWatcher {
     fn handle(&mut self, item: BlockEvent, _ctx: &mut Self::Context) {
         match item {

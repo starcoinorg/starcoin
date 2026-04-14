@@ -68,6 +68,8 @@ enum Action {
     RemoveReservedPeer(SetId, PeerId),
     SetReservedPeers(SetId, HashSet<PeerId>),
     SetReservedOnly(SetId, bool),
+    BanPeer(PeerId),
+    UnbanPeer(PeerId),
     ReportPeer(PeerId, ReputationChange),
     AddToPeersSet(SetId, PeerId),
     RemoveFromPeersSet(SetId, PeerId),
@@ -174,6 +176,16 @@ impl PeersetHandle {
         let _ = self
             .tx
             .unbounded_send(Action::ReportPeer(peer_id, score_diff));
+    }
+
+    /// Bans a peer until it is explicitly unbanned.
+    pub fn ban_peer(&self, peer_id: PeerId) {
+        let _ = self.tx.unbounded_send(Action::BanPeer(peer_id));
+    }
+
+    /// Removes a previously installed manual ban from a peer.
+    pub fn unban_peer(&self, peer_id: PeerId) {
+        let _ = self.tx.unbounded_send(Action::UnbanPeer(peer_id));
     }
 
     /// Add a peer to a set.
@@ -287,10 +299,12 @@ pub struct Peerset {
     tx: TracingUnboundedSender<Action>,
     /// Queue of messages to be emitted when the `Peerset` is polled.
     message_queue: VecDeque<Message>,
-    /// When the `Peerset` was created.
-    created: Instant,
     /// Last time when we updated the reputations of connected nodes.
     latest_time_update: Instant,
+    /// Peers explicitly banned by an operator.
+    manual_bans: HashSet<PeerId>,
+    /// Peers temporarily banned until the recorded instant.
+    temporary_bans: HashMap<PeerId, Instant>,
 }
 
 impl Peerset {
@@ -318,8 +332,9 @@ impl Peerset {
                     .map(|set| (set.reserved_nodes.clone(), set.reserved_only))
                     .collect(),
                 message_queue: VecDeque::new(),
-                created: now,
                 latest_time_update: now,
+                manual_bans: HashSet::new(),
+                temporary_bans: HashMap::new(),
             }
         };
 
@@ -424,6 +439,66 @@ impl Peerset {
         }
     }
 
+    fn on_ban_peer(&mut self, peer_id: PeerId) {
+        self.manual_bans.insert(peer_id);
+        self.disconnect_peer(peer_id);
+    }
+
+    fn on_unban_peer(&mut self, peer_id: PeerId) {
+        if self.manual_bans.remove(&peer_id) {
+            self.alloc_slots();
+        }
+    }
+
+    fn disconnect_peer(&mut self, peer_id: PeerId) {
+        for set_index in 0..self.data.num_sets() {
+            if let peersstate::Peer::Connected(peer) = self.data.peer(set_index, &peer_id) {
+                let peer = peer.disconnect();
+                self.message_queue.push_back(Message::Drop {
+                    set_id: SetId(set_index),
+                    peer_id: peer.into_peer_id(),
+                });
+            }
+        }
+    }
+
+    fn temporarily_banned_until(&self, peer_id: &PeerId, now: Instant) -> Option<Instant> {
+        self.temporary_bans
+            .get(peer_id)
+            .copied()
+            .filter(|expires_at| *expires_at > now)
+    }
+
+    fn is_manually_banned(&self, peer_id: &PeerId) -> bool {
+        self.manual_bans.contains(peer_id)
+    }
+
+    fn is_effectively_banned(&self, peer_id: &PeerId, reputation: i32, now: Instant) -> bool {
+        self.is_manually_banned(peer_id)
+            || self.temporarily_banned_until(peer_id, now).is_some()
+            || reputation < BANNED_THRESHOLD
+    }
+
+    fn install_temporary_ban(&mut self, peer_id: PeerId, now: Instant) {
+        let expires_at = now + UNBANNED_AFTER;
+        let emit_event = match self.temporary_bans.get_mut(&peer_id) {
+            Some(current_expiry) if *current_expiry >= expires_at => false,
+            Some(current_expiry) => {
+                *current_expiry = expires_at;
+                true
+            }
+            None => {
+                self.temporary_bans.insert(peer_id, expires_at);
+                true
+            }
+        };
+
+        if emit_event {
+            self.message_queue
+                .push_back(Message::Banned(peer_id, UNBANNED_AFTER));
+        }
+    }
+
     /// Adds a node to the given set. The peerset will, if possible and not already the case,
     /// try to connect to it.
     ///
@@ -459,6 +534,7 @@ impl Peerset {
     fn on_report_peer(&mut self, peer_id: PeerId, change: ReputationChange) {
         // We want reputations to be up-to-date before adjusting them.
         self.update_time();
+        let now = Instant::now();
 
         let mut reputation = self.data.peer_reputation(peer_id);
         reputation.add_reputation(change.value);
@@ -474,31 +550,19 @@ impl Peerset {
         );
 
         drop(reputation);
-
-        for set_index in 0..self.data.num_sets() {
-            if let peersstate::Peer::Connected(peer) = self.data.peer(set_index, &peer_id) {
-                let peer = peer.disconnect();
-                self.message_queue.push_back(Message::Drop {
-                    set_id: SetId(set_index),
-                    peer_id: peer.into_peer_id(),
-                });
-            }
-        }
+        self.install_temporary_ban(peer_id, now);
+        self.disconnect_peer(peer_id);
     }
 
     /// Updates the value of `self.latest_time_update` and performs all the updates that happen
     /// over time, such as reputation increases for staying connected.
     fn update_time(&mut self) {
         let now = Instant::now();
+        self.temporary_bans
+            .retain(|_, expires_at| *expires_at > now);
 
-        // We basically do `(now - self.latest_update).as_secs()`, except that by the way we do it
-        // we know that we're not going to miss seconds because of rounding to integers.
-        let secs_diff = {
-            let elapsed_latest = self.latest_time_update - self.created;
-            let elapsed_now = now - self.created;
-            self.latest_time_update = now;
-            elapsed_now.as_secs() - elapsed_latest.as_secs()
-        };
+        let secs_diff = (now - self.latest_time_update).as_secs();
+        self.latest_time_update += Duration::from_secs(secs_diff);
 
         // For each elapsed second, move the node reputation towards zero.
         // If we multiply each second the reputation by `k` (where `k` is between 0 and 1), it
@@ -532,10 +596,6 @@ impl Peerset {
                         peersstate::Peer::NotConnected(peer) => {
                             if peer.last_connected_or_discovered() + FORGET_AFTER < now {
                                 peer.forget_peer();
-                                if after < BANNED_THRESHOLD {
-                                    self.message_queue
-                                        .push_back(Message::Banned(peer_id, UNBANNED_AFTER))
-                                }
                             }
                         }
                         peersstate::Peer::Unknown(_) => {
@@ -550,10 +610,19 @@ impl Peerset {
     /// Try to fill available out slots with nodes.
     fn alloc_slots(&mut self) {
         self.update_time();
+        let now = Instant::now();
 
         // Try to connect to all the reserved nodes that we are not connected to.
         for set_index in 0..self.data.num_sets() {
             for reserved_node in &self.reserved_nodes[set_index].0 {
+                if self.is_effectively_banned(
+                    reserved_node,
+                    self.data.reputation(reserved_node),
+                    now,
+                ) {
+                    continue;
+                }
+
                 let entry = match self.data.peer(set_index, reserved_node) {
                     peersstate::Peer::Unknown(n) => n.discover(),
                     peersstate::Peer::NotConnected(n) => n,
@@ -587,11 +656,16 @@ impl Peerset {
             }
 
             // Try to grab the next node to attempt to connect to.
-            while let Some(next) = self.data.highest_not_connected_peer(set_index) {
-                // Don't connect to nodes with an abysmal reputation.
-                if next.reputation() < BANNED_THRESHOLD {
-                    break;
-                }
+            while let Some(peer_id) = self
+                .data
+                .highest_not_connected_peer_id(set_index, |peer_id, reputation| {
+                    !self.is_effectively_banned(peer_id, reputation, now)
+                })
+            {
+                let next = match self.data.peer(set_index, &peer_id) {
+                    peersstate::Peer::NotConnected(peer) => peer,
+                    peersstate::Peer::Connected(_) | peersstate::Peer::Unknown(_) => continue,
+                };
 
                 match next.try_outgoing() {
                     Ok(conn) => self.message_queue.push_back(Message::Connect {
@@ -620,6 +694,14 @@ impl Peerset {
         trace!(target: "peerset", "Incoming {:?}", peer_id);
 
         self.update_time();
+        let now = Instant::now();
+
+        if self.is_manually_banned(&peer_id)
+            || self.temporarily_banned_until(&peer_id, now).is_some()
+        {
+            self.message_queue.push_back(Message::Reject(index));
+            return;
+        }
 
         if self.reserved_nodes[set_id.0].1 && !self.reserved_nodes[set_id.0].0.contains(&peer_id) {
             self.message_queue.push_back(Message::Reject(index));
@@ -688,6 +770,7 @@ impl Peerset {
     /// Produces a JSON object containing the state of the peerset manager, for debugging purposes.
     pub fn debug_info(&mut self) -> serde_json::Value {
         self.update_time();
+        let now = Instant::now();
 
         json!({
             "sets": (0..self.data.num_sets()).map(|set_index| {
@@ -713,8 +796,29 @@ impl Peerset {
                     "reserved_only": self.reserved_nodes[set_index].1,
                 })
             }).collect::<Vec<_>>(),
+            "manual_bans": self.manual_bans.iter().map(|peer_id| {
+                peer_id.to_base58()
+            }).collect::<HashSet<_>>(),
+            "temporary_bans": self.temporary_bans.iter().map(|(peer_id, expires_at)| {
+                (
+                    peer_id.to_base58(),
+                    if *expires_at > now {
+                        (*expires_at - now).as_secs()
+                    } else {
+                        0
+                    },
+                )
+            }).collect::<HashMap<_, _>>(),
             "message_queue": self.message_queue.len(),
         })
+    }
+
+    #[cfg(test)]
+    fn advance_time(&mut self, duration: Duration) {
+        self.latest_time_update -= duration;
+        for expires_at in self.temporary_bans.values_mut() {
+            *expires_at -= duration;
+        }
     }
 
     /// Returns the number of peers that we have discovered.
@@ -760,6 +864,8 @@ impl Stream for Peerset {
                 Action::SetReservedOnly(set_id, reserved) => {
                     self.on_set_reserved_only(set_id, reserved)
                 }
+                Action::BanPeer(peer_id) => self.on_ban_peer(peer_id),
+                Action::UnbanPeer(peer_id) => self.on_unban_peer(peer_id),
                 Action::ReportPeer(peer_id, score_diff) => self.on_report_peer(peer_id, score_diff),
                 Action::AddToPeersSet(sets_name, peer_id) => {
                     self.add_to_peers_set(sets_name, peer_id)
@@ -791,11 +897,12 @@ pub enum DropReason {
 mod tests {
     use super::{
         IncomingIndex, Message, Peerset, PeersetConfig, ReputationChange, SetConfig, SetId,
-        BANNED_THRESHOLD,
+        BANNED_THRESHOLD, UNBANNED_AFTER,
     };
     use futures::prelude::*;
     use libp2p::PeerId;
-    use std::{pin::Pin, task::Poll, thread, time::Duration};
+    use serde_json::{json, Value};
+    use std::{pin::Pin, task::Poll, time::Duration};
 
     fn assert_messages(mut peerset: Peerset, messages: Vec<Message>) -> Peerset {
         for expected_message in messages {
@@ -810,6 +917,21 @@ mod tests {
         let next = futures::executor::block_on_stream(&mut peerset).next();
         let message = next.ok_or(())?;
         Ok((message, peerset))
+    }
+
+    fn assert_pending(mut peerset: Peerset) -> Peerset {
+        futures::executor::block_on(futures::future::poll_fn(|cx| {
+            assert!(matches!(
+                Stream::poll_next(Pin::new(&mut peerset), cx),
+                Poll::Pending
+            ));
+            Poll::Ready(())
+        }));
+        peerset
+    }
+
+    fn peer_debug<'a>(debug_info: &'a Value, peer_id: &PeerId) -> &'a Value {
+        &debug_info["sets"][0]["nodes"][peer_id.to_base58()]
     }
 
     #[test]
@@ -957,30 +1079,89 @@ mod tests {
         let peer_id = PeerId::random();
         handle.report_peer(peer_id, ReputationChange::new(BANNED_THRESHOLD - 1, ""));
 
-        let fut = futures::future::poll_fn(move |cx| {
-            // We need one polling for the message to be processed.
-            assert_eq!(Stream::poll_next(Pin::new(&mut peerset), cx), Poll::Pending);
+        peerset = assert_messages(peerset, vec![Message::Banned(peer_id, UNBANNED_AFTER)]);
 
-            // Check that an incoming connection from that node gets refused.
-            peerset.incoming(SetId::from(0), peer_id, IncomingIndex(1));
-            if let Poll::Ready(msg) = Stream::poll_next(Pin::new(&mut peerset), cx) {
-                assert_eq!(msg.unwrap(), Message::Reject(IncomingIndex(1)));
-            } else {
-                panic!()
-            }
+        peerset.incoming(SetId::from(0), peer_id, IncomingIndex(1));
+        peerset = assert_messages(peerset, vec![Message::Reject(IncomingIndex(1))]);
 
-            // Wait a bit for the node's reputation to go above the threshold.
-            thread::sleep(Duration::from_millis(1500));
+        peerset.advance_time(UNBANNED_AFTER - Duration::from_secs(1));
+        peerset.incoming(SetId::from(0), peer_id, IncomingIndex(2));
+        peerset = assert_messages(peerset, vec![Message::Reject(IncomingIndex(2))]);
 
-            // Try again. This time the node should be accepted.
-            peerset.incoming(SetId::from(0), peer_id, IncomingIndex(2));
-            while let Poll::Ready(msg) = Stream::poll_next(Pin::new(&mut peerset), cx) {
-                assert_eq!(msg.unwrap(), Message::Accept(IncomingIndex(2)));
-            }
+        peerset.advance_time(Duration::from_secs(2));
+        peerset.incoming(SetId::from(0), peer_id, IncomingIndex(3));
+        peerset = assert_messages(peerset, vec![Message::Accept(IncomingIndex(3))]);
+        assert_pending(peerset);
+    }
 
-            Poll::Ready(())
+    #[test]
+    fn test_peerset_manual_ban_disconnects_without_penalizing_reputation() {
+        let peer_id = PeerId::random();
+        let (mut peerset, handle) = Peerset::from_config(PeersetConfig {
+            sets: vec![SetConfig {
+                in_peers: 25,
+                out_peers: 25,
+                bootnodes: vec![],
+                reserved_nodes: Default::default(),
+                reserved_only: false,
+            }],
         });
 
-        futures::executor::block_on(fut);
+        handle.add_to_peers_set(SetId::from(0), peer_id);
+        peerset = assert_messages(
+            peerset,
+            vec![Message::Connect {
+                set_id: SetId::from(0),
+                peer_id,
+            }],
+        );
+
+        handle.ban_peer(peer_id);
+        peerset = assert_messages(
+            peerset,
+            vec![Message::Drop {
+                set_id: SetId::from(0),
+                peer_id,
+            }],
+        );
+
+        peerset.incoming(SetId::from(0), peer_id, IncomingIndex(1));
+        peerset = assert_messages(peerset, vec![Message::Reject(IncomingIndex(1))]);
+
+        let debug_info = peerset.debug_info();
+        let peer_info = peer_debug(&debug_info, &peer_id);
+        assert_eq!(peer_info["connected"], false);
+        assert_eq!(peer_info["reputation"], 0);
+        assert_eq!(debug_info["manual_bans"], json!([peer_id.to_base58()]));
+    }
+
+    #[test]
+    fn test_peerset_manual_unban_restores_outbound_allocation() {
+        let peer_id = PeerId::random();
+        let (mut peerset, handle) = Peerset::from_config(PeersetConfig {
+            sets: vec![SetConfig {
+                in_peers: 25,
+                out_peers: 25,
+                bootnodes: vec![],
+                reserved_nodes: Default::default(),
+                reserved_only: false,
+            }],
+        });
+
+        handle.ban_peer(peer_id);
+        peerset = assert_pending(peerset);
+
+        handle.add_to_peers_set(SetId::from(0), peer_id);
+        peerset = assert_pending(peerset);
+
+        handle.unban_peer(peer_id);
+        peerset = assert_messages(
+            peerset,
+            vec![Message::Connect {
+                set_id: SetId::from(0),
+                peer_id,
+            }],
+        );
+        assert_pending(peerset);
     }
 }

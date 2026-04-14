@@ -2442,10 +2442,10 @@ impl BlockChain {
             None
         };
 
-        if cached_statedb.is_some() && cached_statedb2.is_some() {
+        if let (Some(cached_db), Some(cached_db2)) =
+            (cached_statedb.as_ref(), cached_statedb2.as_ref())
+        {
             // Flush cached statedbs
-            let cached_db = cached_statedb.as_ref().unwrap();
-            let cached_db2 = cached_statedb2.as_ref().unwrap();
             cached_db.flush()?;
             cached_db2.flush()?;
         } else {

@@ -334,7 +334,7 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
         if !Self::layout_has_identifier_mappings(layout) {
             return Ok(HashSet::new());
         }
-        let value = ValueSerDeContext::new(self.max_value_nest_depth)
+        let value = ValueSerDeContext::<DelayedFieldID>::new(self.max_value_nest_depth)
             .with_delayed_fields_serde()
             .deserialize(bytes, layout)
             .ok_or_else(|| {
@@ -420,6 +420,8 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
         }
 
         impl<S: StateView> ValueToIdentifierMapping for Mapping<'_, S> {
+            type Identifier = DelayedFieldID;
+
             fn value_to_identifier(
                 &self,
                 kind: &move_core_types::value::IdentifierMappingKind,
@@ -450,13 +452,13 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
             delayed_ids: RefCell::new(HashSet::new()),
         };
 
-        let value = ValueSerDeContext::new(self.max_value_nest_depth)
+        let value = ValueSerDeContext::<DelayedFieldID>::new(self.max_value_nest_depth)
             .with_delayed_fields_replacement(&mapping)
             .deserialize(state_value.bytes(), layout)
             .ok_or_else(|| {
                 StateviewError::Other("Failed to replace delayed values with ids".to_string())
             })?;
-        let serialized = ValueSerDeContext::new(self.max_value_nest_depth)
+        let serialized = ValueSerDeContext::<DelayedFieldID>::new(self.max_value_nest_depth)
             .with_delayed_fields_serde()
             .serialize(&value, layout)
             .map_err(|e| StateviewError::Other(e.to_string()))?
@@ -576,6 +578,8 @@ struct DelayedFieldValueMapping<'a> {
 }
 
 impl ValueToIdentifierMapping for DelayedFieldValueMapping<'_> {
+    type Identifier = DelayedFieldID;
+
     fn value_to_identifier(
         &self,
         _kind: &move_core_types::value::IdentifierMappingKind,
@@ -980,15 +984,15 @@ impl<S: StateView> CompiledModuleView for StorageAdapter<'_, S> {
 }
 
 pub trait AsMoveResolver<S> {
-    fn as_move_resolver(&self) -> StorageAdapter<S>;
+    fn as_move_resolver(&self) -> StorageAdapter<'_, S>;
     fn as_move_resolver_with_delayed_fields(
         &self,
         delayed_fields_enabled: bool,
-    ) -> StorageAdapter<S>;
+    ) -> StorageAdapter<'_, S>;
 }
 
 impl<S: StateView> AsMoveResolver<S> for S {
-    fn as_move_resolver(&self) -> StorageAdapter<S> {
+    fn as_move_resolver(&self) -> StorageAdapter<'_, S> {
         let features = Features::fetch_config(self).unwrap_or_default();
         self.as_move_resolver_with_delayed_fields(
             features.is_aggregator_v2_delayed_fields_enabled(),
@@ -998,7 +1002,7 @@ impl<S: StateView> AsMoveResolver<S> for S {
     fn as_move_resolver_with_delayed_fields(
         &self,
         delayed_fields_enabled: bool,
-    ) -> StorageAdapter<S> {
+    ) -> StorageAdapter<'_, S> {
         let features = Features::fetch_config(self).unwrap_or_default();
         let deserializer_config = starcoin_prod_deserializer_config(&features);
         let vm_config = VMConfig::fetch_config(self);
@@ -1144,7 +1148,7 @@ pub(crate) mod tests {
     pub(crate) fn as_resolver_with_group_size_kind<S: StateView>(
         state_view: &S,
         group_size_kind: GroupSizeKind,
-    ) -> StorageAdapter<S> {
+    ) -> StorageAdapter<'_, S> {
         assert_ne!(group_size_kind, GroupSizeKind::AsSum, "not yet supported");
 
         let (gas_feature_version, resource_groups_split_in_vm_change_set_enabled) =

@@ -8,7 +8,7 @@ use curve25519_dalek::scalar::Scalar;
 use move_core_types::gas_algebra::{NumArgs, NumBytes};
 use move_vm_types::{loaded_data::runtime_types::Type, values::Value};
 #[cfg(feature = "testing")]
-use rand::RngCore;
+use rand::RngExt;
 use sha2_0_9::Sha512;
 use smallvec::{smallvec, SmallVec};
 use starcoin_gas_schedule::gas_params::natives::starcoin_framework::*;
@@ -36,7 +36,7 @@ pub(crate) fn native_scalar_random(
     // We do this manually due to curve25519-dalek-ng's `Scalar::random` being incompatible with our
     // `rand-0.7.3` dependency
     let mut scalar_bytes = [0u8; 64];
-    rng.fill_bytes(&mut scalar_bytes);
+    rng.fill(&mut scalar_bytes);
 
     let scalar = Scalar::from_bytes_mod_order_wide(&scalar_bytes);
 

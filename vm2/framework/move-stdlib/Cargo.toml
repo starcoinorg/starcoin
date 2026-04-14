@@ -13,9 +13,9 @@ publish = false
 [dependencies]
 anyhow = { workspace = true }
 include_dir = { workspace = true }
-move-core-types = { git = "https://github.com/starcoinorg/move", rev = "7d37ed75c76f34abd2ea71774dcf784408625887" }
-move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "7d37ed75c76f34abd2ea71774dcf784408625887" }
-move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "7d37ed75c76f34abd2ea71774dcf784408625887" }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "ed9d919d05fedeae9cf433d4f44f6aba526580c3" }
+move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "ed9d919d05fedeae9cf433d4f44f6aba526580c3" }
+move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "ed9d919d05fedeae9cf433d4f44f6aba526580c3" }
 once_cell = { workspace = true }
 sha2 = { workspace = true }
 sha3 = { workspace = true }

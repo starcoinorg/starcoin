@@ -10,7 +10,7 @@ use itertools::Itertools;
 use network_p2p_types::{peer_id::PeerId, ReputationChange};
 use parking_lot::Mutex;
 use rand::seq::IteratorRandom;
-use rand::Rng;
+use rand::RngExt;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_types::block::BlockHeader;
@@ -23,11 +23,11 @@ use std::sync::Arc;
 
 pub trait PeerProvider: Send + Sync + std::marker::Unpin {
     /// Get all peers, the peer's order is unsorted.
-    fn peer_set(&self) -> BoxFuture<Result<Vec<PeerInfo>>>;
+    fn peer_set(&self) -> BoxFuture<'_, Result<Vec<PeerInfo>>>;
 
-    fn get_peer(&self, peer_id: PeerId) -> BoxFuture<Result<Option<PeerInfo>>>;
+    fn get_peer(&self, peer_id: PeerId) -> BoxFuture<'_, Result<Option<PeerInfo>>>;
 
-    fn get_self_peer(&self) -> BoxFuture<Result<PeerInfo>>;
+    fn get_self_peer(&self) -> BoxFuture<'_, Result<PeerInfo>>;
 
     fn report_peer(&self, peer_id: PeerId, cost_benefit: ReputationChange);
 

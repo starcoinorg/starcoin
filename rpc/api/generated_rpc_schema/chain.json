@@ -8394,6 +8394,48 @@
           }
         }
       }
+    },
+    {
+      "name": "chain.get_current_block_color",
+      "params": [
+        {
+          "name": "block_hash",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "HashValue",
+            "type": "string",
+            "format": "HashValue"
+          }
+        }
+      ],
+      "result": {
+        "name": "Option < BlockColorView >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Nullable_BlockColorView",
+          "type": [
+            "object",
+            "null"
+          ],
+          "required": [
+            "color",
+            "confirmedblock"
+          ],
+          "properties": {
+            "color": {
+              "type": "string",
+              "enum": [
+                "Blue",
+                "Red"
+              ]
+            },
+            "confirmedblock": {
+              "type": "string",
+              "format": "HashValue"
+            }
+          }
+        }
+      }
     }
   ]
 }

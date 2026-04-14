@@ -52,7 +52,8 @@ pub enum Error {
     Prometheus(PrometheusError),
     /// The network addresses are invalid because they don't match the transport.
     #[display(
-        fmt = "The following addresses are invalid because they don't match the transport: {:?}",
+        fmt = "The following addresses are invalid for transport {:?}: {:?}",
+        transport,
         addresses
     )]
     AddressesForAnotherTransport {

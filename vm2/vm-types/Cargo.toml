@@ -11,11 +11,11 @@ rand = { workspace = true }
 serde = { features = ["derive"], workspace = true }
 serde_bytes = { workspace = true }
 serde_json = { features = ["arbitrary_precision"], workspace = true }
-move-bytecode-verifier = { git = "https://github.com/starcoinorg/move", rev = "7d37ed75c76f34abd2ea71774dcf784408625887" }
-move-core-types = { git = "https://github.com/starcoinorg/move", rev = "7d37ed75c76f34abd2ea71774dcf784408625887" }
-move-ir-types = { git = "https://github.com/starcoinorg/move", rev = "7d37ed75c76f34abd2ea71774dcf784408625887" }
-move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "7d37ed75c76f34abd2ea71774dcf784408625887" }
-move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "7d37ed75c76f34abd2ea71774dcf784408625887" }
+move-bytecode-verifier = { git = "https://github.com/starcoinorg/move", rev = "ed9d919d05fedeae9cf433d4f44f6aba526580c3" }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "ed9d919d05fedeae9cf433d4f44f6aba526580c3" }
+move-ir-types = { git = "https://github.com/starcoinorg/move", rev = "ed9d919d05fedeae9cf433d4f44f6aba526580c3" }
+move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "ed9d919d05fedeae9cf433d4f44f6aba526580c3" }
+move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "ed9d919d05fedeae9cf433d4f44f6aba526580c3" }
 proptest = { features = ["std"], optional = true, workspace = true }
 proptest-derive = { optional = true, workspace = true }
 starcoin-time-service = { workspace = true }
@@ -26,9 +26,9 @@ rustc-hash = { workspace = true }
 forkable-jellyfish-merkle = { workspace = true }
 schemars = { workspace = true }
 starcoin-accumulator = { workspace = true }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "5417dce574142c3da24adf987194a6931869f588" }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "473da84802cdcddceeab4487b75977181a9e1fed" }
 starcoin-uint = { workspace = true }
-vm = { git = "https://github.com/starcoinorg/move", rev = "7d37ed75c76f34abd2ea71774dcf784408625887", package = "move-binary-format" }
+vm = { git = "https://github.com/starcoinorg/move", rev = "ed9d919d05fedeae9cf433d4f44f6aba526580c3", package = "move-binary-format" }
 bytes = { workspace = true }
 strum = { workspace = true }
 strum_macros = { workspace = true }
@@ -44,10 +44,10 @@ starcoin-infallible = { workspace = true }
 [dev-dependencies]
 proptest = { workspace = true, features = ["std"] }
 proptest-derive = { workspace = true }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "5417dce574142c3da24adf987194a6931869f588", features = ["fuzzing"] }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "473da84802cdcddceeab4487b75977181a9e1fed", features = ["fuzzing"] }
 starcoin-gas-algebra = { path = "../framework/gas-algebra", features = ["testing"] }
-vm = { git = "https://github.com/starcoinorg/move", rev = "7d37ed75c76f34abd2ea71774dcf784408625887", package = "move-binary-format", features = ["fuzzing"] }
-move-core-types = { git = "https://github.com/starcoinorg/move", rev = "7d37ed75c76f34abd2ea71774dcf784408625887", features = ["fuzzing"] }
+vm = { git = "https://github.com/starcoinorg/move", rev = "ed9d919d05fedeae9cf433d4f44f6aba526580c3", package = "move-binary-format", features = ["fuzzing"] }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "ed9d919d05fedeae9cf433d4f44f6aba526580c3", features = ["fuzzing"] }
 
 [features]
 default = []

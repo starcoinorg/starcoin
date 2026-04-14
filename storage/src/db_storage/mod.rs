@@ -246,7 +246,7 @@ impl DBStorage {
         &self,
         prefix_name: &str,
         direction: ScanDirection,
-    ) -> Result<SchemaIterator<K, V>>
+    ) -> Result<SchemaIterator<'_, K, V>>
     where
         K: KeyCodec,
         V: ValueCodec,
@@ -264,13 +264,13 @@ impl DBStorage {
         prefix_name: &str,
         mode: IteratorMode,
         readopts: ReadOptions,
-    ) -> Result<DBIterator> {
+    ) -> Result<DBIterator<'_>> {
         let cf_handle = self.get_cf_handle(prefix_name);
         Ok(self.db.iterator_cf_opt(cf_handle, readopts, mode))
     }
 
     /// Returns a forward [`SchemaIterator`] on a certain schema.
-    pub fn iter<K, V>(&self, prefix_name: &str) -> Result<SchemaIterator<K, V>>
+    pub fn iter<K, V>(&self, prefix_name: &str) -> Result<SchemaIterator<'_, K, V>>
     where
         K: KeyCodec,
         V: ValueCodec,
@@ -279,7 +279,7 @@ impl DBStorage {
     }
 
     /// Returns a backward [`SchemaIterator`] on a certain schema.
-    pub fn rev_iter<K, V>(&self, prefix_name: &str) -> Result<SchemaIterator<K, V>>
+    pub fn rev_iter<K, V>(&self, prefix_name: &str) -> Result<SchemaIterator<'_, K, V>>
     where
         K: KeyCodec,
         V: ValueCodec,
@@ -548,7 +548,7 @@ impl RawDBStorage for DBStorage {
         &self,
         prefix: &str,
         key: K,
-    ) -> Result<Option<DBPinnableSlice>> {
+    ) -> Result<Option<DBPinnableSlice<'_>>> {
         let cf = self.get_cf_handle(prefix);
         let res = self
             .db

@@ -25,10 +25,11 @@ use crate::{
 };
 use bytes::Bytes;
 use futures::channel::oneshot;
-use libp2p::core::{Multiaddr, PeerId, PublicKey};
 use libp2p::identify::Info;
-use libp2p::kad::record;
+use libp2p::identity::PublicKey;
+use libp2p::kad::RecordKey;
 use libp2p::swarm::NetworkBehaviour;
+use libp2p::{Multiaddr, PeerId};
 use sc_peerset::ReputationChange;
 use std::borrow::Cow;
 use std::collections::HashSet;
@@ -36,7 +37,7 @@ use std::time::Duration;
 
 /// General behaviour of the network. Combines all protocols together.
 #[derive(NetworkBehaviour)]
-#[behaviour(out_event = "BehaviourOut")]
+#[behaviour(to_swarm = "BehaviourOut")]
 pub struct Behaviour<T: 'static + BusinessLayerHandle + Send> {
     protocol: Protocol<T>,
     /// Periodically pings and identifies the nodes we are connected to, and store information in a
@@ -208,17 +209,17 @@ impl<T: BusinessLayerHandle + Send> Behaviour<T> {
     /// Returns `None` if we don't know anything about this node. Always returns `Some` for nodes
     /// we're connected to, meaning that if `None` is returned then we're not connected to that
     /// node.
-    pub fn node(&self, peer_id: &PeerId) -> Option<peer_info::Node> {
+    pub fn node(&self, peer_id: &PeerId) -> Option<peer_info::Node<'_>> {
         self.peer_info.node(peer_id)
     }
 
     /// Start querying a record from the DHT. Will later produce either a `ValueFound` or a `ValueNotFound` event.
-    pub fn get_value(&mut self, key: record::Key) {
+    pub fn get_value(&mut self, key: RecordKey) {
         self.discovery.get_value(key);
     }
 
     /// Starts putting a record into DHT. Will later produce either a `ValuePut` or a `ValuePutFailed` event.
-    pub fn put_value(&mut self, key: record::Key, value: Vec<u8>) {
+    pub fn put_value(&mut self, key: RecordKey, value: Vec<u8>) {
         self.discovery.put_value(key, value);
     }
 
@@ -245,12 +246,16 @@ impl<T: BusinessLayerHandle + Send> Behaviour<T> {
         &mut self.protocol
     }
 
+    pub fn addresses_of_peer(&mut self, peer_id: &PeerId) -> Vec<Multiaddr> {
+        self.discovery.addresses_of_peer(peer_id)
+    }
+
     /// Add a self-reported address of a remote peer to the k-buckets of the supported
     /// DHTs (`supported_protocols`).
     pub fn add_self_reported_address_to_dht(
         &mut self,
         peer_id: &PeerId,
-        supported_protocols: &[impl AsRef<[u8]>],
+        supported_protocols: &[impl AsRef<str>],
         addr: Multiaddr,
     ) {
         self.discovery

@@ -338,6 +338,14 @@ where
         self.apply_block(block, None)
     }
 
+    #[cfg(test)]
+    pub async fn fetch_blocks_for_test(
+        &self,
+        block_ids: Vec<HashValue>,
+    ) -> Result<Vec<BlockHeader>> {
+        self.fetch_blocks(block_ids).await
+    }
+
     fn notify_connected_block(
         &mut self,
         block: Block,
@@ -526,7 +534,7 @@ where
             if self.cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
                 return anyhow::Ok(ParallelSign::NeedMoreBlocks);
             }
-            if block_header.number() % ASYNC_BLOCK_COUNT == 0
+            if block_header.number().is_multiple_of(ASYNC_BLOCK_COUNT)
                 || block_header.number() >= self.target.target_id.number()
             {
                 self.sync_dag_store.delete_all_dag_sync_block()?;

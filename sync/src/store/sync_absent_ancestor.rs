@@ -39,7 +39,7 @@ pub trait AbsentDagBlockStoreReader {
         number: BlockNumber,
         block_id: HashValue,
     ) -> anyhow::Result<DagSyncBlock, StoreError>;
-    fn iter_at_first(&self) -> anyhow::Result<SchemaIterator<Vec<u8>, Vec<u8>>>;
+    fn iter_at_first(&self) -> anyhow::Result<SchemaIterator<'_, Vec<u8>, Vec<u8>>>;
 }
 
 pub trait AbsentDagBlockStoreWriter {
@@ -157,7 +157,7 @@ impl AbsentDagBlockStoreReader for SyncAbsentBlockStore {
         self.cache_access.read(DagSyncBlockKey { number, block_id })
     }
 
-    fn iter_at_first(&self) -> anyhow::Result<SchemaIterator<Vec<u8>, Vec<u8>>> {
+    fn iter_at_first(&self) -> anyhow::Result<SchemaIterator<'_, Vec<u8>, Vec<u8>>> {
         let mut iter = self.db.iter::<Vec<u8>, Vec<u8>>(SYNC_ABSENT_BLOCK_CF)?;
         iter.seek_to_first();
         Ok(iter)
