@@ -164,18 +164,38 @@ impl TaskState for BlockSyncTask {
                     result_map.len()
                 );
                 let remote_fetch_begin = Instant::now();
-                let mut result_map = if no_exist_block_ids.is_empty() {
-                    result_map
-                } else {
-                    self.fetcher
-                        .fetch_blocks(no_exist_block_ids)
-                        .await?
+                let mut result_map = result_map;
+                if !no_exist_block_ids.is_empty() {
+                    let fetch_res = self.fetcher.fetch_blocks(no_exist_block_ids).await;
+                    let fetched_blocks = match fetch_res {
+                        Ok(blocks) => blocks,
+                        Err(err) => {
+                            if profiling_info {
+                                let remote_fetch_ms = remote_fetch_begin.elapsed().as_millis();
+                                let total_ms = batch_begin.elapsed().as_millis();
+                                warn!(
+                                    "{} stage=batch_fetch_blocks status=err mode=local_then_remote start_number={} requested_ids={} local_hits={} local_misses={} local_lookup_ms={} remote_fetch_ms={} total_ms={} error={:?}",
+                                    SYNC_PROF_PREFIX,
+                                    self.start_number,
+                                    requested_ids_len,
+                                    local_hit_count,
+                                    local_miss_count,
+                                    local_lookup_ms,
+                                    remote_fetch_ms,
+                                    total_ms,
+                                    err
+                                );
+                            }
+                            return Err(err);
+                        }
+                    };
+                    result_map = fetched_blocks
                         .into_iter()
                         .fold(result_map, |mut result_map, (block, peer_id)| {
                             result_map.insert(block.id(), SyncBlockData::new(block, None, peer_id));
                             result_map
-                        })
-                };
+                        });
+                }
                 let remote_fetch_ms = remote_fetch_begin.elapsed().as_millis();
                 //ensure return block's order same as request block_id's order.
                 let result: Result<Vec<SyncBlockData>> = block_ids
@@ -218,13 +238,13 @@ impl TaskState for BlockSyncTask {
                 result
             } else {
                 let remote_fetch_begin = Instant::now();
-                let result = Ok(self
-                    .fetcher
-                    .fetch_blocks(block_ids)
-                    .await?
-                    .into_iter()
-                    .map(|(block, peer_id)| SyncBlockData::new(block, None, peer_id))
-                    .collect::<Vec<_>>());
+                let fetch_res = self.fetcher.fetch_blocks(block_ids).await;
+                let result = fetch_res.map(|blocks| {
+                    blocks
+                        .into_iter()
+                        .map(|(block, peer_id)| SyncBlockData::new(block, None, peer_id))
+                        .collect::<Vec<_>>()
+                });
                 if profiling_info {
                     let remote_fetch_ms = remote_fetch_begin.elapsed().as_millis();
                     let total_ms = batch_begin.elapsed().as_millis();
@@ -818,7 +838,30 @@ where
         let remote_fetch_begin = Instant::now();
         let mut remote_fetched_blocks = 0_u64;
         for chunk in deduped_block_ids.chunks(usize::try_from(MAX_BLOCK_REQUEST_SIZE)?) {
-            let remote_dag_sync_blocks = self.fetcher.fetch_blocks(chunk.to_vec()).await?;
+            let fetch_res = self.fetcher.fetch_blocks(chunk.to_vec()).await;
+            let remote_dag_sync_blocks = match fetch_res {
+                Ok(blocks) => blocks,
+                Err(err) => {
+                    if profiling_info {
+                        let remote_fetch_ms = remote_fetch_begin.elapsed().as_millis();
+                        let total_ms = fetch_begin.elapsed().as_millis();
+                        warn!(
+                            "{} stage=fetch_absent_blocks status=err input_ids={} deduped_ids={} local_block_hits={} local_dag_hits={} remote_request_ids={} remote_fetched_blocks={} remote_fetch_ms={} total_ms={} error={:?}",
+                            SYNC_PROF_PREFIX,
+                            input_ids,
+                            seen.len(),
+                            local_block_hits,
+                            local_dag_hits,
+                            remote_request_ids,
+                            remote_fetched_blocks,
+                            remote_fetch_ms,
+                            total_ms,
+                            err
+                        );
+                    }
+                    return Err(err);
+                }
+            };
             for (block, _) in remote_dag_sync_blocks {
                 self.local_store
                     .save_dag_sync_block(starcoin_storage::block::DagSyncBlock {
@@ -1037,7 +1080,10 @@ where
                         let timestamp = block.header().timestamp();
 
                         let block_info = if self.chain.has_dag_block(block.header().id())? {
-                            block_info
+                            match block_info {
+                                Some(block_info) => Some(block_info),
+                                None => self.local_store.get_block_info(block.id())?,
+                            }
                         } else {
                             None
                         };
