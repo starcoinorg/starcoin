@@ -108,3 +108,49 @@ pub(crate) fn generate_node_name() -> String {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::decode_key;
+    use network_p2p_types::peer_id::PeerId;
+
+    fn parse_private_keys(raw_keys: &str) -> Vec<&str> {
+        raw_keys
+            .lines()
+            .flat_map(|line| line.split(|c| matches!(c, ',' | ';')))
+            .map(str::trim)
+            .filter(|key| !key.is_empty())
+            .collect()
+    }
+
+    #[test]
+    #[ignore = "manual utility test; set STC_PEER_PRIVATE_KEYS to a comma/semicolon/newline separated list of hex private keys"]
+    fn print_peer_id_addresses_from_private_keys() {
+        let raw_keys = std::env::var("STC_PEER_PRIVATE_KEYS").expect(
+            "missing STC_PEER_PRIVATE_KEYS; provide comma/semicolon/newline separated hex private keys",
+        );
+        
+        let keys: Vec<&str> = parse_private_keys(&raw_keys);
+        for (index, private_key_hex) in keys.iter().enumerate() {
+            let (_private_key, public_key) =
+                decode_key(private_key_hex).expect("peer private key should decode successfully");
+            let peer_id = PeerId::from_ed25519_public_key(public_key.clone());
+
+            println!(
+                "peer[{index}] public_key={} peer_id={} p2p_suffix=/p2p/{}",
+                hex::encode(public_key.to_bytes()),
+                peer_id,
+                peer_id
+            );
+        }
+
+        // Print the kubectl command to create/update the node-keys secret for main network
+        let joined = keys.join("; ");
+        println!();
+        println!("--- kubectl create secret command (main network) ---");
+        println!(
+            "kubectl -n starcoin-main create secret generic node-keys \\\n  --from-literal=node-keys='{}' \\\n  --dry-run=client -o yaml | kubectl apply -f -",
+            joined
+        );
+    }
+}
