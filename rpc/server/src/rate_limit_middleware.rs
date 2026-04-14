@@ -11,7 +11,9 @@ use jsonrpsee::{
     MethodResponse,
 };
 use starcoin_config::{ApiQuotaConfig, ApiQuotaConfiguration, QuotaDuration};
+use starcoin_logger::prelude::*;
 use starcoin_rpc_api::metadata::Metadata;
+use std::collections::HashSet;
 use std::future::Future;
 use std::sync::Arc;
 use tower::Layer;
@@ -34,6 +36,7 @@ impl From<ApiQuotaConfig> for QuotaWrapper {
 #[derive(Clone, Debug)]
 pub struct JsonApiRateLimitLayer {
     limiters: Arc<ApiLimiters<MethodName, String>>,
+    ip_whitelist: Arc<HashSet<String>>,
 }
 
 impl JsonApiRateLimitLayer {
@@ -52,8 +55,15 @@ impl JsonApiRateLimitLayer {
                 .map(|(k, v)| (k, Into::<QuotaWrapper>::into(v).0))
                 .collect(),
         );
+        let ip_whitelist: HashSet<String> = quotas.ip_whitelist().into_iter().collect();
+        if ip_whitelist.is_empty() {
+            info!("RPC rate limit middleware initialized with no IP whitelist");
+        } else {
+            info!("RPC rate limit middleware initialized with IP whitelist: {:?}", ip_whitelist);
+        }
         Self {
             limiters: Arc::new(limiters),
+            ip_whitelist: Arc::new(ip_whitelist),
         }
     }
 }
@@ -65,6 +75,7 @@ impl<S> Layer<S> for JsonApiRateLimitLayer {
         JsonApiRateLimitMiddleware {
             service,
             limiters: self.limiters.clone(),
+            ip_whitelist: self.ip_whitelist.clone(),
         }
     }
 }
@@ -73,6 +84,7 @@ impl<S> Layer<S> for JsonApiRateLimitLayer {
 pub struct JsonApiRateLimitMiddleware<S> {
     service: S,
     limiters: Arc<ApiLimiters<MethodName, String>>,
+    ip_whitelist: Arc<HashSet<String>>,
 }
 
 fn user_from_extensions(extensions: &Extensions) -> Option<String> {
@@ -116,12 +128,22 @@ where
         let user = user_from_extensions(request.extensions());
         let service = self.service.clone();
         let limiters = self.limiters.clone();
+        let ip_whitelist = self.ip_whitelist.clone();
 
         async move {
+            if let Some(ref ip) = user {
+                if ip_whitelist.contains(ip) {
+                    debug!("IP {} is whitelisted, bypassing rate limit for method={}", ip, method);
+                    return service.call(request).await;
+                }
+            }
             match limiters.check(&method, user.as_ref()) {
                 Ok(_) => service.call(request).await,
-                Err(e) => MethodResponse::error(request.id(), rate_limit_error(e))
-                    .with_extensions(request.extensions),
+                Err(e) => {
+                    warn!("Rate limited: method={}, user={:?}, reason={}", method, user, e);
+                    MethodResponse::error(request.id(), rate_limit_error(e))
+                        .with_extensions(request.extensions)
+                }
             }
         }
     }
@@ -134,11 +156,19 @@ where
         let user = user_from_extensions(notification.extensions());
         let service = self.service.clone();
         let limiters = self.limiters.clone();
+        let ip_whitelist = self.ip_whitelist.clone();
 
         async move {
+            if let Some(ref ip) = user {
+                if ip_whitelist.contains(ip) {
+                    debug!("IP {} is whitelisted, bypassing rate limit for notification={}", ip, method);
+                    return service.notification(notification).await;
+                }
+            }
             match limiters.check(&method, user.as_ref()) {
                 Ok(_) => service.notification(notification).await,
                 Err(e) => {
+                    warn!("Rate limited: notification={}, user={:?}, reason={}", method, user, e);
                     S::NotificationResponse::from_rate_limited(notification, rate_limit_error(e))
                 }
             }
@@ -152,20 +182,34 @@ where
                 Ok(BatchEntry::Call(req)) => {
                     let method = req.method_name().to_owned();
                     let user = user_from_extensions(req.extensions());
-                    match self.limiters.check(&method, user.as_ref()) {
-                        Ok(_) => entries.push(Ok(BatchEntry::Call(req))),
-                        Err(e) => {
-                            entries.push(Err(BatchEntryErr::new(req.id(), rate_limit_error(e))))
+                    let whitelisted = user.as_ref().map_or(false, |ip| self.ip_whitelist.contains(ip));
+                    if whitelisted {
+                        debug!("IP {:?} is whitelisted, bypassing rate limit for batch call={}", user, method);
+                        entries.push(Ok(BatchEntry::Call(req)));
+                    } else {
+                        match self.limiters.check(&method, user.as_ref()) {
+                            Ok(_) => entries.push(Ok(BatchEntry::Call(req))),
+                            Err(e) => {
+                                warn!("Rate limited: batch call={}, user={:?}, reason={}", method, user, e);
+                                entries.push(Err(BatchEntryErr::new(req.id(), rate_limit_error(e))))
+                            }
                         }
                     }
                 }
                 Ok(BatchEntry::Notification(n)) => {
                     let method = n.method_name().to_owned();
                     let user = user_from_extensions(n.extensions());
-                    match self.limiters.check(&method, user.as_ref()) {
-                        Ok(_) => entries.push(Ok(BatchEntry::Notification(n))),
-                        Err(e) => {
-                            entries.push(Err(BatchEntryErr::new(Id::Null, rate_limit_error(e))))
+                    let whitelisted = user.as_ref().map_or(false, |ip| self.ip_whitelist.contains(ip));
+                    if whitelisted {
+                        debug!("IP {:?} is whitelisted, bypassing rate limit for batch notification={}", user, method);
+                        entries.push(Ok(BatchEntry::Notification(n)));
+                    } else {
+                        match self.limiters.check(&method, user.as_ref()) {
+                            Ok(_) => entries.push(Ok(BatchEntry::Notification(n))),
+                            Err(e) => {
+                                warn!("Rate limited: batch notification={}, user={:?}, reason={}", method, user, e);
+                                entries.push(Err(BatchEntryErr::new(Id::Null, rate_limit_error(e))))
+                            }
                         }
                     }
                 }
@@ -244,6 +288,30 @@ mod tests {
         JsonApiRateLimitLayer::from_config(quotas).layer(service)
     }
 
+    fn test_middleware_with_whitelist(
+        method: &str,
+        whitelist: Vec<String>,
+    ) -> JsonApiRateLimitMiddleware<ObserveService> {
+        let service = ObserveService::default();
+        let quotas = ApiQuotaConfiguration {
+            custom_global_api_quota: Some(vec![(
+                method.to_owned(),
+                ApiQuotaConfig::from_str("1/s").expect("valid quota"),
+            )]),
+            ip_whitelist: Some(whitelist),
+            ..Default::default()
+        };
+        JsonApiRateLimitLayer::from_config(quotas).layer(service)
+    }
+
+    fn request_with_user<'a>(method: &'a str, user: &str) -> Request<'a> {
+        let mut req = Request::borrowed(method, None, Id::Number(1));
+        req.extensions_mut().insert(Metadata {
+            user: Some(user.to_string()),
+        });
+        req
+    }
+
     #[test]
     fn notification_should_be_rate_limited() {
         let middleware = test_middleware_for_method("state.get");
@@ -275,5 +343,60 @@ mod tests {
 
         let _ = futures::executor::block_on(middleware.batch(second_batch));
         assert_eq!(middleware.service.batch_errors.load(Ordering::Relaxed), 1);
+    }
+
+    #[test]
+    fn whitelisted_ip_bypasses_rate_limit() {
+        let middleware =
+            test_middleware_with_whitelist("state.get", vec!["10.0.0.1".to_string()]);
+
+        // First call consumes the quota
+        let req1 = request_with_user("state.get", "10.0.0.1");
+        let rsp1 = futures::executor::block_on(middleware.call(req1));
+        assert_ne!(rsp1.as_error_code(), Some(-10000));
+
+        // Second call should still succeed because 10.0.0.1 is whitelisted
+        let req2 = request_with_user("state.get", "10.0.0.1");
+        let rsp2 = futures::executor::block_on(middleware.call(req2));
+        assert_ne!(rsp2.as_error_code(), Some(-10000));
+    }
+
+    #[test]
+    fn non_whitelisted_ip_still_rate_limited() {
+        let middleware =
+            test_middleware_with_whitelist("state.get", vec!["10.0.0.1".to_string()]);
+
+        // First call from non-whitelisted IP
+        let req1 = request_with_user("state.get", "192.168.1.1");
+        let rsp1 = futures::executor::block_on(middleware.call(req1));
+        assert_ne!(rsp1.as_error_code(), Some(-10000));
+
+        // Second call should be rate limited
+        let req2 = request_with_user("state.get", "192.168.1.1");
+        let rsp2 = futures::executor::block_on(middleware.call(req2));
+        assert_eq!(rsp2.as_error_code(), Some(-10000));
+    }
+
+    #[test]
+    fn whitelisted_ip_bypasses_notification_rate_limit() {
+        let middleware =
+            test_middleware_with_whitelist("state.get", vec!["10.0.0.1".to_string()]);
+
+        let mut n1 = Notification::new(Cow::Borrowed("state.get"), None);
+        n1.extensions_mut().insert(Metadata {
+            user: Some("10.0.0.1".to_string()),
+        });
+        let mut n2 = Notification::new(Cow::Borrowed("state.get"), None);
+        n2.extensions_mut().insert(Metadata {
+            user: Some("10.0.0.1".to_string()),
+        });
+
+        let rsp1 = futures::executor::block_on(middleware.notification(n1));
+        let rsp2 = futures::executor::block_on(middleware.notification(n2));
+
+        // Both should succeed (whitelisted)
+        assert!(rsp1.is_notification());
+        assert!(rsp2.is_notification());
+        assert_eq!(middleware.service.notifications.load(Ordering::Relaxed), 2);
     }
 }

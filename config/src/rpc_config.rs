@@ -336,6 +336,15 @@ pub struct ApiQuotaConfiguration {
         value_parser = parse_key_val::<String, ApiQuotaConfig>,
     )]
     pub custom_user_api_quota: Option<Vec<(String, ApiQuotaConfig)>>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(
+        name = "jsonrpc-ratelimit-ip-whitelist",
+        long,
+        help = "IPs that bypass rate limiting, eg: 1.2.3.4,5.6.7.8",
+        use_value_delimiter = true
+    )]
+    pub ip_whitelist: Option<Vec<String>>,
 }
 
 impl ApiQuotaConfiguration {
@@ -365,6 +374,10 @@ impl ApiQuotaConfiguration {
         self.custom_user_api_quota.clone().unwrap_or_default()
     }
 
+    pub fn ip_whitelist(&self) -> Vec<String> {
+        self.ip_whitelist.clone().unwrap_or_default()
+    }
+
     pub fn merge(&mut self, o: &Self) -> Result<()> {
         if o.default_global_api_quota.is_some() {
             self.default_global_api_quota = o.default_global_api_quota.clone();
@@ -378,6 +391,16 @@ impl ApiQuotaConfiguration {
         }
         if o.custom_user_api_quota.is_some() {
             self.custom_user_api_quota = o.custom_user_api_quota.clone();
+        }
+        if o.ip_whitelist.is_some() {
+            let mut whitelist: HashSet<String> = self
+                .ip_whitelist
+                .clone()
+                .unwrap_or_default()
+                .into_iter()
+                .collect();
+            whitelist.extend(o.ip_whitelist.clone().unwrap_or_default());
+            self.ip_whitelist = Some(whitelist.into_iter().collect());
         }
         Ok(())
     }
