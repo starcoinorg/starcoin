@@ -64,7 +64,10 @@ where
             .trust_forwarded_ip_headers
             .then(|| extract_user_from_request(&request, &self.ip_headers))
             .flatten();
-        debug!("HTTP RPC metadata: user={:?}, trust_forwarded={}", user, self.trust_forwarded_ip_headers);
+        debug!(
+            "HTTP RPC metadata: user={:?}, trust_forwarded={}",
+            user, self.trust_forwarded_ip_headers
+        );
         request.extensions_mut().insert(Metadata { user });
 
         let fut = self.service.call(request);
