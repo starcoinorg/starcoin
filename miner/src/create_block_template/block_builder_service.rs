@@ -53,6 +53,8 @@ use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_types::U256;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 
+const EPHEMERAL_NONCE_CACHE_LIMIT: usize = 128;
+
 #[derive(Clone, Debug)]
 pub struct MinerResponse {
     pub previous_header: BlockHeader,
@@ -343,7 +345,7 @@ impl TemplateTxProvider for TxPoolService {
             state_root2,
             statedb,
             statedb2,
-            NonceCache::new(0),
+            NonceCache::new(EPHEMERAL_NONCE_CACHE_LIMIT),
             None,
         );
         self.inner

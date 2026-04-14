@@ -34,6 +34,8 @@ use starcoin_vm2_statedb::ChainStateDB;
 use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
 use std::sync::Arc;
 
+const EPHEMERAL_NONCE_CACHE_LIMIT: usize = 128;
+
 #[derive(Clone, Debug)]
 pub struct TxPoolService {
     pub inner: Inner,
@@ -190,7 +192,7 @@ impl TxPoolSyncService for TxPoolService {
             state_root2,
             self.inner.storage.clone(),
             self.inner.storage2.clone(),
-            NonceCache::new(0),
+            NonceCache::new(EPHEMERAL_NONCE_CACHE_LIMIT),
             self.inner.vm_metrics.clone(),
             self.inner.verifier_pool.clone(),
         );
@@ -506,7 +508,7 @@ impl Inner {
             state_root2,
             self.storage.clone(),
             self.storage2.clone(),
-            NonceCache::new(0),
+            NonceCache::new(EPHEMERAL_NONCE_CACHE_LIMIT),
             self.vm_metrics.clone(),
             self.verifier_pool.clone(),
         );
