@@ -9,9 +9,12 @@ use jsonrpsee::{
 };
 use starcoin_abi_decoder::DecodedMoveValue;
 use starcoin_abi_types::{FunctionABI, ModuleABI, StructInstantiation};
+use starcoin_rpc_schema_derive::rpc_schema;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
 use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
+
+#[rpc_schema]
 #[rpc(client, server, namespace = "contract", namespace_separator = ".")]
 pub trait ContractApi {
     /// get code of module

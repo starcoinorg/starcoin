@@ -13,6 +13,9 @@ use starcoin_types::sign_message::SigningMessage;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use starcoin_vm_types::token::token_code::TokenCode;
 
+use starcoin_rpc_schema_derive::rpc_schema;
+
+#[rpc_schema]
 #[rpc(client, server, namespace = "account", namespace_separator = ".")]
 pub trait AccountApi {
     /// Get default account

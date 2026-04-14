@@ -9,7 +9,10 @@ use jsonrpsee::{
 };
 use network_api::PeerStrategy;
 use network_p2p_types::peer_id::PeerId;
+use starcoin_rpc_schema_derive::rpc_schema;
 use starcoin_sync_api::{PeerScoreResponse, SyncProgressReport};
+
+#[rpc_schema]
 #[rpc(client, server, namespace = "sync", namespace_separator = ".")]
 pub trait SyncManagerApi {
     #[method(name = "status")]

@@ -492,6 +492,51 @@
                 }
               }
             },
+            "parallel": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "required": [
+                "total_synced_block_count",
+                "worker_count",
+                "workers"
+              ],
+              "properties": {
+                "total_synced_block_count": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "worker_count": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "workers": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "synced_block_count",
+                      "worker_id"
+                    ],
+                    "properties": {
+                      "synced_block_count": {
+                        "type": "integer",
+                        "format": "uint64",
+                        "minimum": 0.0
+                      },
+                      "worker_id": {
+                        "type": "integer",
+                        "format": "uint64",
+                        "minimum": 0.0
+                      }
+                    }
+                  }
+                }
+              }
+            },
             "target_difficulty": {
               "type": "string"
             },

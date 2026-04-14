@@ -7,7 +7,10 @@ use jsonrpsee::{
     Methods,
 };
 use starcoin_crypto::HashValue;
+use starcoin_rpc_schema_derive::rpc_schema;
 use starcoin_service_registry::{ServiceInfo, ServiceStatus};
+
+#[rpc_schema]
 #[rpc(client, server, namespace = "node_manager", namespace_separator = ".")]
 pub trait NodeManagerApi {
     #[method(name = "list_service")]

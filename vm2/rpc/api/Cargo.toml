@@ -1,3 +1,7 @@
+[[bin]]
+name = "starcoin-vm2-rpc-schema-generate"
+path = "src/generate_schema.rs"
+
 [package]
 name = "starcoin-vm2-rpc-api"
 authors.workspace = true
@@ -12,11 +16,15 @@ version.workspace = true
 [dependencies]
 anyhow = { workspace = true }
 bytes = { workspace = true }
+clap = { workspace = true, features = ["derive"] }
 futures = { workspace = true }
 jsonrpsee = { workspace = true, features = ["server", "async-client", "macros"] }
+openrpc-schema = { workspace = true }
 serde = { features = ["derive"], workspace = true }
+serde_json = { features = ["arbitrary_precision"], workspace = true }
 schemars = { workspace = true }
 
+starcoin-rpc-schema-derive = { workspace = true }
 starcoin-accumulator = { workspace = true }
 starcoin-vm1-types = { path = "../../../types" }
 starcoin-vm2-types = { workspace = true }

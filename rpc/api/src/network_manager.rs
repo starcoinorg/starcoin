@@ -10,6 +10,9 @@ use jsonrpsee::{
 use network_p2p_types::network_state::NetworkState;
 use network_p2p_types::peer_id::PeerId;
 use network_types::peer_info::Multiaddr;
+use starcoin_rpc_schema_derive::rpc_schema;
+
+#[rpc_schema]
 #[rpc(
     client,
     server,

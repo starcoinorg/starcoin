@@ -6,6 +6,7 @@ use jsonrpsee::{
     proc_macros::rpc,
     Methods,
 };
+use starcoin_rpc_schema_derive::rpc_schema;
 use starcoin_vm2_abi_decoder::DecodedMoveValue;
 use starcoin_vm2_abi_types::{FunctionABI, ModuleABI, StructInstantiation};
 use starcoin_vm2_types::view::{
@@ -17,6 +18,8 @@ use starcoin_vm2_vm_types::{
     language_storage::{ModuleId, StructTag},
     transaction::authenticator::AccountPublicKey,
 };
+
+#[rpc_schema]
 #[rpc(client, server, namespace = "contract2", namespace_separator = ".")]
 // copy from https://github.com/starcoinorg/starcoin/blob/bf5ec6e44a242e9dff5ac177c1565c64c6e4b0d0/rpc/api/src/contract_api.rs#L14 etc
 pub trait ContractApi {

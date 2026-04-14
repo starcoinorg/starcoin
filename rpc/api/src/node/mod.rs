@@ -40,6 +40,9 @@ impl NodeInfo {
         }
     }
 }
+use starcoin_rpc_schema_derive::rpc_schema;
+
+#[rpc_schema]
 #[rpc(client, server, namespace = "node", namespace_separator = ".")]
 pub trait NodeApi {
     /// Get node run status, just for api available check.

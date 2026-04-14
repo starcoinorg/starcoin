@@ -70,6 +70,7 @@ members = [
     "account/service",
     "account/provider",
     "rpc/api",
+    "rpc/schema-derive",
     "rpc/middleware",
     "rpc/client",
     "rpc/server",
@@ -447,6 +448,7 @@ num-traits = "0.2"
 num_cpus = "1.13"
 num_enum = "0.5.7"
 once_cell = "1.13.0"
+openrpc-schema = { git = "https://github.com/starcoinorg/openrpc-rs", rev = "ede68cb6bd9cee80225ac978a9b982c2c5617d0f" }
 ordinal = "0.4.0"
 parity-tokio-ipc = "0.9"
 parking_lot = "0.12.1"
@@ -539,6 +541,7 @@ starcoin-node-api = { path = "node/api" }
 starcoin-open-block = { path = "chain/open-block" }
 starcoin-resource-viewer = { path = "vm/resource-viewer" }
 starcoin-rpc-api = { path = "rpc/api" }
+starcoin-rpc-schema-derive = { path = "rpc/schema-derive" }
 starcoin-rpc-client = { path = "rpc/client" }
 starcoin-rpc-local = { path = "commons/rpc/local" }
 starcoin-rpc-middleware = { path = "rpc/middleware" }

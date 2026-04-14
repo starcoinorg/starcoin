@@ -23,6 +23,9 @@ use starcoin_vm2_vm_types::{
     state_store::{state_key::StateKey, table::TableHandle},
 };
 
+use starcoin_rpc_schema_derive::rpc_schema;
+
+#[rpc_schema]
 #[rpc(client, server, namespace = "state2", namespace_separator = ".")]
 pub trait StateApi {
     #[method(name = "get")]

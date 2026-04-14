@@ -25,6 +25,9 @@ use starcoin_vm2_types::view::{
 };
 use starcoin_vm_types::access_path::AccessPath;
 
+use starcoin_rpc_schema_derive::rpc_schema;
+
+#[rpc_schema]
 #[rpc(client, server, namespace = "chain", namespace_separator = ".")]
 pub trait ChainApi {
     #[method(name = "id")]

@@ -2834,6 +2834,20 @@
                 "default": false,
                 "type": "boolean"
               },
+              "primary_fungible_store": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "token_code": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              },
               "state_root": {
                 "default": null,
                 "type": [
@@ -2898,6 +2912,20 @@
                 "type": "integer",
                 "format": "uint",
                 "minimum": 0.0
+              },
+              "primary_fungible_store": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "token_code": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
               },
               "resource_types": {
                 "default": null,

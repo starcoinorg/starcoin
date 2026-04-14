@@ -9,6 +9,9 @@ use jsonrpsee::{
 use starcoin_logger::LogPattern;
 
 use crate::types::FactoryAction;
+use starcoin_rpc_schema_derive::rpc_schema;
+
+#[rpc_schema]
 #[rpc(client, server)]
 pub trait DebugApi {
     /// Update log level, if logger_name is none, update global log level.

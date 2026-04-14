@@ -7,7 +7,10 @@ use jsonrpsee::{
     proc_macros::rpc,
     Methods,
 };
+use starcoin_rpc_schema_derive::rpc_schema;
 use starcoin_types::system_events::MintBlockEvent;
+
+#[rpc_schema]
 #[rpc(client, server)]
 pub trait MinerApi {
     /// submit mining seal

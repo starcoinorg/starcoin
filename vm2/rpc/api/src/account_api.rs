@@ -15,6 +15,9 @@ use starcoin_vm2_types::{
 };
 use starcoin_vm2_vm_types::token::token_code::TokenCode;
 
+use starcoin_rpc_schema_derive::rpc_schema;
+
+#[rpc_schema]
 #[rpc(client, server, namespace = "account2", namespace_separator = ".")]
 pub trait AccountApi {
     /// Get default account

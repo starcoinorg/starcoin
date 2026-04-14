@@ -16,6 +16,9 @@ use starcoin_vm2_types::{
     transaction::SignedUserTransaction as SignedUserTransaction2,
 };
 
+use starcoin_rpc_schema_derive::rpc_schema;
+
+#[rpc_schema]
 #[rpc(client, server, namespace = "txpool", namespace_separator = ".")]
 pub trait TxPoolApi {
     #[method(name = "submit_transaction")]

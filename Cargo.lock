@@ -12679,6 +12679,7 @@ version = "2.1.1"
 dependencies = [
  "anyhow",
  "bcs-ext",
+ "clap 4.6.0",
  "futures",
  "hex",
  "jsonrpsee",
@@ -12686,6 +12687,7 @@ dependencies = [
  "network-api",
  "network-p2p-types",
  "network-types",
+ "openrpc-schema",
  "schemars",
  "serde 1.0.228",
  "serde_json",
@@ -12699,6 +12701,7 @@ dependencies = [
  "starcoin-dag",
  "starcoin-logger",
  "starcoin-resource-viewer",
+ "starcoin-rpc-schema-derive",
  "starcoin-service-registry",
  "starcoin-state-api",
  "starcoin-sync-api",
@@ -12810,6 +12813,15 @@ dependencies = [
  "starcoin-logger",
  "starcoin-metrics",
  "starcoin-rpc-api",
+]
+
+[[package]]
+name = "starcoin-rpc-schema-derive"
+version = "2.1.1"
+dependencies = [
+ "proc-macro2 1.0.106",
+ "quote 1.0.45",
+ "syn 2.0.117",
 ]
 
 [[package]]
@@ -13877,12 +13889,16 @@ version = "2.1.1"
 dependencies = [
  "anyhow",
  "bytes",
+ "clap 4.6.0",
  "futures",
  "jsonrpsee",
+ "openrpc-schema",
  "schemars",
  "serde 1.0.228",
+ "serde_json",
  "starcoin-accumulator",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=473da84802cdcddceeab4487b75977181a9e1fed)",
+ "starcoin-rpc-schema-derive",
  "starcoin-types",
  "starcoin-vm-types",
  "starcoin-vm1-types",
