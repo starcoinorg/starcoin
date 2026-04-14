@@ -253,9 +253,9 @@ impl EventHandler<Self, BlockTemplateRequest> for BlockBuilderService {
             .clone();
         let _ = self.receive_header();
         let callback = BlockBuilderTemplateNotify::new(miner_service, msg.event);
-        if let Err(e) = self
-            .inner
-            .create_block_template(header_version, Box::new(callback), self.bus.clone())
+        if let Err(e) =
+            self.inner
+                .create_block_template(header_version, Box::new(callback), self.bus.clone())
         {
             error!("Failed to create block template: {}", e);
         }
@@ -595,7 +595,10 @@ where
                 txn_hashes: blue_txn_hashes.into(),
             };
             if let Err(e) = bus.broadcast(event) {
-                error!("[BlockProcess] broadcast BlockTemplateBlueTxns failed: {:?}", e);
+                error!(
+                    "[BlockProcess] broadcast BlockTemplateBlueTxns failed: {:?}",
+                    e
+                );
             }
         }
         info!(

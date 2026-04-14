@@ -51,7 +51,14 @@ impl TxPoolService {
         chain_header: BlockHeader,
         vm_metrics: Option<VMMetrics>,
     ) -> Self {
-        Self::new_with_dag(node_config, storage, storage2, chain_header, None, vm_metrics)
+        Self::new_with_dag(
+            node_config,
+            storage,
+            storage2,
+            chain_header,
+            None,
+            vm_metrics,
+        )
     }
 
     pub fn new_with_dag(
@@ -534,8 +541,7 @@ impl Inner {
         );
         let mut results = self
             .queue
-            .next_sequence_number_in_batch(pool_client, addresses)
-            ?;
+            .next_sequence_number_in_batch(pool_client, addresses)?;
         if let Some(tips) = self.current_dag_tips() {
             for (address, queue_next) in &mut results {
                 let dag_tips_next = self.max_sequence_over_tips(*address, &tips);
@@ -668,7 +674,11 @@ impl Inner {
                 return None;
             }
         };
-        self.sequence_number_at_state_roots(address, multi_state.state_root1(), multi_state.state_root2())
+        self.sequence_number_at_state_roots(
+            address,
+            multi_state.state_root1(),
+            multi_state.state_root2(),
+        )
     }
 
     fn sequence_number_at_state_roots(

@@ -1020,7 +1020,9 @@ async fn induce_blue_dag_warmup(
         rounds, burst_size, break_interval_ms, round_wait_ms
     );
     for round in 0..rounds {
-        let tips_before = get_dag_tip_count(chain_reader_service.clone()).await.unwrap_or(0);
+        let tips_before = get_dag_tip_count(chain_reader_service.clone())
+            .await
+            .unwrap_or(0);
         for i in 0..burst_size {
             bus.broadcast(GenerateBlockEvent::new(true, true))?;
             if i + 1 < burst_size {
@@ -1028,7 +1030,9 @@ async fn induce_blue_dag_warmup(
             }
         }
         tokio::time::sleep(tokio::time::Duration::from_millis(round_wait_ms)).await;
-        let tips_after = get_dag_tip_count(chain_reader_service.clone()).await.unwrap_or(0);
+        let tips_after = get_dag_tip_count(chain_reader_service.clone())
+            .await
+            .unwrap_or(0);
         info!(
             "Blue DAG warmup round {}/{} finished: tips {} -> {}",
             round + 1,
@@ -2458,10 +2462,12 @@ impl ObserverService {
     }
 
     fn dump_results(&self) -> Result<()> {
-        let mining_target_ms = self
-            .config
-            .as_ref()
-            .map(|cfg| cfg.net().genesis_config2().consensus_config.base_block_time_target);
+        let mining_target_ms = self.config.as_ref().map(|cfg| {
+            cfg.net()
+                .genesis_config2()
+                .consensus_config
+                .base_block_time_target
+        });
         let dumper = ResultsDumper::with_mining_target(&self.transaction_data, mining_target_ms);
 
         // Calculate and log statistics
@@ -2532,12 +2538,9 @@ impl ActorService for ObserverService {
 impl EventHandler<Self, BlockTemplateBlueTxns> for ObserverService {
     fn handle_event(&mut self, msg: BlockTemplateBlueTxns, _ctx: &mut ServiceContext<Self>) {
         for txn_hash in msg.txn_hashes.iter() {
-            self.transaction_data
-                .entry(*txn_hash)
-                .or_default()
-                .push(TransactionExecutionResult::BlueTemplateSelected(
-                    msg.template_time_ms,
-                ));
+            self.transaction_data.entry(*txn_hash).or_default().push(
+                TransactionExecutionResult::BlueTemplateSelected(msg.template_time_ms),
+            );
         }
     }
 }

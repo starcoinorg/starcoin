@@ -261,7 +261,8 @@ impl std::fmt::Display for BenchmarkStats {
         )?;
         if let (Some(target_ms), Some(adjusted)) = (
             self.mining_target_ms,
-            self.txpool_to_final_executed_excluding_target_latency.as_ref(),
+            self.txpool_to_final_executed_excluding_target_latency
+                .as_ref(),
         ) {
             writeln!(
                 f,
@@ -376,8 +377,7 @@ impl<'a> ResultsDumper<'a> {
                 .collect();
             PhaseLatencyStats::from_samples(&adjusted)
         });
-        let mined_to_executed_latency =
-            PhaseLatencyStats::from_samples(&mined_to_executed_samples);
+        let mined_to_executed_latency = PhaseLatencyStats::from_samples(&mined_to_executed_samples);
         let txpool_to_final_executed_latency = PhaseLatencyStats::from_samples(&all_delays);
         let txpool_to_final_executed_excluding_target_latency = self.mining_target_ms.map(|v| {
             let target_ms = v as f64;
@@ -534,7 +534,12 @@ impl<'a> ResultsDumper<'a> {
                     TransactionExecutionResult::Mined(ts_ms, _block_number, block_id) => {
                         mined_infos.push((*ts_ms, *block_id));
                     }
-                    TransactionExecutionResult::Executed(ts_ms, _block_number, block_id, _block_ts) => {
+                    TransactionExecutionResult::Executed(
+                        ts_ms,
+                        _block_number,
+                        block_id,
+                        _block_ts,
+                    ) => {
                         executed_infos.push((*ts_ms, *block_id));
                     }
                     _ => {}
@@ -1051,10 +1056,7 @@ impl<'a> ResultsDumper<'a> {
         }
 
         let mut chart = ChartBuilder::on(area)
-            .caption(
-                "Txpool to Final Executed Latency",
-                ("sans-serif", 28),
-            )
+            .caption("Txpool to Final Executed Latency", ("sans-serif", 28))
             .margin(20)
             .x_label_area_size(120)
             .y_label_area_size(70)
