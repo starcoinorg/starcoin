@@ -18,9 +18,11 @@ use futures_channel::mpsc;
 use parking_lot::RwLock;
 use starcoin_config::NodeConfig;
 use starcoin_crypto::hash::HashValue;
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
-use starcoin_storage::Store;
-use starcoin_storage::Store2;
+use starcoin_state_api::AccountStateReader as AccountStateReader1;
+use starcoin_statedb::ChainStateDB as ChainStateDB1;
+use starcoin_storage::{Store, Store2};
 use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService, TxnStatusFullEvent};
 use starcoin_types::multi_transaction::{
     APIInterruptedError, MultiAccountAddress, MultiSignatureCheckedTransaction,
@@ -30,7 +32,8 @@ use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader},
 };
-use starcoin_vm2_statedb::ChainStateDB;
+use starcoin_vm2_state_api::AccountStateReader as AccountStateReader2;
+use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
 use std::sync::Arc;
 
@@ -46,6 +49,17 @@ impl TxPoolService {
         storage: Arc<dyn Store>,
         storage2: Arc<dyn Store2>,
         chain_header: BlockHeader,
+        vm_metrics: Option<VMMetrics>,
+    ) -> Self {
+        Self::new_with_dag(node_config, storage, storage2, chain_header, None, vm_metrics)
+    }
+
+    pub fn new_with_dag(
+        node_config: Arc<NodeConfig>,
+        storage: Arc<dyn Store>,
+        storage2: Arc<dyn Store2>,
+        chain_header: BlockHeader,
+        dag: Option<BlockDAG>,
         vm_metrics: Option<VMMetrics>,
     ) -> Self {
         let metrics = node_config
@@ -86,6 +100,7 @@ impl TxPoolService {
             storage,
             storage2,
             chain_header: Arc::new(RwLock::new(chain_header)),
+            dag,
             sequence_number_cache: NonceCache::new(128),
             metrics,
             vm_metrics,
@@ -361,6 +376,7 @@ pub struct Inner {
     chain_header: Arc<RwLock<BlockHeader>>,
     storage: Arc<dyn Store>,
     storage2: Arc<dyn Store2>,
+    dag: Option<BlockDAG>,
     sequence_number_cache: NonceCache,
     pub(crate) metrics: Option<TxPoolMetrics>,
     vm_metrics: Option<VMMetrics>,
@@ -392,11 +408,11 @@ impl Inner {
         }
     }
 
-    pub(crate) fn get_chain_reader(&self) -> Result<ChainStateDB> {
+    pub(crate) fn get_chain_reader(&self) -> Result<ChainStateDB2> {
         let multi_state = self
             .storage
             .get_vm_multi_state(self.chain_header.read().id())?;
-        Ok(ChainStateDB::new(
+        Ok(ChainStateDB2::new(
             self.storage2.clone().into_super_arc(),
             Some(multi_state.state_root2()),
         ))
@@ -483,7 +499,11 @@ impl Inner {
                 return None;
             }
         };
-        self.queue.next_sequence_number(client, &address)
+        let queue_next = self.queue.next_sequence_number(client, &address);
+        let dag_tips_next = self
+            .current_dag_tips()
+            .and_then(|tips| self.max_sequence_over_tips(address, &tips));
+        max_option(queue_next, dag_tips_next)
     }
 
     pub(crate) fn next_sequence_number_in_batch(
@@ -512,8 +532,17 @@ impl Inner {
             self.vm_metrics.clone(),
             self.verifier_pool.clone(),
         );
-        self.queue
+        let mut results = self
+            .queue
             .next_sequence_number_in_batch(pool_client, addresses)
+            ?;
+        if let Some(tips) = self.current_dag_tips() {
+            for (address, queue_next) in &mut results {
+                let dag_tips_next = self.max_sequence_over_tips(*address, &tips);
+                *queue_next = max_option(*queue_next, dag_tips_next);
+            }
+        }
+        Some(results)
     }
 
     pub(crate) fn subscribe_txns(&self) -> mpsc::UnboundedReceiver<TxnStatusFullEvent> {
@@ -588,5 +617,107 @@ impl Inner {
             self.vm_metrics.clone(),
             self.verifier_pool.clone(),
         ))
+    }
+
+    fn current_dag_tips(&self) -> Option<Vec<HashValue>> {
+        let dag = self.dag.as_ref()?;
+        let current_header = self.chain_header.read().clone();
+        let pruning_point = if current_header.pruning_point() == HashValue::zero() {
+            match self.storage.get_genesis() {
+                Ok(Some(genesis)) => genesis,
+                Ok(None) => {
+                    error!("failed to get dag state: missing genesis hash in storage");
+                    return None;
+                }
+                Err(e) => {
+                    error!("failed to get genesis hash in current_dag_tips: {}", e);
+                    return None;
+                }
+            }
+        } else {
+            current_header.pruning_point()
+        };
+        match dag.get_dag_state(pruning_point) {
+            Ok(state) => Some(state.tips),
+            Err(e) => {
+                error!(
+                    "failed to get dag state by pruning point {}: {}",
+                    pruning_point, e
+                );
+                None
+            }
+        }
+    }
+
+    fn max_sequence_over_tips(
+        &self,
+        address: MultiAccountAddress,
+        tips: &[HashValue],
+    ) -> Option<u64> {
+        tips.iter().copied().fold(None, |current_max, tip| {
+            let seq = self.sequence_number_at_tip(address, tip);
+            max_option(current_max, seq)
+        })
+    }
+
+    fn sequence_number_at_tip(&self, address: MultiAccountAddress, tip: HashValue) -> Option<u64> {
+        let multi_state = match self.storage.get_vm_multi_state(tip) {
+            Ok(state) => state,
+            Err(e) => {
+                error!("failed to get vm multi state at tip {}: {}", tip, e);
+                return None;
+            }
+        };
+        self.sequence_number_at_state_roots(address, multi_state.state_root1(), multi_state.state_root2())
+    }
+
+    fn sequence_number_at_state_roots(
+        &self,
+        address: MultiAccountAddress,
+        state_root1: HashValue,
+        state_root2: HashValue,
+    ) -> Option<u64> {
+        match address {
+            MultiAccountAddress::VM1(account_address) => {
+                let statedb1 =
+                    ChainStateDB1::new(self.storage.clone().into_super_arc(), Some(state_root1));
+                let reader1 = AccountStateReader1::new(&statedb1);
+                match reader1.get_account_resource(&account_address) {
+                    Ok(Some(resource)) => Some(resource.sequence_number()),
+                    Ok(None) => Some(0),
+                    Err(e) => {
+                        error!(
+                            "failed to read vm1 account resource {} at state root {}: {}",
+                            account_address, state_root1, e
+                        );
+                        None
+                    }
+                }
+            }
+            MultiAccountAddress::VM2(account_address) => {
+                let statedb2 =
+                    ChainStateDB2::new(self.storage2.clone().into_super_arc(), Some(state_root2));
+                let reader2 = AccountStateReader2::new(&statedb2);
+                match reader2.get_account_resource(&account_address) {
+                    Ok(resource) => Some(resource.sequence_number()),
+                    Err(e) => {
+                        error!(
+                            "failed to read vm2 account resource {} at state root {}: {}",
+                            account_address, state_root2, e
+                        );
+                        None
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn max_option(left: Option<u64>, right: Option<u64>) -> Option<u64> {
+    match (left, right) {
+        (Some(a), Some(b)) => Some(a.max(b)),
+        (Some(a), None) => Some(a),
+        (None, Some(b)) => Some(b),
+        (None, None) => None,
     }
 }
