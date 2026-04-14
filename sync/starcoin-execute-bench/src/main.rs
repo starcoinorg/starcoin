@@ -28,6 +28,7 @@ use starcoin_logger::{
 };
 use starcoin_node::NodeHandle;
 use starcoin_pipeline_timing::{clear_timing, disable_timing, enable_timing, global_collector};
+use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::{
     ActorService, EventHandler, RegistryAsyncService, ServiceContext, ServiceFactory, ServiceRef,
 };
@@ -41,7 +42,7 @@ use starcoin_types::{
     block::{Block, BlockHeader},
     genesis_config::ChainId,
     multi_transaction::MultiSignedUserTransaction,
-    system_events::{BlockTemplateBlueTxns, MinedBlock, NewHeadBlock},
+    system_events::{BlockTemplateBlueTxns, GenerateBlockEvent, MinedBlock, NewHeadBlock},
     transaction::StcTransactionInfo,
 };
 use starcoin_vm2_account_api::{
@@ -222,6 +223,34 @@ struct Cli {
                 Skips account creation, funding, settle delay, and signing (~37s savings)."
     )]
     load_bench_dir: Option<PathBuf>,
+
+    #[arg(
+        long = "blue-dag-warmup-rounds",
+        default_value = "0",
+        help = "Warmup rounds to induce multi-tip DAG forks before the benchmark loop (0 disables)."
+    )]
+    blue_dag_warmup_rounds: u32,
+
+    #[arg(
+        long = "blue-dag-burst-size",
+        default_value = "3",
+        help = "GenerateBlockEvent bursts per warmup round (break_current_task=true)."
+    )]
+    blue_dag_burst_size: u32,
+
+    #[arg(
+        long = "blue-dag-break-interval-ms",
+        default_value = "120",
+        help = "Interval in milliseconds between warmup burst events."
+    )]
+    blue_dag_break_interval_ms: u64,
+
+    #[arg(
+        long = "blue-dag-round-wait-ms",
+        default_value = "1500",
+        help = "Wait time in milliseconds after each warmup burst round for blocks/tips to settle."
+    )]
+    blue_dag_round_wait_ms: u64,
 }
 
 fn parse_network_choice(value: &str) -> Result<NetworkChoice, String> {
@@ -521,6 +550,10 @@ fn run_normal_bench(cli: &Cli) -> Result<()> {
         cli.preload_batches,
         cli.simple_transfer,
         cli.rounds,
+        cli.blue_dag_warmup_rounds,
+        cli.blue_dag_burst_size,
+        cli.blue_dag_break_interval_ms,
+        cli.blue_dag_round_wait_ms,
     ));
 
     run_post_benchmark(cli, node)?;
@@ -953,6 +986,58 @@ async fn get_balance(
     let statedb2 = ChainStateDB::new(storage2.clone(), Some(multi_state.state_root2()));
     let balance = statedb2.get_balance_by_type(address, G_STC_TOKEN_CODE.clone().try_into()?)?;
     Ok(balance)
+}
+
+async fn get_dag_tip_count(chain_reader_service: ServiceRef<ChainReaderService>) -> Result<usize> {
+    let dag_state = match chain_reader_service
+        .send(ChainRequest::GetDagStateView)
+        .await??
+    {
+        ChainResponse::DagStateView(state) => state,
+        _ => bail!("Unexpected response type when reading dag state"),
+    };
+    Ok(dag_state.tips.len())
+}
+
+async fn induce_blue_dag_warmup(
+    rounds: u32,
+    burst_size: u32,
+    break_interval_ms: u64,
+    round_wait_ms: u64,
+    bus: ServiceRef<BusService>,
+    chain_reader_service: ServiceRef<ChainReaderService>,
+) -> Result<()> {
+    if rounds == 0 {
+        return Ok(());
+    }
+    if burst_size == 0 {
+        info!("Skip blue DAG warmup because burst_size=0");
+        return Ok(());
+    }
+
+    info!(
+        "Blue DAG warmup start: rounds={}, burst_size={}, break_interval_ms={}, round_wait_ms={}",
+        rounds, burst_size, break_interval_ms, round_wait_ms
+    );
+    for round in 0..rounds {
+        let tips_before = get_dag_tip_count(chain_reader_service.clone()).await.unwrap_or(0);
+        for i in 0..burst_size {
+            bus.broadcast(GenerateBlockEvent::new(true, true))?;
+            if i + 1 < burst_size {
+                tokio::time::sleep(tokio::time::Duration::from_millis(break_interval_ms)).await;
+            }
+        }
+        tokio::time::sleep(tokio::time::Duration::from_millis(round_wait_ms)).await;
+        let tips_after = get_dag_tip_count(chain_reader_service.clone()).await.unwrap_or(0);
+        info!(
+            "Blue DAG warmup round {}/{} finished: tips {} -> {}",
+            round + 1,
+            rounds,
+            tips_before,
+            tips_after
+        );
+    }
+    Ok(())
 }
 
 async fn wait_for_sufficient_balance(
@@ -1412,6 +1497,10 @@ async fn execute_benchmark(
     _preload_batches: usize,
     simple_transfer: bool,
     rounds: usize,
+    blue_dag_warmup_rounds: u32,
+    blue_dag_burst_size: u32,
+    blue_dag_break_interval_ms: u64,
+    blue_dag_round_wait_ms: u64,
 ) -> Result<()> {
     let registry = node.registry();
     let storage1 = node.storage();
@@ -1424,6 +1513,7 @@ async fn execute_benchmark(
         let account_service = registry.service_ref::<AccountService2>().await?;
 
         let chain_reader_service = registry.service_ref::<ChainReaderService>().await?;
+        let bus = registry.service_ref::<BusService>().await?;
 
         wait_for_sufficient_balance(
             account_count,
@@ -1571,6 +1661,16 @@ async fn execute_benchmark(
             "Preloading complete: {} transactions in txpool",
             txn_hashes.len()
         );
+
+        induce_blue_dag_warmup(
+            blue_dag_warmup_rounds,
+            blue_dag_burst_size,
+            blue_dag_break_interval_ms,
+            blue_dag_round_wait_ms,
+            bus,
+            chain_reader_service.clone(),
+        )
+        .await?;
 
         // Wait for benchmark to complete:
         // 1. All batches have been sent, AND
