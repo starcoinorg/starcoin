@@ -847,3 +847,123 @@ impl SessionExt<'_, '_> {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::data_cache::AsMoveResolver;
+    use bytes::Bytes;
+    use move_core_types::{
+        identifier::Identifier,
+        language_storage::StructTag,
+        value::{MoveStructLayout, MoveTypeLayout},
+    };
+    use starcoin_vm_runtime_types::abstract_write_op::AbstractResourceWriteOp;
+    use starcoin_vm_types::state_store::{
+        in_memory_state_view::InMemoryStateView,
+        state_value::{StateValue, StateValueMetadata},
+    };
+    use std::{collections::HashMap, sync::Arc};
+
+    fn delayed_layout() -> Arc<MoveTypeLayout> {
+        Arc::new(MoveTypeLayout::Struct(MoveStructLayout::Runtime(vec![
+            MoveTypeLayout::U64,
+            MoveTypeLayout::Native(
+                move_core_types::value::IdentifierMappingKind::Aggregator,
+                Box::new(MoveTypeLayout::U64),
+            ),
+        ])))
+    }
+
+    #[test]
+    fn convert_change_set_produces_in_place_write_for_delayed_read_only_key() {
+        let key = StateKey::raw(b"delayed-read-only-key");
+        let state_view = InMemoryStateView::new(HashMap::new());
+        let resolver = state_view.as_move_resolver();
+        let woc = WriteOpConverter::new(&resolver, false);
+
+        let aggregator_change_set = AggregatorChangeSet {
+            aggregator_v1_changes: BTreeMap::new(),
+            delayed_field_changes: BTreeMap::new(),
+            reads_needing_exchange: BTreeMap::from([(
+                key.clone(),
+                (StateValueMetadata::none(), 16, delayed_layout()),
+            )]),
+            group_reads_needing_exchange: BTreeMap::new(),
+        };
+
+        let (change_set, _) = SessionExt::convert_change_set(
+            &woc,
+            ChangeSet::new(),
+            ResourceGroupChangeSet::V1(BTreeMap::new()),
+            vec![],
+            TableChangeSet::default(),
+            aggregator_change_set,
+            false,
+        )
+        .expect("convert_change_set should succeed");
+
+        assert!(matches!(
+            change_set.resource_write_set().get(&key),
+            Some(AbstractResourceWriteOp::InPlaceDelayedFieldChange(_))
+        ));
+    }
+
+    #[test]
+    fn convert_change_set_filters_in_place_when_same_key_has_resource_write() {
+        let addr = AccountAddress::ONE;
+        let tag = StructTag {
+            address: addr,
+            module: Identifier::new("DelayedOnly").unwrap(),
+            name: Identifier::new("SameTxn").unwrap(),
+            type_args: vec![],
+        };
+        let key = resource_state_key(&addr, &tag).unwrap();
+
+        let mut state_data = HashMap::new();
+        state_data.insert(key.clone(), StateValue::new_legacy(Bytes::from(vec![9u8])));
+        let state_view = InMemoryStateView::new(state_data);
+        let resolver = state_view.as_move_resolver();
+        let woc = WriteOpConverter::new(&resolver, false);
+
+        let mut change_set = ChangeSet::new();
+        change_set
+            .add_account_changeset(
+                addr,
+                AccountChangeSet::from_modules_resources(
+                    BTreeMap::new(),
+                    BTreeMap::from([(
+                        tag,
+                        MoveStorageOp::Modify((Bytes::from(vec![1u8, 2u8]), None)),
+                    )]),
+                ),
+            )
+            .expect("add account changeset should succeed");
+
+        let aggregator_change_set = AggregatorChangeSet {
+            aggregator_v1_changes: BTreeMap::new(),
+            delayed_field_changes: BTreeMap::new(),
+            reads_needing_exchange: BTreeMap::from([(
+                key.clone(),
+                (StateValueMetadata::none(), 16, delayed_layout()),
+            )]),
+            group_reads_needing_exchange: BTreeMap::new(),
+        };
+
+        let (converted, _) = SessionExt::convert_change_set(
+            &woc,
+            change_set,
+            ResourceGroupChangeSet::V1(BTreeMap::new()),
+            vec![],
+            TableChangeSet::default(),
+            aggregator_change_set,
+            false,
+        )
+        .expect("convert_change_set should succeed");
+
+        assert!(!matches!(
+            converted.resource_write_set().get(&key),
+            Some(AbstractResourceWriteOp::InPlaceDelayedFieldChange(_))
+        ));
+    }
+}
