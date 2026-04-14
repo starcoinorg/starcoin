@@ -1080,10 +1080,18 @@ where
                         let timestamp = block.header().timestamp();
 
                         let block_info = if self.chain.has_dag_block(block.header().id())? {
-                            match block_info {
-                                Some(block_info) => Some(block_info),
-                                None => self.local_store.get_block_info(block.id())?,
-                            }
+                            Some(match block_info {
+                                Some(block_info) => block_info,
+                                None => self
+                                    .local_store
+                                    .get_block_info(block.id())?
+                                    .ok_or_else(|| {
+                                        format_err!(
+                                            "block info should exist for already-connected dag block: {}",
+                                            block.id()
+                                        )
+                                    })?,
+                            })
                         } else {
                             None
                         };
