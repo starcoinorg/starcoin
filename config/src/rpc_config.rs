@@ -341,7 +341,7 @@ pub struct ApiQuotaConfiguration {
     #[clap(
         name = "jsonrpc-ratelimit-ip-whitelist",
         long,
-        help = "IPs that bypass rate limiting, eg: 1.2.3.4,5.6.7.8",
+        help = "IPs that bypass rate limiting (requires --http-trust-forwarded-ip-headers to identify callers); eg: 1.2.3.4,5.6.7.8",
         use_value_delimiter = true
     )]
     pub ip_whitelist: Option<Vec<String>>,
@@ -393,14 +393,7 @@ impl ApiQuotaConfiguration {
             self.custom_user_api_quota = o.custom_user_api_quota.clone();
         }
         if o.ip_whitelist.is_some() {
-            let mut whitelist: HashSet<String> = self
-                .ip_whitelist
-                .clone()
-                .unwrap_or_default()
-                .into_iter()
-                .collect();
-            whitelist.extend(o.ip_whitelist.clone().unwrap_or_default());
-            self.ip_whitelist = Some(whitelist.into_iter().collect());
+            self.ip_whitelist = o.ip_whitelist.clone();
         }
         Ok(())
     }
