@@ -4,7 +4,7 @@
 use anyhow::Result;
 use clap::Parser;
 use rand::distr::Alphanumeric;
-use rand::Rng;
+use rand::RngExt;
 use scmd::{CmdContext, CommandAction, CustomCommand, ExecContext};
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};

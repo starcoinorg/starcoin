@@ -52,6 +52,7 @@ use proptest_derive::Arbitrary;
 use rand::distr::Distribution;
 use rand::seq::IndexedRandom;
 use rand::Rng;
+use rand::RngExt;
 use schemars::{self, JsonSchema};
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};

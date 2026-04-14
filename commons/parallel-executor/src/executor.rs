@@ -14,7 +14,7 @@ use crate::{
 use move_vm_types::delayed_values::delayed_field_id::DelayedFieldID;
 use num_cpus;
 use once_cell::sync::Lazy;
-use rand::Rng;
+use rand::RngExt;
 use starcoin_aggregator::types::{DelayedFieldsSpeculativeError, PanicOr};
 use starcoin_infallible::Mutex;
 use starcoin_logger::prelude::{error, info};

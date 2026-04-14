@@ -9,7 +9,7 @@ use anyhow::{ensure, Error, Result};
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
 #[cfg(any(test, feature = "fuzzing"))]
-use rand::Rng;
+use rand::RngExt;
 use schemars::{self, JsonSchema};
 use serde::{de, ser, Deserialize, Serialize};
 use std::str::FromStr;

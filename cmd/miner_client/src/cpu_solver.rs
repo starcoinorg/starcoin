@@ -3,7 +3,7 @@ use futures::executor::block_on;
 use futures::{SinkExt, StreamExt};
 use futures_channel::mpsc;
 use futures_channel::mpsc::{unbounded, TryRecvError, UnboundedSender};
-use rand::Rng;
+use rand::RngExt;
 use starcoin_config::{MinerClientConfig, TimeService};
 use starcoin_consensus::{difficult_to_target, Consensus};
 use starcoin_logger::prelude::*;

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::Account;
-use rand::Rng;
+use rand::RngExt;
 use starcoin_config::ChainNetwork;
 use starcoin_transaction_builder::{
     create_signed_txn_with_association_account, DEFAULT_MAX_GAS_AMOUNT,
