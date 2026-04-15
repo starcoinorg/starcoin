@@ -373,6 +373,7 @@ pub struct Inner<P> {
     #[allow(unused)]
     metrics: Option<BlockBuilderMetrics>,
     vm_metrics: Option<VMMetrics>,
+    template_create_count: u64,
 }
 
 impl<P> Inner<P>
@@ -406,15 +407,16 @@ where
             metrics,
             vm_metrics,
             genesis_hash,
+            template_create_count: 0,
         })
     }
 
     fn resolve_block_parents(&mut self) -> Result<(MinerResponse, BlockChain)> {
-        let MineNewDagBlockInfo {
-            selected_parents,
-            ghostdata,
-            pruning_point,
-        } = {
+        let (mut selected_parents, mut ghostdata, mut pruning_point): (
+            Vec<HashValue>,
+            GhostdagData,
+            HashValue,
+        ) = {
             // get the current pruning point and the current dag state, which contains the tip blocks, some of which may be the selected parents
             let pruning_point = if self.main.pruning_point() == HashValue::zero() {
                 self.genesis_hash
@@ -462,12 +464,52 @@ where
 
             self.update_main_chain(ghostdata.selected_parent)?;
 
-            MineNewDagBlockInfo {
-                selected_parents,
-                ghostdata,
-                pruning_point,
-            }
+            (selected_parents, ghostdata, pruning_point)
         };
+
+        let parent_parent_interval = self.config.miner.template_parent_parent_interval();
+        self.template_create_count = self.template_create_count.saturating_add(1);
+        if parent_parent_interval > 0 && self.template_create_count % parent_parent_interval == 0 {
+            let selected_parent = ghostdata.selected_parent;
+            let selected_parent_header = self
+                .storage
+                .get_block_header_by_hash(selected_parent)?
+                .ok_or_else(|| {
+                    format_err!("BlockHeader should exist by hash: {}", selected_parent)
+                })?;
+            let parent_of_selected = selected_parent_header.parent_hash();
+            if parent_of_selected != HashValue::zero() {
+                selected_parents = vec![parent_of_selected];
+                ghostdata = self.dag.ghostdata(&selected_parents)?;
+                self.update_main_chain(ghostdata.selected_parent)?;
+                let forced_parent_header = self
+                    .storage
+                    .get_block_header_by_hash(ghostdata.selected_parent)?
+                    .ok_or_else(|| {
+                        format_err!(
+                            "BlockHeader should exist by hash: {}",
+                            ghostdata.selected_parent
+                        )
+                    })?;
+                pruning_point = if forced_parent_header.pruning_point() == HashValue::zero() {
+                    self.genesis_hash
+                } else {
+                    forced_parent_header.pruning_point()
+                };
+                info!(
+                    "[CreateBlockTemplate] force parent-parent mode: interval={}, template_count={}, selected_parent {} -> {}",
+                    parent_parent_interval,
+                    self.template_create_count,
+                    selected_parent,
+                    ghostdata.selected_parent
+                );
+            } else {
+                info!(
+                    "[CreateBlockTemplate] skip parent-parent forcing at template_count={} because selected_parent={} has zero parent",
+                    self.template_create_count, selected_parent
+                );
+            }
+        }
 
         let selected_parent = ghostdata.selected_parent;
 

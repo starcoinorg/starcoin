@@ -259,6 +259,13 @@ struct Cli {
         help = "Approx target blue-block count (estimated as max(tips-1, 0)) to stop warmup early."
     )]
     blue_dag_target_blue_blocks: u32,
+
+    #[arg(
+        long = "blue-dag-parent-parent-interval",
+        default_value = "0",
+        help = "Force miner create_block_template to use selected_parent's parent every N templates (0 disables)."
+    )]
+    blue_dag_parent_parent_interval: u64,
 }
 
 fn parse_network_choice(value: &str) -> Result<NetworkChoice, String> {
@@ -427,6 +434,7 @@ fn build_node_config(
     init_opt
         .txpool
         .set_max_per_sender(txpool_max_per_sender_for_bench);
+    init_opt.miner.template_parent_parent_interval = Some(cli.blue_dag_parent_parent_interval);
     init_opt.txpool.set_max_count(txpool_max_count);
     init_opt.genesis_config = genesis_config.clone();
     init_opt.network.disable_seed = true; // Single-node benchmark, no peers needed
@@ -440,6 +448,7 @@ fn build_node_config(
     global_opt
         .txpool
         .set_max_per_sender(txpool_max_per_sender_for_bench);
+    global_opt.miner.template_parent_parent_interval = Some(cli.blue_dag_parent_parent_interval);
     global_opt.txpool.set_max_count(txpool_max_count);
     global_opt.genesis_config = genesis_config;
     global_opt.network.disable_seed = true;
