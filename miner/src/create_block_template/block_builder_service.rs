@@ -631,17 +631,16 @@ where
                     .map(|txn| HashValue::new(txn.id().to_inner())),
             )
             .collect();
-        if !blue_txn_hashes.is_empty() {
-            let event = BlockTemplateBlueTxns {
-                template_time_ms: now_millis,
-                txn_hashes: blue_txn_hashes.into(),
-            };
-            if let Err(e) = bus.broadcast(event) {
-                error!(
-                    "[BlockProcess] broadcast BlockTemplateBlueTxns failed: {:?}",
-                    e
-                );
-            }
+        let event = BlockTemplateBlueTxns {
+            template_time_ms: now_millis,
+            blue_block_count: blue_blocks.len() as u32,
+            txn_hashes: blue_txn_hashes.into(),
+        };
+        if let Err(e) = bus.broadcast(event) {
+            error!(
+                "[BlockProcess] broadcast BlockTemplateBlueTxns failed: {:?}",
+                e
+            );
         }
         info!(
             "[BlockProcess] Blue VM1 txns len: {}, Blue VM2 txns len: {}",

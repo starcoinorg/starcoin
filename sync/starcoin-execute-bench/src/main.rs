@@ -2338,6 +2338,7 @@ fn sign_and_import_transactions_sync(
 
 struct ObserverService {
     transaction_data: HashMap<HashValue, Vec<TransactionExecutionResult>>,
+    blue_block_counts: Vec<u32>,
     storage1: Arc<Storage>,
     benchmark_state: Option<Arc<BenchmarkState>>,
     account_service: Option<ServiceRef<AccountService2>>,
@@ -2349,6 +2350,7 @@ impl ObserverService {
     fn new(storage1: Arc<Storage>) -> Result<Self> {
         Ok(Self {
             transaction_data: HashMap::new(),
+            blue_block_counts: Vec::new(),
             storage1,
             benchmark_state: None,
             account_service: None,
@@ -2498,7 +2500,11 @@ impl ObserverService {
                 .consensus_config
                 .base_block_time_target
         });
-        let dumper = ResultsDumper::with_mining_target(&self.transaction_data, mining_target_ms);
+        let dumper = ResultsDumper::with_mining_target(
+            &self.transaction_data,
+            &self.blue_block_counts,
+            mining_target_ms,
+        );
 
         // Calculate and log statistics
         let stats = dumper.calculate_stats();
@@ -2567,6 +2573,7 @@ impl ActorService for ObserverService {
 
 impl EventHandler<Self, BlockTemplateBlueTxns> for ObserverService {
     fn handle_event(&mut self, msg: BlockTemplateBlueTxns, _ctx: &mut ServiceContext<Self>) {
+        self.blue_block_counts.push(msg.blue_block_count);
         for txn_hash in msg.txn_hashes.iter() {
             self.transaction_data.entry(*txn_hash).or_default().push(
                 TransactionExecutionResult::BlueTemplateSelected(msg.template_time_ms),

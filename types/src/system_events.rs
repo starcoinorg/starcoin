@@ -36,6 +36,7 @@ pub struct MinedBlock(pub Arc<Block>);
 #[derive(Clone, Debug)]
 pub struct BlockTemplateBlueTxns {
     pub template_time_ms: u64,
+    pub blue_block_count: u32,
     pub txn_hashes: Arc<[HashValue]>,
 }
 

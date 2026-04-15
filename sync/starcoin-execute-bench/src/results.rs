@@ -185,6 +185,12 @@ pub struct BenchmarkStats {
     pub blue_template_final_executed_count: usize,
     pub blue_template_duplicate_exec_count: usize,
     pub blue_template_final_latency: PhaseLatencyStats,
+    pub blue_block_count_samples: usize,
+    pub blue_block_count_non_zero_samples: usize,
+    pub blue_block_count_min: f64,
+    pub blue_block_count_max: f64,
+    pub blue_block_count_avg: f64,
+    pub blue_block_count_median: f64,
     pub min_latency_ms: f64,
     pub max_latency_ms: f64,
     pub avg_latency_ms: f64,
@@ -291,6 +297,20 @@ impl std::fmt::Display for BenchmarkStats {
             self.blue_template_final_latency.avg_ms,
             self.blue_template_final_latency.median_ms
         )?;
+        writeln!(
+            f,
+            "Blue Blocks (from create_block_template) - Samples: {} | NonZero: {}",
+            self.blue_block_count_samples, self.blue_block_count_non_zero_samples
+        )?;
+        writeln!(
+            f,
+            "Blue Block Count Per Template (n={}) - Min: {:.2} | Max: {:.2} | Avg: {:.2} | Median: {:.2}",
+            self.blue_block_count_samples,
+            self.blue_block_count_min,
+            self.blue_block_count_max,
+            self.blue_block_count_avg,
+            self.blue_block_count_median
+        )?;
         writeln!(f, "========================================")?;
         Ok(())
     }
@@ -321,16 +341,19 @@ pub struct TopLatencyBlock {
 
 pub struct ResultsDumper<'a> {
     transaction_data: &'a HashMap<HashValue, Vec<TransactionExecutionResult>>,
+    blue_block_counts: &'a [u32],
     mining_target_ms: Option<u64>,
 }
 
 impl<'a> ResultsDumper<'a> {
     pub fn with_mining_target(
         transaction_data: &'a HashMap<HashValue, Vec<TransactionExecutionResult>>,
+        blue_block_counts: &'a [u32],
         mining_target_ms: Option<u64>,
     ) -> Self {
         Self {
             transaction_data,
+            blue_block_counts,
             mining_target_ms,
         }
     }
@@ -393,6 +416,14 @@ impl<'a> ResultsDumper<'a> {
             blue_template_duplicate_exec_count,
             blue_template_final_latency,
         ) = self.collect_blue_template_stats();
+        let (
+            blue_block_count_samples,
+            blue_block_count_non_zero_samples,
+            blue_block_count_min,
+            blue_block_count_max,
+            blue_block_count_avg,
+            blue_block_count_median,
+        ) = self.collect_blue_block_count_stats();
 
         // Calculate TPS based on executed times (OLD - affected by event queue delays)
         let tps = self.calculate_tps_from_executed();
@@ -453,6 +484,12 @@ impl<'a> ResultsDumper<'a> {
             blue_template_final_executed_count,
             blue_template_duplicate_exec_count,
             blue_template_final_latency,
+            blue_block_count_samples,
+            blue_block_count_non_zero_samples,
+            blue_block_count_min,
+            blue_block_count_max,
+            blue_block_count_avg,
+            blue_block_count_median,
             min_latency_ms: txpool_to_final_executed_latency.min_ms,
             max_latency_ms: txpool_to_final_executed_latency.max_ms,
             avg_latency_ms: txpool_to_final_executed_latency.avg_ms,
@@ -514,6 +551,20 @@ impl<'a> ResultsDumper<'a> {
             final_executed_count,
             duplicate_exec_count,
             PhaseLatencyStats::from_samples(&latencies),
+        )
+    }
+
+    fn collect_blue_block_count_stats(&self) -> (usize, usize, f64, f64, f64, f64) {
+        let samples: Vec<f64> = self.blue_block_counts.iter().map(|v| *v as f64).collect();
+        let non_zero_samples = self.blue_block_counts.iter().filter(|v| **v > 0).count();
+        let (min, max, avg, median) = calculate_statistics(&samples);
+        (
+            self.blue_block_counts.len(),
+            non_zero_samples,
+            min,
+            max,
+            avg,
+            median,
         )
     }
 
