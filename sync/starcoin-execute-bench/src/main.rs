@@ -1231,7 +1231,7 @@ impl BenchmarkState {
         // 1) no larger than account count
         // 2) even number so sender/receiver split has equal length
         let mut effective_batch_user_count = batch_user_count.min(accounts.len());
-        if effective_batch_user_count % 2 != 0 {
+        if !effective_batch_user_count.is_multiple_of(2) {
             effective_batch_user_count -= 1;
         }
         if effective_batch_user_count != batch_user_count {

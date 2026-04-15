@@ -46,7 +46,7 @@ fn calculate_statistics(values: &[f64]) -> (f64, f64, f64, f64) {
 
     let mut sorted = values.to_vec();
     sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-    let median = if sorted.len() % 2 == 0 {
+    let median = if sorted.len().is_multiple_of(2) {
         (sorted[sorted.len() / 2 - 1] + sorted[sorted.len() / 2]) / 2.0
     } else {
         sorted[sorted.len() / 2]
@@ -948,7 +948,7 @@ impl<'a> ResultsDumper<'a> {
         let median_txn_count = if !txn_counts.is_empty() {
             let mut sorted = txn_counts.clone();
             sorted.sort();
-            if sorted.len() % 2 == 0 {
+            if sorted.len().is_multiple_of(2) {
                 (sorted[sorted.len() / 2 - 1] + sorted[sorted.len() / 2]) as f64 / 2.0
             } else {
                 sorted[sorted.len() / 2] as f64
