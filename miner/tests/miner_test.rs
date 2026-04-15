@@ -507,7 +507,7 @@ pub fn test_open_block_and_execute() -> Result<()> {
     let registry = RegistryService::launch();
     let bus = futures::executor::block_on(async { registry.service_ref::<BusService>().await })?;
 
-    create_block_template_service.create_block_template(1, Box::new(callback), bus)?;
+    create_block_template_service.create_block_template(1, Box::new(callback), bus, false)?;
 
     if let Err(e) = receiver.recv_timeout(std::time::Duration::from_secs(10))? {
         bail!("failed to create and execute a block for: {:?}", e);
@@ -640,7 +640,7 @@ pub fn test_block_template_filters_txpool_after_blue() -> Result<()> {
     let registry = RegistryService::launch();
     let bus = futures::executor::block_on(async { registry.service_ref::<BusService>().await })?;
 
-    create_block_template_service.create_block_template(1, Box::new(callback), bus)?;
+    create_block_template_service.create_block_template(1, Box::new(callback), bus, false)?;
 
     if let Err(e) = receiver.recv_timeout(Duration::from_secs(10))? {
         bail!("failed to create block template: {:?}", e);

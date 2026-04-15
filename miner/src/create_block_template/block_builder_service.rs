@@ -252,11 +252,17 @@ impl EventHandler<Self, BlockTemplateRequest> for BlockBuilderService {
             .expect("MinerService should exist")
             .clone();
         let _ = self.receive_header();
+        // Parent-parent forcing is only for explicit synthetic fork/warmup events.
+        // Pacemaker's regular break events (`new_break(true)`) should not trigger it.
+        let allow_parent_parent_force =
+            msg.event.break_current_task && msg.event.skip_empty_block_check;
         let callback = BlockBuilderTemplateNotify::new(miner_service, msg.event);
-        if let Err(e) =
-            self.inner
-                .create_block_template(header_version, Box::new(callback), self.bus.clone())
-        {
+        if let Err(e) = self.inner.create_block_template(
+            header_version,
+            Box::new(callback),
+            self.bus.clone(),
+            allow_parent_parent_force,
+        ) {
             error!("Failed to create block template: {}", e);
         }
     }
@@ -374,6 +380,7 @@ pub struct Inner<P> {
     metrics: Option<BlockBuilderMetrics>,
     vm_metrics: Option<VMMetrics>,
     template_create_count: u64,
+    templates_since_last_forced_parent_parent: u64,
 }
 
 impl<P> Inner<P>
@@ -408,10 +415,14 @@ where
             vm_metrics,
             genesis_hash,
             template_create_count: 0,
+            templates_since_last_forced_parent_parent: 0,
         })
     }
 
-    fn resolve_block_parents(&mut self) -> Result<(MinerResponse, BlockChain)> {
+    fn resolve_block_parents(
+        &mut self,
+        allow_parent_parent_force: bool,
+    ) -> Result<(MinerResponse, BlockChain)> {
         let (mut selected_parents, mut ghostdata, mut pruning_point): (
             Vec<HashValue>,
             GhostdagData,
@@ -469,7 +480,11 @@ where
 
         let parent_parent_interval = self.config.miner.template_parent_parent_interval();
         self.template_create_count = self.template_create_count.saturating_add(1);
-        if parent_parent_interval > 0 && self.template_create_count % parent_parent_interval == 0 {
+        let mut forced_parent_parent_applied = false;
+        let should_try_parent_parent_force = allow_parent_parent_force
+            && parent_parent_interval > 0
+            && self.templates_since_last_forced_parent_parent >= parent_parent_interval;
+        if should_try_parent_parent_force {
             let selected_parent = ghostdata.selected_parent;
             let selected_parent_header = self
                 .storage
@@ -494,6 +509,7 @@ where
                     selected_parents = vec![parent_of_selected];
                     ghostdata = self.dag.ghostdata(&selected_parents)?;
                     self.update_main_chain(ghostdata.selected_parent)?;
+                    forced_parent_parent_applied = true;
                     let forced_parent_header = self
                         .storage
                         .get_block_header_by_hash(ghostdata.selected_parent)?
@@ -525,6 +541,15 @@ where
                     parent_has_ghostdata
                 );
                 }
+            }
+        }
+        if allow_parent_parent_force && parent_parent_interval > 0 {
+            if forced_parent_parent_applied {
+                self.templates_since_last_forced_parent_parent = 0;
+            } else {
+                self.templates_since_last_forced_parent_parent = self
+                    .templates_since_last_forced_parent_parent
+                    .saturating_add(1);
             }
         }
 
@@ -571,6 +596,7 @@ where
         version: Version,
         mut block_template_call_back: Box<dyn BlockTemplateCallBack + Send + Sync>,
         bus: ServiceRef<BusService>,
+        allow_parent_parent_force: bool,
         // miner_service: Option<ServiceRef<MinerService>>,
         // event: Option<GenerateBlockEvent>,
     ) -> Result<()> {
@@ -587,7 +613,7 @@ where
                 max_transaction_per_block,
             },
             main,
-        ) = self.resolve_block_parents()?;
+        ) = self.resolve_block_parents(allow_parent_parent_force)?;
 
         let block_gas_limit = self
             .local_block_gas_limit
