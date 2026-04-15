@@ -26,6 +26,7 @@ use starcoin_logger::{
     prelude::{error, info, warn, LevelFilter},
     LoggerHandle,
 };
+use starcoin_miner::MinerService;
 use starcoin_node::NodeHandle;
 use starcoin_pipeline_timing::{clear_timing, disable_timing, enable_timing, global_collector};
 use starcoin_service_registry::bus::{Bus, BusService};
@@ -1013,7 +1014,7 @@ async fn induce_blue_dag_warmup(
     break_interval_ms: u64,
     round_wait_ms: u64,
     target_blue_blocks: u32,
-    bus: ServiceRef<BusService>,
+    miner_service: ServiceRef<MinerService>,
     chain_reader_service: ServiceRef<ChainReaderService>,
 ) -> Result<()> {
     if rounds == 0 {
@@ -1033,7 +1034,7 @@ async fn induce_blue_dag_warmup(
             .await
             .unwrap_or(0);
         for i in 0..burst_size {
-            bus.broadcast(GenerateBlockEvent::new(true, true))?;
+            miner_service.notify(GenerateBlockEvent::new(true, true))?;
             if i + 1 < burst_size {
                 tokio::time::sleep(tokio::time::Duration::from_millis(break_interval_ms)).await;
             }
@@ -1536,7 +1537,7 @@ async fn execute_benchmark(
         let account_service = registry.service_ref::<AccountService2>().await?;
 
         let chain_reader_service = registry.service_ref::<ChainReaderService>().await?;
-        let bus = registry.service_ref::<BusService>().await?;
+        let miner_service = registry.service_ref::<MinerService>().await?;
 
         wait_for_sufficient_balance(
             account_count,
@@ -1691,7 +1692,7 @@ async fn execute_benchmark(
             blue_dag_break_interval_ms,
             blue_dag_round_wait_ms,
             blue_dag_target_blue_blocks,
-            bus,
+            miner_service,
             chain_reader_service.clone(),
         )
         .await?;
