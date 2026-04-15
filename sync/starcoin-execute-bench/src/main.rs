@@ -251,6 +251,13 @@ struct Cli {
         help = "Wait time in milliseconds after each warmup burst round for blocks/tips to settle."
     )]
     blue_dag_round_wait_ms: u64,
+
+    #[arg(
+        long = "blue-dag-target-blue-blocks",
+        default_value = "0",
+        help = "Approx target blue-block count (estimated as max(tips-1, 0)) to stop warmup early."
+    )]
+    blue_dag_target_blue_blocks: u32,
 }
 
 fn parse_network_choice(value: &str) -> Result<NetworkChoice, String> {
@@ -554,6 +561,7 @@ fn run_normal_bench(cli: &Cli) -> Result<()> {
         cli.blue_dag_burst_size,
         cli.blue_dag_break_interval_ms,
         cli.blue_dag_round_wait_ms,
+        cli.blue_dag_target_blue_blocks,
     ));
 
     run_post_benchmark(cli, node)?;
@@ -1004,6 +1012,7 @@ async fn induce_blue_dag_warmup(
     burst_size: u32,
     break_interval_ms: u64,
     round_wait_ms: u64,
+    target_blue_blocks: u32,
     bus: ServiceRef<BusService>,
     chain_reader_service: ServiceRef<ChainReaderService>,
 ) -> Result<()> {
@@ -1016,8 +1025,8 @@ async fn induce_blue_dag_warmup(
     }
 
     info!(
-        "Blue DAG warmup start: rounds={}, burst_size={}, break_interval_ms={}, round_wait_ms={}",
-        rounds, burst_size, break_interval_ms, round_wait_ms
+        "Blue DAG warmup start: rounds={}, burst_size={}, break_interval_ms={}, round_wait_ms={}, target_blue_blocks={}",
+        rounds, burst_size, break_interval_ms, round_wait_ms, target_blue_blocks
     );
     for round in 0..rounds {
         let tips_before = get_dag_tip_count(chain_reader_service.clone())
@@ -1033,13 +1042,22 @@ async fn induce_blue_dag_warmup(
         let tips_after = get_dag_tip_count(chain_reader_service.clone())
             .await
             .unwrap_or(0);
+        let estimated_blue_blocks = tips_after.saturating_sub(1) as u32;
         info!(
-            "Blue DAG warmup round {}/{} finished: tips {} -> {}",
+            "Blue DAG warmup round {}/{} finished: tips {} -> {}, estimated_blue_blocks={}",
             round + 1,
             rounds,
             tips_before,
-            tips_after
+            tips_after,
+            estimated_blue_blocks
         );
+        if target_blue_blocks > 0 && estimated_blue_blocks >= target_blue_blocks {
+            info!(
+                "Blue DAG warmup reached target: estimated_blue_blocks={} >= target={}",
+                estimated_blue_blocks, target_blue_blocks
+            );
+            break;
+        }
     }
     Ok(())
 }
@@ -1505,6 +1523,7 @@ async fn execute_benchmark(
     blue_dag_burst_size: u32,
     blue_dag_break_interval_ms: u64,
     blue_dag_round_wait_ms: u64,
+    blue_dag_target_blue_blocks: u32,
 ) -> Result<()> {
     let registry = node.registry();
     let storage1 = node.storage();
@@ -1671,6 +1690,7 @@ async fn execute_benchmark(
             blue_dag_burst_size,
             blue_dag_break_interval_ms,
             blue_dag_round_wait_ms,
+            blue_dag_target_blue_blocks,
             bus,
             chain_reader_service.clone(),
         )
