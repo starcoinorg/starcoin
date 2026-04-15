@@ -20,6 +20,7 @@ starcoin-config = { workspace = true }
 starcoin-executor = { workspace = true }
 starcoin-metrics = { workspace = true }
 starcoin-open-block = { workspace = true }
+starcoin-pipeline-timing = { workspace = true }
 starcoin-service-registry = { workspace = true }
 starcoin-state-api = { workspace = true }
 starcoin-storage = { workspace = true }

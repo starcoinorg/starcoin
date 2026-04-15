@@ -48,3 +48,12 @@ build/
 mold
 .claude/*
 .direnv/
+# TPS Benchmark outputs
+.benchmark_history/
+.optimization_knowledge/
+.optimization_data/
+agent_output.json
+benchmark_results.json
+benchmark_results.svg
+bench_output.log
+transaction_results.txt

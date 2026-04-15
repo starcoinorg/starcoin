@@ -1597,6 +1597,7 @@ dependencies = [
  "iana-time-zone",
  "js-sys",
  "num-traits 0.2.19",
+ "serde 1.0.228",
  "wasm-bindgen",
  "windows-link",
 ]
@@ -11305,6 +11306,7 @@ dependencies = [
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-open-block",
+ "starcoin-pipeline-timing",
  "starcoin-service-registry",
  "starcoin-state-api",
  "starcoin-statedb",
@@ -11778,6 +11780,8 @@ dependencies = [
  "futures",
  "num_cpus",
  "plotters",
+ "serde 1.0.228",
+ "serde_json",
  "starcoin-chain-api",
  "starcoin-chain-service",
  "starcoin-config",
@@ -11786,6 +11790,7 @@ dependencies = [
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-node",
+ "starcoin-pipeline-timing",
  "starcoin-service-registry",
  "starcoin-storage",
  "starcoin-transaction-builder",
@@ -11801,6 +11806,7 @@ dependencies = [
  "tempfile",
  "test-helper",
  "tokio",
+ "uuid",
 ]
 
 [[package]]
@@ -12235,6 +12241,7 @@ dependencies = [
  "starcoin-network-rpc-api",
  "starcoin-node",
  "starcoin-open-block",
+ "starcoin-pipeline-timing",
  "starcoin-service-registry",
  "starcoin-state-api",
  "starcoin-state-service",
@@ -12687,6 +12694,17 @@ dependencies = [
  "starcoin-infallible",
  "starcoin-logger",
  "starcoin-mvhashmap",
+]
+
+[[package]]
+name = "starcoin-pipeline-timing"
+version = "0.1.0"
+dependencies = [
+ "once_cell",
+ "parking_lot 0.12.5",
+ "serde 1.0.228",
+ "serde_json",
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=3993e99d8458887a044145d710440d93f82019ca)",
 ]
 
 [[package]]
@@ -13401,6 +13419,7 @@ dependencies = [
  "starcoin-logger",
  "starcoin-metrics",
  "starcoin-open-block",
+ "starcoin-pipeline-timing",
  "starcoin-service-registry",
  "starcoin-state-api",
  "starcoin-state-tree",
