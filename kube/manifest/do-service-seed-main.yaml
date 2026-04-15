@@ -203,91 +203,96 @@ spec:
     statefulset.kubernetes.io/pod-name: starcoin-4
   type: LoadBalancer
 
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+        service.beta.kubernetes.io/do-loadbalancer-protocol: "tcp"
+        service.beta.kubernetes.io/do-loadbalancer-healthcheck-protocol: "tcp"
+        service.beta.kubernetes.io/do-loadbalancer-healthcheck-port: "9840"
+  labels:
+    app: starcoin
+    network: main
+    statefulset.kubernetes.io/pod-name: starcoin-5
+  name: starcoin-5
+  namespace: starcoin-main
+spec:
+  ports:
+    - port: 9840
+      name: node
+      protocol: TCP
+      targetPort: 9840
+    - port: 9850
+      name: http-rpc
+      protocol: TCP
+      targetPort: 9850
+    - port: 9860
+      name: tcp-rpc
+      protocol: TCP
+      targetPort: 9860
+    - port: 9870
+      name: ws-rpc
+      protocol: TCP
+      targetPort: 9870
+    - port: 9101
+      name: metrics
+      protocol: TCP
+      targetPort: 9101
+  selector:
+    app: starcoin
+    network: main
+    statefulset.kubernetes.io/pod-name: starcoin-5
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    service.beta.kubernetes.io/do-loadbalancer-protocol: "tcp"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-protocol: "tcp"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-port: "9840"
+  labels:
+    app: starcoin
+    network: main
+    statefulset.kubernetes.io/pod-name: starcoin-6
+  name: starcoin-6
+  namespace: starcoin-main
+spec:
+  ports:
+    - port: 9840
+      name: node
+      protocol: TCP
+      targetPort: 9840
+    - port: 9850
+      name: http-rpc
+      protocol: TCP
+      targetPort: 9850
+    - port: 9860
+      name: tcp-rpc
+      protocol: TCP
+      targetPort: 9860
+    - port: 9870
+      name: ws-rpc
+      protocol: TCP
+      targetPort: 9870
+    - port: 9101
+      name: metrics
+      protocol: TCP
+      targetPort: 9101
+  selector:
+    app: starcoin
+    network: main
+    statefulset.kubernetes.io/pod-name: starcoin-6
+  type: LoadBalancer
 # ---
 # apiVersion: v1
 # kind: Service
 # metadata:
 #   annotations:
 #     service.beta.kubernetes.io/do-loadbalancer-protocol: "tcp"
-#   labels:
-#     app: starcoin
-#     network: main
-#     statefulset.kubernetes.io/pod-name: starcoin-5
-#   name: starcoin-5
-#   namespace: starcoin-main
-# spec:
-#   ports:
-#     - port: 9840
-#       name: node
-#       protocol: TCP
-#       targetPort: 9840
-#     - port: 9850
-#       name: http-rpc
-#       protocol: TCP
-#       targetPort: 9850
-#     - port: 9860
-#       name: tcp-rpc
-#       protocol: TCP
-#       targetPort: 9860
-#     - port: 9870
-#       name: ws-rpc
-#       protocol: TCP
-#       targetPort: 9870
-#     - port: 9101
-#       name: metrics
-#       protocol: TCP
-#       targetPort: 9101
-#   selector:
-#     app: starcoin
-#     network: main
-#     statefulset.kubernetes.io/pod-name: starcoin-5
-#   type: LoadBalancer
-
-# ---
-# apiVersion: v1
-# kind: Service
-# metadata:
-#   annotations:
-#     service.beta.kubernetes.io/do-loadbalancer-protocol: "tcp"
-#   labels:
-#     app: starcoin
-#     network: main
-#     statefulset.kubernetes.io/pod-name: starcoin-6
-#   name: starcoin-6
-#   namespace: starcoin-main
-# spec:
-#   ports:
-#     - port: 9840
-#       name: node
-#       protocol: TCP
-#       targetPort: 9840
-#     - port: 9850
-#       name: http-rpc
-#       protocol: TCP
-#       targetPort: 9850
-#     - port: 9860
-#       name: tcp-rpc
-#       protocol: TCP
-#       targetPort: 9860
-#     - port: 9870
-#       name: ws-rpc
-#       protocol: TCP
-#       targetPort: 9870
-#     - port: 9101
-#       name: metrics
-#       protocol: TCP
-#       targetPort: 9101
-#   selector:
-#     app: starcoin
-#     network: main
-#     statefulset.kubernetes.io/pod-name: starcoin-6
-#   type: LoadBalancer
-# ---
-# apiVersion: v1
-# kind: Service
-# metadata:
-#   annotations:
-#     service.beta.kubernetes.io/do-loadbalancer-protocol: "tcp"
+#     service.beta.kubernetes.io/do-loadbalancer-healthcheck-protocol: "tcp"
+#     service.beta.kubernetes.io/do-loadbalancer-healthcheck-port: "9840"
 #   labels:
 #     app: starcoin
 #     network: main
