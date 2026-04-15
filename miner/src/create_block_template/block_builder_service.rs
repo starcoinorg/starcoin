@@ -477,37 +477,54 @@ where
                 .ok_or_else(|| {
                     format_err!("BlockHeader should exist by hash: {}", selected_parent)
                 })?;
-            let parent_of_selected = selected_parent_header.parent_hash();
-            if parent_of_selected != HashValue::zero() {
-                selected_parents = vec![parent_of_selected];
-                ghostdata = self.dag.ghostdata(&selected_parents)?;
-                self.update_main_chain(ghostdata.selected_parent)?;
-                let forced_parent_header = self
-                    .storage
-                    .get_block_header_by_hash(ghostdata.selected_parent)?
-                    .ok_or_else(|| {
-                        format_err!(
-                            "BlockHeader should exist by hash: {}",
-                            ghostdata.selected_parent
-                        )
-                    })?;
-                pruning_point = if forced_parent_header.pruning_point() == HashValue::zero() {
-                    self.genesis_hash
-                } else {
-                    forced_parent_header.pruning_point()
-                };
+            if selected_parent_header.number() == 0 {
                 info!(
+                    "[CreateBlockTemplate] skip parent-parent forcing at template_count={} because selected_parent={} is genesis",
+                    self.template_create_count, selected_parent
+                );
+            } else {
+                let parent_of_selected = selected_parent_header.parent_hash();
+                let parent_header = self.storage.get_block_header_by_hash(parent_of_selected)?;
+                let parent_has_ghostdata =
+                    self.dag.ghostdata_by_hash(parent_of_selected)?.is_some();
+                if parent_of_selected != HashValue::zero()
+                    && parent_header.is_some()
+                    && parent_has_ghostdata
+                {
+                    selected_parents = vec![parent_of_selected];
+                    ghostdata = self.dag.ghostdata(&selected_parents)?;
+                    self.update_main_chain(ghostdata.selected_parent)?;
+                    let forced_parent_header = self
+                        .storage
+                        .get_block_header_by_hash(ghostdata.selected_parent)?
+                        .ok_or_else(|| {
+                            format_err!(
+                                "BlockHeader should exist by hash: {}",
+                                ghostdata.selected_parent
+                            )
+                        })?;
+                    pruning_point = if forced_parent_header.pruning_point() == HashValue::zero() {
+                        self.genesis_hash
+                    } else {
+                        forced_parent_header.pruning_point()
+                    };
+                    info!(
                     "[CreateBlockTemplate] force parent-parent mode: interval={}, template_count={}, selected_parent {} -> {}",
                     parent_parent_interval,
                     self.template_create_count,
                     selected_parent,
                     ghostdata.selected_parent
                 );
-            } else {
-                info!(
-                    "[CreateBlockTemplate] skip parent-parent forcing at template_count={} because selected_parent={} has zero parent",
-                    self.template_create_count, selected_parent
+                } else {
+                    info!(
+                    "[CreateBlockTemplate] skip parent-parent forcing at template_count={} because selected_parent={} parent={} is invalid for forcing (exists={}, has_ghostdata={})",
+                    self.template_create_count,
+                    selected_parent,
+                    parent_of_selected,
+                    parent_header.is_some(),
+                    parent_has_ghostdata
                 );
+                }
             }
         }
 
