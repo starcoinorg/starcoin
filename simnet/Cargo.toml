@@ -11,12 +11,17 @@ version.workspace = true
 
 [dependencies]
 anyhow.workspace = true
+clap = { workspace = true, features = ["derive"] }
 rand_chacha = "0.10"
 starcoin-crypto = { workspace = true }
 starcoin-dag = { workspace = true }
 starcoin-time-service = { workspace = true }
 starcoin-types = { workspace = true }
 tempfile.workspace = true
+
+[[bin]]
+name = "sweep_dag_params"
+path = "src/bin/sweep_dag_params.rs"
 
 [dev-dependencies]
 proptest = "1.11"

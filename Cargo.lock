@@ -10842,6 +10842,7 @@ name = "simnet"
 version = "2.1.1"
 dependencies = [
  "anyhow",
+ "clap 4.6.0",
  "proptest",
  "rand_chacha 0.10.0",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=3993e99d8458887a044145d710440d93f82019ca)",

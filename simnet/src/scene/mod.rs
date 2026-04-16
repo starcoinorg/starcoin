@@ -663,9 +663,10 @@ impl<'a> TopologyAudit<'a> {
     }
 }
 
+pub mod harness;
+pub mod sweep;
+
 #[cfg(test)]
 mod basic;
 #[cfg(test)]
 mod common_prefix;
-#[cfg(test)]
-mod harness;

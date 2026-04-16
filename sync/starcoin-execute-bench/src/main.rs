@@ -222,6 +222,39 @@ struct Cli {
                 Skips account creation, funding, settle delay, and signing (~37s savings)."
     )]
     load_bench_dir: Option<PathBuf>,
+
+    // --- DAG parameter overrides (Layer 1 sweep) ---
+
+    #[arg(
+        long = "override-block-time",
+        help = "Override base_block_time_target in genesis ConsensusConfig (milliseconds). \
+                Also adjusts min/max_block_time_target to [value, value*2]."
+    )]
+    override_block_time: Option<u64>,
+
+    #[arg(
+        long = "override-max-txn",
+        help = "Override max_transaction_per_block in genesis ConsensusConfig."
+    )]
+    override_max_txn: Option<u64>,
+
+    #[arg(
+        long = "override-gas-limit",
+        help = "Override base_block_gas_limit in genesis ConsensusConfig."
+    )]
+    override_gas_limit: Option<u64>,
+
+    #[arg(
+        long = "override-k",
+        help = "Override base_max_uncles_per_block (GhostDAG K) in genesis ConsensusConfig."
+    )]
+    override_k: Option<u64>,
+
+    #[arg(
+        long = "override-max-parents",
+        help = "Override maximum_parents_count for the miner. Must be <= K."
+    )]
+    override_max_parents: Option<usize>,
 }
 
 fn parse_network_choice(value: &str) -> Result<NetworkChoice, String> {
@@ -393,6 +426,9 @@ fn build_node_config(
     init_opt.txpool.set_max_count(txpool_max_count);
     init_opt.genesis_config = genesis_config.clone();
     init_opt.network.disable_seed = true; // Single-node benchmark, no peers needed
+    if let Some(max_parents) = cli.override_max_parents {
+        init_opt.miner.maximum_parents_count = Some(max_parents);
+    }
     BaseConfig::load_with_opt(&init_opt)?;
 
     let mut global_opt = StarcoinOpt {
@@ -406,6 +442,9 @@ fn build_node_config(
     global_opt.txpool.set_max_count(txpool_max_count);
     global_opt.genesis_config = genesis_config;
     global_opt.network.disable_seed = true;
+    if let Some(max_parents) = cli.override_max_parents {
+        global_opt.miner.maximum_parents_count = Some(max_parents);
+    }
 
     Ok(Arc::new(NodeConfig::load_with_opt(&global_opt)?))
 }
@@ -478,6 +517,7 @@ fn run_normal_bench(cli: &Cli) -> Result<()> {
         Some(prepare_custom_genesis_template(
             &base_dir,
             cli.custom_template,
+            cli,
         )?)
     } else {
         None
@@ -548,6 +588,7 @@ fn run_prepare_bench(cli: &Cli, prepare_dir: &Path) -> Result<()> {
         Some(prepare_custom_genesis_template(
             &chain_data_dir,
             cli.custom_template,
+            cli,
         )?)
     } else {
         None
@@ -679,6 +720,7 @@ fn run_load_bench(cli: &Cli, load_dir: &Path) -> Result<()> {
             Some(prepare_custom_genesis_template(
                 &temp_chain_dir,
                 cli.custom_template,
+                cli,
             )?)
         }
     } else {
@@ -799,6 +841,7 @@ fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<()> {
 fn prepare_custom_genesis_template(
     base_dir: &Path,
     template: CustomGenesisTemplate,
+    cli: &Cli,
 ) -> Result<String> {
     use starcoin_config::genesis_config::vm2;
 
@@ -815,6 +858,26 @@ fn prepare_custom_genesis_template(
     // from dev template so the benchmark can batch-fund test accounts.
     genesis_config.association_key_pair = G_DEV_CONFIG.association_key_pair.clone();
     genesis_config2.association_key_pair = vm2::G_DEV_CONFIG.association_key_pair.clone();
+
+    // Apply DAG parameter overrides (Layer 1 sweep)
+    if let Some(bt) = cli.override_block_time {
+        genesis_config2.consensus_config.base_block_time_target = bt;
+        genesis_config2.consensus_config.min_block_time_target = bt;
+        genesis_config2.consensus_config.max_block_time_target = bt * 2;
+        println!("[Benchmark] Override block_time_target={bt}ms (min={bt}, max={})", bt * 2);
+    }
+    if let Some(max_txn) = cli.override_max_txn {
+        genesis_config2.consensus_config.max_transaction_per_block = max_txn;
+        println!("[Benchmark] Override max_transaction_per_block={max_txn}");
+    }
+    if let Some(gas_limit) = cli.override_gas_limit {
+        genesis_config2.consensus_config.base_block_gas_limit = gas_limit;
+        println!("[Benchmark] Override base_block_gas_limit={gas_limit}");
+    }
+    if let Some(k) = cli.override_k {
+        genesis_config2.consensus_config.base_max_uncles_per_block = k;
+        println!("[Benchmark] Override K (base_max_uncles_per_block)={k}");
+    }
 
     let genesis_path = base_dir.join(format!("bench-custom-template-{}.json", template.as_str()));
     let genesis_path2 = PathBuf::from(format!("{}.2", genesis_path.display()));
