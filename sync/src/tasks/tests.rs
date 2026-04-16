@@ -1361,7 +1361,7 @@ impl BlockIdRangeFetcher for SequenceRangeLocateFetcher {
         _peer: Option<PeerId>,
         start_id: HashValue,
         end_id: Option<HashValue>,
-    ) -> BoxFuture<Result<RangeInLocation>> {
+    ) -> BoxFuture<'_, Result<RangeInLocation>> {
         let responses = self.responses.clone();
         async move {
             let mut guard = responses
