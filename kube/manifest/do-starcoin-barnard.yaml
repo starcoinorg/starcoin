@@ -65,10 +65,10 @@ spec:
           livenessProbe:
             tcpSocket:
               port: 9840
-            initialDelaySeconds: 600
-            periodSeconds: 5
+            initialDelaySeconds: 1500
+            periodSeconds: 10
             timeoutSeconds: 2
-            failureThreshold: 3
+            failureThreshold: 6
             successThreshold: 1
           readinessProbe:
             exec:
@@ -77,8 +77,8 @@ spec:
                 - -c
                 - >-
                   /starcoin/starcoin -n barnard -d /sc-data node sync status|grep Synchronized
-            initialDelaySeconds: 600
-            periodSeconds: 5
+            initialDelaySeconds: 1500
+            periodSeconds: 30
             timeoutSeconds: 2
             failureThreshold: 3
             successThreshold: 1
@@ -90,7 +90,7 @@ spec:
         accessModes: [ "ReadWriteOnce" ]
         resources:
           requests:
-            storage: 600Gi
+            storage: 700Gi
         storageClassName: do-block-storage
         dataSource:
           apiGroup: snapshot.storage.k8s.io
