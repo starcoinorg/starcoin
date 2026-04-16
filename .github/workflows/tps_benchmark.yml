@@ -68,7 +68,7 @@ jobs:
     name: TPS Benchmark
     needs: choose-runner
     runs-on: ${{ fromJSON(needs.choose-runner.outputs.runs_on_json) }}
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       # ── 1. Checkout current branch ──
       - name: Checkout current branch
