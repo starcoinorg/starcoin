@@ -157,6 +157,7 @@ pub struct PoolClient {
     state_root1: HashValue,
     state_root2: HashValue,
     nonce_client: CachedSeqNumberClient,
+    nonce_overrides: Option<Arc<HashMap<MultiAccountAddress, u64>>>,
     vm_metrics: Option<VMMetrics>,
     verifier_pool: Option<Arc<VerifierPool>>,
 }
@@ -184,6 +185,7 @@ impl PoolClient {
             state_root1,
             state_root2,
             nonce_client,
+            nonce_overrides: None,
             vm_metrics,
             verifier_pool,
         }
@@ -202,15 +204,32 @@ impl PoolClient {
             state_root1,
             state_root2,
             nonce_client,
+            nonce_overrides: None,
             vm_metrics,
             verifier_pool: None,
         }
+    }
+
+    pub fn with_nonce_overrides(
+        mut self,
+        nonce_overrides: HashMap<MultiAccountAddress, u64>,
+    ) -> Self {
+        if !nonce_overrides.is_empty() {
+            self.nonce_overrides = Some(Arc::new(nonce_overrides));
+        }
+        self
     }
 }
 
 impl crate::pool::AccountSeqNumberClient for PoolClient {
     fn account_seq_number(&self, address: &MultiAccountAddress) -> u64 {
-        self.nonce_client.account_seq_number(address)
+        let base = self.nonce_client.account_seq_number(address);
+        if let Some(overrides) = &self.nonce_overrides {
+            if let Some(override_nonce) = overrides.get(address) {
+                return base.max(*override_nonce);
+            }
+        }
+        base
     }
 }
 

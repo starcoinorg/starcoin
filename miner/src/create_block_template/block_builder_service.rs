@@ -837,35 +837,9 @@ where
                 let state_root1 = statedb.state_root();
                 let state_root2 = statedb2.state_root();
                 let current_timestamp_secs = now_millis / 1000;
-                let pending_multi_transactions = tx_provider.get_pending_with_state_dbs(
-                    remaining_max,
-                    current_timestamp_secs,
-                    state_root1,
-                    state_root2,
-                    statedb,
-                    statedb2,
-                );
-                for txn in pending_multi_transactions {
-                    match txn {
-                        MultiSignedUserTransaction::VM1(txn) => {
-                            if vm1_offline {
-                                continue;
-                            }
-                            if seen_hashes.insert(txn.id()) {
-                                pending_transactions.push(txn);
-                            }
-                        }
-                        MultiSignedUserTransaction::VM2(txn) => {
-                            let hash = HashValue::new(txn.id().to_inner());
-                            if seen_hashes.insert(hash) {
-                                pending_transactions2.push(txn);
-                            }
-                        }
-                    }
-                }
-
-                // Supplement candidates from other legal parent branches (if any).
-                // These parents are already validated by DAG parent selection logic.
+                // Step 1: pull from legal non-selected parents first.
+                // This prioritizes direct cross-branch inclusion from txpool before
+                // regular selected-parent pending fetch.
                 if !legal_alternative_pending_parents.is_empty() {
                     let parent_count = legal_alternative_pending_parents.len() as u64;
                     let per_parent_limit = ((remaining_max + parent_count - 1) / parent_count)
@@ -935,6 +909,39 @@ where
                             "[BlockProcess] Supplement from legal parent {}: accepted VM1={}, VM2={}",
                             parent_id, accepted_vm1, accepted_vm2
                         );
+                    }
+                }
+
+                // Step 2: fill remaining capacity from selected-parent view.
+                let selected_remaining = remaining_max.saturating_sub(
+                    (pending_transactions.len() + pending_transactions2.len()) as u64,
+                );
+                if selected_remaining > 0 {
+                    let pending_multi_transactions = tx_provider.get_pending_with_state_dbs(
+                        selected_remaining,
+                        current_timestamp_secs,
+                        state_root1,
+                        state_root2,
+                        statedb,
+                        statedb2,
+                    );
+                    for txn in pending_multi_transactions {
+                        match txn {
+                            MultiSignedUserTransaction::VM1(txn) => {
+                                if vm1_offline {
+                                    continue;
+                                }
+                                if seen_hashes.insert(txn.id()) {
+                                    pending_transactions.push(txn);
+                                }
+                            }
+                            MultiSignedUserTransaction::VM2(txn) => {
+                                let hash = HashValue::new(txn.id().to_inner());
+                                if seen_hashes.insert(hash) {
+                                    pending_transactions2.push(txn);
+                                }
+                            }
+                        }
                     }
                 }
             }

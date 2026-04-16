@@ -35,7 +35,10 @@ use starcoin_types::{
 use starcoin_vm2_state_api::AccountStateReader as AccountStateReader2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
-use std::sync::Arc;
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 const EPHEMERAL_NONCE_CACHE_LIMIT: usize = 128;
 
@@ -441,12 +444,15 @@ impl Inner {
         bypass_vm1_limit: bool,
         peer_id: Option<String>,
     ) -> Result<Vec<Result<(), MultiTransactionError>>> {
+        let senders: HashSet<MultiAccountAddress> = txns.iter().map(|txn| txn.sender()).collect();
+        let nonce_overrides = self.nonce_overrides_for_senders(&senders);
         let txns = txns
             .into_iter()
             .map(|t| PoolTransaction::Unverified(UnverifiedUserTransaction::from(t)));
-        Ok(self
-            .queue
-            .import(self.get_pool_client()?, txns, bypass_vm1_limit, peer_id))
+        let client = self
+            .get_pool_client()?
+            .with_nonce_overrides(nonce_overrides);
+        Ok(self.queue.import(client, txns, bypass_vm1_limit, peer_id))
     }
     pub(crate) fn remove_txn(
         &self,
@@ -623,6 +629,22 @@ impl Inner {
             self.vm_metrics.clone(),
             self.verifier_pool.clone(),
         ))
+    }
+
+    fn nonce_overrides_for_senders(
+        &self,
+        senders: &HashSet<MultiAccountAddress>,
+    ) -> HashMap<MultiAccountAddress, u64> {
+        let Some(tips) = self.current_dag_tips() else {
+            return HashMap::new();
+        };
+        senders
+            .iter()
+            .filter_map(|sender| {
+                self.max_sequence_over_tips(*sender, &tips)
+                    .map(|seq| (*sender, seq))
+            })
+            .collect()
     }
 
     fn current_dag_tips(&self) -> Option<Vec<HashValue>> {

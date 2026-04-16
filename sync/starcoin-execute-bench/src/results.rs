@@ -241,6 +241,9 @@ pub struct BenchmarkStats {
     pub legal_parent_supp_candidate_per_template_p95: f64,
     pub legal_parent_supp_candidate_per_non_zero_parent_template_p50: f64,
     pub legal_parent_supp_candidate_per_non_zero_parent_template_p95: f64,
+    pub direct_cross_branch_included_count: usize,
+    pub direct_cross_branch_executed_total: usize,
+    pub direct_cross_branch_included_pct: f64,
     pub min_latency_ms: f64,
     pub max_latency_ms: f64,
     pub avg_latency_ms: f64,
@@ -403,6 +406,13 @@ impl std::fmt::Display for BenchmarkStats {
             self.legal_parent_supp_candidate_per_non_zero_parent_template_p50,
             self.legal_parent_supp_candidate_per_non_zero_parent_template_p95
         )?;
+        writeln!(
+            f,
+            "DirectCrossBranchIncluded (final executed without BlueTemplateSelected before execution) - Count: {} / {} ({:.2}%)",
+            self.direct_cross_branch_included_count,
+            self.direct_cross_branch_executed_total,
+            self.direct_cross_branch_included_pct
+        )?;
         writeln!(f, "========================================")?;
         Ok(())
     }
@@ -552,6 +562,11 @@ impl<'a> ResultsDumper<'a> {
         } else {
             0.0
         };
+        let (
+            direct_cross_branch_included_count,
+            direct_cross_branch_executed_total,
+            direct_cross_branch_included_pct,
+        ) = self.collect_direct_cross_branch_included_stats();
 
         // Calculate TPS based on executed times (OLD - affected by event queue delays)
         let tps = self.calculate_tps_from_executed();
@@ -637,6 +652,9 @@ impl<'a> ResultsDumper<'a> {
             legal_parent_supp_candidate_per_template_p95,
             legal_parent_supp_candidate_per_non_zero_parent_template_p50,
             legal_parent_supp_candidate_per_non_zero_parent_template_p95,
+            direct_cross_branch_included_count,
+            direct_cross_branch_executed_total,
+            direct_cross_branch_included_pct,
             min_latency_ms: txpool_to_final_executed_latency.min_ms,
             max_latency_ms: txpool_to_final_executed_latency.max_ms,
             avg_latency_ms: txpool_to_final_executed_latency.avg_ms,
@@ -788,6 +806,52 @@ impl<'a> ResultsDumper<'a> {
             candidate_per_template_p95,
             candidate_per_non_zero_parent_template_p50,
             candidate_per_non_zero_parent_template_p95,
+        )
+    }
+
+    fn collect_direct_cross_branch_included_stats(&self) -> (usize, usize, f64) {
+        let mut direct_cross_branch_included_count = 0usize;
+        let mut final_executed_total = 0usize;
+        for events in self.transaction_data.values() {
+            let mut has_added = false;
+            let mut blue_template_selected_times: Vec<u64> = Vec::new();
+            let mut executed_times: Vec<u64> = Vec::new();
+            for ev in events {
+                match ev {
+                    TransactionExecutionResult::Added(_) => {
+                        has_added = true;
+                    }
+                    TransactionExecutionResult::BlueTemplateSelected(ts_ms) => {
+                        blue_template_selected_times.push(*ts_ms);
+                    }
+                    TransactionExecutionResult::Executed(ts_ms, _, _, _) => {
+                        executed_times.push(*ts_ms);
+                    }
+                    _ => {}
+                }
+            }
+
+            if !has_added || executed_times.is_empty() {
+                continue;
+            }
+            final_executed_total += 1;
+            let final_exec_ts = *executed_times.iter().max().unwrap();
+            let has_blue_before_final_exec = blue_template_selected_times
+                .iter()
+                .any(|blue_ts| *blue_ts <= final_exec_ts);
+            if !has_blue_before_final_exec {
+                direct_cross_branch_included_count += 1;
+            }
+        }
+        let pct = if final_executed_total > 0 {
+            direct_cross_branch_included_count as f64 * 100.0 / final_executed_total as f64
+        } else {
+            0.0
+        };
+        (
+            direct_cross_branch_included_count,
+            final_executed_total,
+            pct,
         )
     }
 
