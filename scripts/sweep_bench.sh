@@ -42,8 +42,22 @@ while [[ $# -gt 0 ]]; do
         --dry-run)   DRY_RUN=true; shift ;;
         --output)    OUTPUT="$2"; shift 2 ;;
         --output=*)  OUTPUT="${1#*=}"; shift ;;
+        --k)         IFS=',' read -ra K_VALUES <<< "$2"; shift 2 ;;
+        --max-parents) IFS=',' read -ra MAX_PARENTS_VALUES <<< "$2"; shift 2 ;;
+        --block-time)  IFS=',' read -ra BLOCK_TIME_VALUES <<< "$2"; shift 2 ;;
+        --max-txn)     IFS=',' read -ra MAX_TXN_VALUES <<< "$2"; shift 2 ;;
+        --gas-limit)   IFS=',' read -ra GAS_LIMIT_VALUES <<< "$2"; shift 2 ;;
         -h|--help)
-            echo "Usage: $0 [--dry-run] [--output results.csv]"
+            echo "Usage: $0 [OPTIONS]"
+            echo ""
+            echo "Options:"
+            echo "  --dry-run              Print combos without running"
+            echo "  --output FILE          Write CSV to FILE (default: stdout)"
+            echo "  --k 16,32              K values (comma-separated)"
+            echo "  --max-parents 10,16    max_parents values"
+            echo "  --block-time 500,1000  block time in ms"
+            echo "  --max-txn 700,1400     max txn per block"
+            echo "  --gas-limit N,M        gas limit values"
             echo ""
             echo "Environment variables:"
             echo "  BENCH_BIN=$BENCH_BIN"
