@@ -33,7 +33,9 @@ use starcoin_txpool::{NonceCache, PoolClient, TxPoolService};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::blockhash::BlockHashSet;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
-use starcoin_types::system_events::{BlockTemplateBlueTxns, GenerateBlockEvent};
+use starcoin_types::system_events::{
+    BlockTemplateBlueTxns, BlockTemplateLegalParentSupplementStats, GenerateBlockEvent,
+};
 use starcoin_types::{
     block::{Block, BlockHeader, BlockTemplate, Version},
     transaction::SignedUserTransaction,
@@ -483,6 +485,9 @@ where
         let mut forced_parent_parent_applied = false;
         let should_try_parent_parent_force = allow_parent_parent_force
             && parent_parent_interval > 0
+            // Only force when DAG currently has a single selected parent.
+            // If tips are already competing, keep natural parent selection to avoid over-forking.
+            && selected_parents.len() == 1
             && self.templates_since_last_forced_parent_parent >= parent_parent_interval;
         if should_try_parent_parent_force {
             let selected_parent = ghostdata.selected_parent;
@@ -542,6 +547,15 @@ where
                 );
                 }
             }
+        } else if allow_parent_parent_force
+            && parent_parent_interval > 0
+            && selected_parents.len() > 1
+        {
+            info!(
+                "[CreateBlockTemplate] skip parent-parent forcing at template_count={} because selected_parents_len={} (>1)",
+                self.template_create_count,
+                selected_parents.len()
+            );
         }
         if allow_parent_parent_force && parent_parent_interval > 0 {
             if forced_parent_parent_applied {
@@ -677,6 +691,7 @@ where
         let event = BlockTemplateBlueTxns {
             template_time_ms: now_millis,
             blue_block_count: blue_blocks.len() as u32,
+            red_block_count: ghostdata.mergeset_reds.len() as u32,
             txn_hashes: blue_txn_hashes.into(),
         };
         if let Err(e) = bus.broadcast(event) {
@@ -695,6 +710,15 @@ where
         let storage2 = self.storage2.clone();
         let vm_metrics = self.vm_metrics.clone();
         let tx_provider = self.tx_provider.clone();
+        let bus_for_supplement_stats = bus.clone();
+        let selected_parent_id = previous_header.id();
+        // Additional legal parent branches after DAG filtering.
+        // We will use their state views as supplementary txpool candidate sources.
+        let legal_alternative_pending_parents: Vec<HashValue> = selected_parents
+            .iter()
+            .copied()
+            .filter(|id| *id != selected_parent_id)
+            .collect();
 
         let vm1_offline = previous_header.number().saturating_add(1)
             >= vm1_offline_height(previous_header.chain_id().id().into());
@@ -801,6 +825,12 @@ where
             let remaining_max = max_txns.saturating_sub(included_blue as u64);
             let mut pending_transactions = Vec::new();
             let mut pending_transactions2 = Vec::new();
+            let mut supplement_vm1_hashes: HashSet<HashValue> = HashSet::new();
+            let mut supplement_vm2_hashes: HashSet<HashValue> = HashSet::new();
+            let mut supplement_candidate_vm1 = 0usize;
+            let mut supplement_candidate_vm2 = 0usize;
+            let mut supplement_included_vm1 = 0usize;
+            let mut supplement_included_vm2 = 0usize;
             if remaining_max > 0 && opened_block.gas_left() > 0 {
                 let statedb = opened_block.state_db();
                 let statedb2 = opened_block.state_db2();
@@ -831,6 +861,80 @@ where
                                 pending_transactions2.push(txn);
                             }
                         }
+                    }
+                }
+
+                // Supplement candidates from other legal parent branches (if any).
+                // These parents are already validated by DAG parent selection logic.
+                if !legal_alternative_pending_parents.is_empty() {
+                    let parent_count = legal_alternative_pending_parents.len() as u64;
+                    let per_parent_limit = ((remaining_max + parent_count - 1) / parent_count)
+                        .max(1)
+                        .min(remaining_max);
+
+                    for parent_id in &legal_alternative_pending_parents {
+                        let vm_state = match storage.get_vm_multi_state(*parent_id) {
+                            Ok(state) => state,
+                            Err(e) => {
+                                error!(
+                                    "[BlockProcess] Failed to get vm_multi_state for legal parent {}: {}",
+                                    parent_id, e
+                                );
+                                continue;
+                            }
+                        };
+
+                        let parent_state_root1 = vm_state.state_root1();
+                        let parent_state_root2 = vm_state.state_root2();
+                        let parent_statedb = Arc::new(ChainStateDB::new(
+                            storage.clone(),
+                            Some(parent_state_root1),
+                        ));
+                        let parent_statedb2 = Arc::new(ChainStateDB2::new(
+                            storage2.clone(),
+                            Some(parent_state_root2),
+                        ));
+
+                        let parent_pending = tx_provider.get_pending_with_state_dbs(
+                            per_parent_limit,
+                            current_timestamp_secs,
+                            parent_state_root1,
+                            parent_state_root2,
+                            parent_statedb,
+                            parent_statedb2,
+                        );
+
+                        let mut accepted_vm1 = 0usize;
+                        let mut accepted_vm2 = 0usize;
+                        for txn in parent_pending {
+                            match txn {
+                                MultiSignedUserTransaction::VM1(txn) => {
+                                    if vm1_offline {
+                                        continue;
+                                    }
+                                    if seen_hashes.insert(txn.id()) {
+                                        supplement_vm1_hashes.insert(txn.id());
+                                        pending_transactions.push(txn);
+                                        supplement_candidate_vm1 += 1;
+                                        accepted_vm1 += 1;
+                                    }
+                                }
+                                MultiSignedUserTransaction::VM2(txn) => {
+                                    let hash = HashValue::new(txn.id().to_inner());
+                                    if seen_hashes.insert(hash) {
+                                        supplement_vm2_hashes.insert(hash);
+                                        pending_transactions2.push(txn);
+                                        supplement_candidate_vm2 += 1;
+                                        accepted_vm2 += 1;
+                                    }
+                                }
+                            }
+                        }
+
+                        info!(
+                            "[BlockProcess] Supplement from legal parent {}: accepted VM1={}, VM2={}",
+                            parent_id, accepted_vm1, accepted_vm2
+                        );
                     }
                 }
             }
@@ -869,6 +973,16 @@ where
                 let included_vm1 = pending_vm1_len
                     .saturating_sub(excluded_txns.discarded_txns.len())
                     .saturating_sub(excluded_txns.untouched_txns.len());
+                let excluded_vm1_hashes: HashSet<HashValue> = excluded_txns
+                    .discarded_txns
+                    .iter()
+                    .map(|txn| txn.id())
+                    .chain(excluded_txns.untouched_txns.iter().map(|txn| txn.id()))
+                    .collect();
+                supplement_included_vm1 = supplement_vm1_hashes
+                    .iter()
+                    .filter(|hash| !excluded_vm1_hashes.contains(hash))
+                    .count();
                 info!(
                     "[BlockProcess] TxPool VM1 included: {}, discarded: {}, untouched: {}",
                     included_vm1,
@@ -893,11 +1007,57 @@ where
                 let included_vm2 = pending_vm2_len
                     .saturating_sub(excluded_txns2.discarded_txns.len())
                     .saturating_sub(excluded_txns2.untouched_txns.len());
+                let excluded_vm2_hashes: HashSet<HashValue> = excluded_txns2
+                    .discarded_txns
+                    .iter()
+                    .map(|txn| HashValue::new(txn.id().to_inner()))
+                    .chain(
+                        excluded_txns2
+                            .untouched_txns
+                            .iter()
+                            .map(|txn| HashValue::new(txn.id().to_inner())),
+                    )
+                    .collect();
+                supplement_included_vm2 = supplement_vm2_hashes
+                    .iter()
+                    .filter(|hash| !excluded_vm2_hashes.contains(hash))
+                    .count();
                 info!(
                     "[BlockProcess] TxPool VM2 included: {}, discarded: {}, untouched: {}",
                     included_vm2,
                     excluded_txns2.discarded_txns.len(),
                     excluded_txns2.untouched_txns.len()
+                );
+            }
+
+            let supplement_candidate_total = supplement_candidate_vm1 + supplement_candidate_vm2;
+            let supplement_included_total = supplement_included_vm1 + supplement_included_vm2;
+            let supplement_inclusion_rate = if supplement_candidate_total > 0 {
+                supplement_included_total as f64 * 100.0 / supplement_candidate_total as f64
+            } else {
+                0.0
+            };
+            info!(
+                "[BlockProcess] Legal-parent supplement stats: parents={}, candidate_vm1={}, candidate_vm2={}, included_vm1={}, included_vm2={}, inclusion_rate={:.2}%",
+                legal_alternative_pending_parents.len(),
+                supplement_candidate_vm1,
+                supplement_candidate_vm2,
+                supplement_included_vm1,
+                supplement_included_vm2,
+                supplement_inclusion_rate
+            );
+            let supplement_event = BlockTemplateLegalParentSupplementStats {
+                template_time_ms: now_millis,
+                legal_parent_count: legal_alternative_pending_parents.len() as u32,
+                candidate_vm1: supplement_candidate_vm1 as u32,
+                candidate_vm2: supplement_candidate_vm2 as u32,
+                included_vm1: supplement_included_vm1 as u32,
+                included_vm2: supplement_included_vm2 as u32,
+            };
+            if let Err(e) = bus_for_supplement_stats.broadcast(supplement_event) {
+                error!(
+                    "[BlockProcess] broadcast BlockTemplateLegalParentSupplementStats failed: {:?}",
+                    e
                 );
             }
 

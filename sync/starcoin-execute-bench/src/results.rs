@@ -26,6 +26,15 @@ pub enum TransactionExecutionResult {
     Other(String),
 }
 
+#[derive(Clone, Debug, Default)]
+pub struct LegalParentSupplementSample {
+    pub legal_parent_count: u32,
+    pub candidate_vm1: u32,
+    pub candidate_vm2: u32,
+    pub included_vm1: u32,
+    pub included_vm2: u32,
+}
+
 /// Helper function to format epoch millis to readable string
 fn format_epoch_ms(epoch_ms: u64) -> String {
     let secs = (epoch_ms / 1000) as i64;
@@ -79,6 +88,28 @@ fn calculate_trimmed_mean(values: &[f64], trim_pct: f64) -> f64 {
     }
 
     trimmed.iter().sum::<f64>() / trimmed.len() as f64
+}
+
+fn calculate_percentile(values: &[f64], percentile: f64) -> f64 {
+    if values.is_empty() {
+        return 0.0;
+    }
+    let mut sorted = values.to_vec();
+    sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    let n = sorted.len();
+    if n == 1 {
+        return sorted[0];
+    }
+    let p = percentile.clamp(0.0, 100.0) / 100.0;
+    let rank = p * (n - 1) as f64;
+    let lower = rank.floor() as usize;
+    let upper = rank.ceil() as usize;
+    if lower == upper {
+        sorted[lower]
+    } else {
+        let weight = rank - lower as f64;
+        sorted[lower] * (1.0 - weight) + sorted[upper] * weight
+    }
 }
 
 #[derive(Debug, Clone, Default)]
@@ -191,6 +222,25 @@ pub struct BenchmarkStats {
     pub blue_block_count_max: f64,
     pub blue_block_count_avg: f64,
     pub blue_block_count_median: f64,
+    pub red_block_count_samples: usize,
+    pub red_block_count_non_zero_samples: usize,
+    pub red_block_count_min: f64,
+    pub red_block_count_max: f64,
+    pub red_block_count_avg: f64,
+    pub red_block_count_median: f64,
+    pub legal_parent_supp_samples: usize,
+    pub legal_parent_supp_non_zero_parent_samples: usize,
+    pub legal_parent_supp_candidate_vm1_total: usize,
+    pub legal_parent_supp_candidate_vm2_total: usize,
+    pub legal_parent_supp_candidate_total: usize,
+    pub legal_parent_supp_included_vm1_total: usize,
+    pub legal_parent_supp_included_vm2_total: usize,
+    pub legal_parent_supp_included_total: usize,
+    pub legal_parent_supp_inclusion_rate_pct: f64,
+    pub legal_parent_supp_candidate_per_template_p50: f64,
+    pub legal_parent_supp_candidate_per_template_p95: f64,
+    pub legal_parent_supp_candidate_per_non_zero_parent_template_p50: f64,
+    pub legal_parent_supp_candidate_per_non_zero_parent_template_p95: f64,
     pub min_latency_ms: f64,
     pub max_latency_ms: f64,
     pub avg_latency_ms: f64,
@@ -311,6 +361,48 @@ impl std::fmt::Display for BenchmarkStats {
             self.blue_block_count_avg,
             self.blue_block_count_median
         )?;
+        writeln!(
+            f,
+            "Red Blocks (from create_block_template) - Samples: {} | NonZero: {}",
+            self.red_block_count_samples, self.red_block_count_non_zero_samples
+        )?;
+        writeln!(
+            f,
+            "Red Block Count Per Template (n={}) - Min: {:.2} | Max: {:.2} | Avg: {:.2} | Median: {:.2}",
+            self.red_block_count_samples,
+            self.red_block_count_min,
+            self.red_block_count_max,
+            self.red_block_count_avg,
+            self.red_block_count_median
+        )?;
+        writeln!(
+            f,
+            "Legal Parent Supplement - Samples: {} | NonZeroParents: {}",
+            self.legal_parent_supp_samples, self.legal_parent_supp_non_zero_parent_samples
+        )?;
+        writeln!(
+            f,
+            "Legal Parent Supplement Txns - Candidate: {} (VM1={}, VM2={}) | Included: {} (VM1={}, VM2={}) | Inclusion Rate: {:.2}%",
+            self.legal_parent_supp_candidate_total,
+            self.legal_parent_supp_candidate_vm1_total,
+            self.legal_parent_supp_candidate_vm2_total,
+            self.legal_parent_supp_included_total,
+            self.legal_parent_supp_included_vm1_total,
+            self.legal_parent_supp_included_vm2_total,
+            self.legal_parent_supp_inclusion_rate_pct
+        )?;
+        writeln!(
+            f,
+            "Legal Parent Supplement Candidate Dist (per template) - P50: {:.2} | P95: {:.2}",
+            self.legal_parent_supp_candidate_per_template_p50,
+            self.legal_parent_supp_candidate_per_template_p95
+        )?;
+        writeln!(
+            f,
+            "Legal Parent Supplement Candidate Dist (non-zero-parent templates) - P50: {:.2} | P95: {:.2}",
+            self.legal_parent_supp_candidate_per_non_zero_parent_template_p50,
+            self.legal_parent_supp_candidate_per_non_zero_parent_template_p95
+        )?;
         writeln!(f, "========================================")?;
         Ok(())
     }
@@ -342,6 +434,8 @@ pub struct TopLatencyBlock {
 pub struct ResultsDumper<'a> {
     transaction_data: &'a HashMap<HashValue, Vec<TransactionExecutionResult>>,
     blue_block_counts: &'a [u32],
+    red_block_counts: &'a [u32],
+    legal_parent_supplement_samples: &'a [LegalParentSupplementSample],
     mining_target_ms: Option<u64>,
 }
 
@@ -349,11 +443,15 @@ impl<'a> ResultsDumper<'a> {
     pub fn with_mining_target(
         transaction_data: &'a HashMap<HashValue, Vec<TransactionExecutionResult>>,
         blue_block_counts: &'a [u32],
+        red_block_counts: &'a [u32],
+        legal_parent_supplement_samples: &'a [LegalParentSupplementSample],
         mining_target_ms: Option<u64>,
     ) -> Self {
         Self {
             transaction_data,
             blue_block_counts,
+            red_block_counts,
+            legal_parent_supplement_samples,
             mining_target_ms,
         }
     }
@@ -424,6 +522,36 @@ impl<'a> ResultsDumper<'a> {
             blue_block_count_avg,
             blue_block_count_median,
         ) = self.collect_blue_block_count_stats();
+        let (
+            red_block_count_samples,
+            red_block_count_non_zero_samples,
+            red_block_count_min,
+            red_block_count_max,
+            red_block_count_avg,
+            red_block_count_median,
+        ) = self.collect_red_block_count_stats();
+        let (
+            legal_parent_supp_samples,
+            legal_parent_supp_non_zero_parent_samples,
+            legal_parent_supp_candidate_vm1_total,
+            legal_parent_supp_candidate_vm2_total,
+            legal_parent_supp_included_vm1_total,
+            legal_parent_supp_included_vm2_total,
+            legal_parent_supp_candidate_per_template_p50,
+            legal_parent_supp_candidate_per_template_p95,
+            legal_parent_supp_candidate_per_non_zero_parent_template_p50,
+            legal_parent_supp_candidate_per_non_zero_parent_template_p95,
+        ) = self.collect_legal_parent_supplement_stats();
+        let legal_parent_supp_candidate_total =
+            legal_parent_supp_candidate_vm1_total + legal_parent_supp_candidate_vm2_total;
+        let legal_parent_supp_included_total =
+            legal_parent_supp_included_vm1_total + legal_parent_supp_included_vm2_total;
+        let legal_parent_supp_inclusion_rate_pct = if legal_parent_supp_candidate_total > 0 {
+            legal_parent_supp_included_total as f64 * 100.0
+                / legal_parent_supp_candidate_total as f64
+        } else {
+            0.0
+        };
 
         // Calculate TPS based on executed times (OLD - affected by event queue delays)
         let tps = self.calculate_tps_from_executed();
@@ -490,6 +618,25 @@ impl<'a> ResultsDumper<'a> {
             blue_block_count_max,
             blue_block_count_avg,
             blue_block_count_median,
+            red_block_count_samples,
+            red_block_count_non_zero_samples,
+            red_block_count_min,
+            red_block_count_max,
+            red_block_count_avg,
+            red_block_count_median,
+            legal_parent_supp_samples,
+            legal_parent_supp_non_zero_parent_samples,
+            legal_parent_supp_candidate_vm1_total,
+            legal_parent_supp_candidate_vm2_total,
+            legal_parent_supp_candidate_total,
+            legal_parent_supp_included_vm1_total,
+            legal_parent_supp_included_vm2_total,
+            legal_parent_supp_included_total,
+            legal_parent_supp_inclusion_rate_pct,
+            legal_parent_supp_candidate_per_template_p50,
+            legal_parent_supp_candidate_per_template_p95,
+            legal_parent_supp_candidate_per_non_zero_parent_template_p50,
+            legal_parent_supp_candidate_per_non_zero_parent_template_p95,
             min_latency_ms: txpool_to_final_executed_latency.min_ms,
             max_latency_ms: txpool_to_final_executed_latency.max_ms,
             avg_latency_ms: txpool_to_final_executed_latency.avg_ms,
@@ -565,6 +712,82 @@ impl<'a> ResultsDumper<'a> {
             max,
             avg,
             median,
+        )
+    }
+
+    fn collect_red_block_count_stats(&self) -> (usize, usize, f64, f64, f64, f64) {
+        let samples: Vec<f64> = self.red_block_counts.iter().map(|v| *v as f64).collect();
+        let non_zero_samples = self.red_block_counts.iter().filter(|v| **v > 0).count();
+        let (min, max, avg, median) = calculate_statistics(&samples);
+        (
+            self.red_block_counts.len(),
+            non_zero_samples,
+            min,
+            max,
+            avg,
+            median,
+        )
+    }
+
+    fn collect_legal_parent_supplement_stats(
+        &self,
+    ) -> (usize, usize, usize, usize, usize, usize, f64, f64, f64, f64) {
+        let samples = self.legal_parent_supplement_samples.len();
+        let non_zero_parent_samples = self
+            .legal_parent_supplement_samples
+            .iter()
+            .filter(|s| s.legal_parent_count > 0)
+            .count();
+        let candidate_per_template_samples: Vec<f64> = self
+            .legal_parent_supplement_samples
+            .iter()
+            .map(|s| (s.candidate_vm1 + s.candidate_vm2) as f64)
+            .collect();
+        let candidate_per_non_zero_parent_template_samples: Vec<f64> = self
+            .legal_parent_supplement_samples
+            .iter()
+            .filter(|s| s.legal_parent_count > 0)
+            .map(|s| (s.candidate_vm1 + s.candidate_vm2) as f64)
+            .collect();
+        let candidate_vm1_total = self
+            .legal_parent_supplement_samples
+            .iter()
+            .map(|s| s.candidate_vm1 as usize)
+            .sum();
+        let candidate_vm2_total = self
+            .legal_parent_supplement_samples
+            .iter()
+            .map(|s| s.candidate_vm2 as usize)
+            .sum();
+        let included_vm1_total = self
+            .legal_parent_supplement_samples
+            .iter()
+            .map(|s| s.included_vm1 as usize)
+            .sum();
+        let included_vm2_total = self
+            .legal_parent_supplement_samples
+            .iter()
+            .map(|s| s.included_vm2 as usize)
+            .sum();
+        let candidate_per_template_p50 =
+            calculate_percentile(&candidate_per_template_samples, 50.0);
+        let candidate_per_template_p95 =
+            calculate_percentile(&candidate_per_template_samples, 95.0);
+        let candidate_per_non_zero_parent_template_p50 =
+            calculate_percentile(&candidate_per_non_zero_parent_template_samples, 50.0);
+        let candidate_per_non_zero_parent_template_p95 =
+            calculate_percentile(&candidate_per_non_zero_parent_template_samples, 95.0);
+        (
+            samples,
+            non_zero_parent_samples,
+            candidate_vm1_total,
+            candidate_vm2_total,
+            included_vm1_total,
+            included_vm2_total,
+            candidate_per_template_p50,
+            candidate_per_template_p95,
+            candidate_per_non_zero_parent_template_p50,
+            candidate_per_non_zero_parent_template_p95,
         )
     }
 
