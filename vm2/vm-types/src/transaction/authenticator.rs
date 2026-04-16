@@ -6,7 +6,7 @@ use crate::sign_message::SigningMessage;
 use anyhow::{ensure, Error, Result};
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
-use rand::Rng;
+use rand::RngExt;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::ed25519::{

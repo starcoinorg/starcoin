@@ -10,7 +10,7 @@ use itertools::Itertools;
 use network_p2p_types::{peer_id::PeerId, ReputationChange};
 use parking_lot::Mutex;
 use rand::seq::IteratorRandom;
-use rand::Rng;
+use rand::RngExt;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_types::block::BlockHeader;

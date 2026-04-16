@@ -21,6 +21,7 @@ members = [
     "commons/forkable-jellyfish-merkle",
     "commons/time-service",
     "commons/infallible",
+    "commons/pipeline-timing",
     "types",
     "types/uint",
     "genesis",
@@ -191,6 +192,7 @@ default-members = [
     "node",
     "sync",
     "sync/api",
+    "sync/starcoin-execute-bench",
     "block-relayer",
     "miner",
     "network-p2p",
@@ -347,7 +349,7 @@ rustc-hash = "2.1.2"
 git-version = "0.3.9"
 goldenfile = "1.8.0"
 governor = { version = "0.4.2", features = ["dashmap"] }
-hashbrown = "0.16.1"
+hashbrown = "0.17.0"
 heck = "0.5.0"
 hex = "0.4"
 hmac = "0.13.0"
@@ -464,7 +466,7 @@ proptest-derive = "0.8.0"
 quote = "1.0.16"
 rand_0_7_3 = { package = "rand", version = "0.7.3" }
 rand_0_8 = { package = "rand", version = "0.8.5" }
-rand = "0.9.2"
+rand = "0.10.1"
 rand_core = { version = "0.6.3", default-features = false }
 rayon = "1.6.1"
 regex = "1.6.0"
@@ -575,6 +577,7 @@ stest-macro = { path = "commons/stest/stest-macro" }
 stream-task = { path = "commons/stream-task" }
 starcoin-mvhashmap = { path = "commons/mvhashmap" }
 starcoin-infallible = { path = "commons/infallible" }
+starcoin-pipeline-timing = { path = "commons/pipeline-timing" }
 starcoin-parallel-executor = { path = "commons/parallel-executor" }
 starcoin-transaction-benchmarks = { path = "vm/transaction-benchmarks" }
 starcoin-language-e2e-tests = { path = "vm/e2e-tests" }

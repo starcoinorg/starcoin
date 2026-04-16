@@ -8,7 +8,7 @@ use crate::dummy::DummyConsensus;
 use crate::keccak::KeccakConsensus;
 use anyhow::{format_err, Result};
 use once_cell::sync::Lazy;
-use rand::Rng;
+use rand::RngExt;
 use starcoin_chain_api::ChainReader;
 use starcoin_crypto::HashValue;
 use starcoin_time_service::TimeService;

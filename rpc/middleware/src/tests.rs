@@ -1,7 +1,7 @@
 use super::*;
 use futures::executor::block_on;
 use jsonrpc_core::{MetaIoHandler, Params, Value};
-use rand::Rng;
+use rand::RngExt;
 use starcoin_metrics::{get_all_metrics, Registry};
 use std::time::Duration;
 

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use move_vm_types::delayed_values::delayed_field_id::{DelayedFieldID, ExtractUniqueIndex};
-use rand::{rngs::StdRng, Rng, SeedableRng};
+use rand::{rngs::StdRng, RngExt, SeedableRng};
 use starcoin_aggregator::bounded_math::SignedU128;
 use starcoin_aggregator::delayed_change::{DelayedApplyChange, DelayedChange};
 use starcoin_aggregator::delta_change_set::DeltaWithMax;

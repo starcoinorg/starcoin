@@ -4,7 +4,7 @@ use std::{cmp::min, sync::Arc};
 use anyhow::{format_err, Result};
 use futures::executor::block_on;
 use rand::seq::SliceRandom;
-use rand::Rng;
+use rand::RngExt;
 use starcoin_chain::{
     get_merge_bound_hash, global_block_state_cache, is_node_shutting_down, BlockChain,
     CachedBlockState, ChainReader,
@@ -19,6 +19,7 @@ use starcoin_dag::reachability::reachability_service::ReachabilityService;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::{error, info};
 use starcoin_open_block::OpenedBlock;
+use starcoin_pipeline_timing::global_collector;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceRef,
 };
@@ -587,6 +588,11 @@ where
             >= vm1_offline_height(previous_header.chain_id().id().into());
 
         RAYON_EXEC_POOL.spawn(move || {
+            let build_start = if global_collector().is_enabled() {
+                Some(std::time::Instant::now())
+            } else {
+                None
+            };
             if is_node_shutting_down() {
                 return;
             }
@@ -828,6 +834,25 @@ where
                     Some(finalized.executed_data2),
                 ),
             );
+
+            // Record block build timing using txn_accumulator_root as temporary block ID
+            if let Some(start) = build_start {
+                let build_duration_ms = start.elapsed().as_secs_f64() * 1000.0;
+                let txn_count =
+                    template.body.transactions.len() + template.body.transactions2.len();
+                global_collector().record_block_build_start(
+                    template.txn_accumulator_root,
+                    previous_header.number() + 1,
+                    txn_count,
+                );
+                global_collector().update_block_timing(template.txn_accumulator_root, |timing| {
+                    timing.build_end_ms = Some(global_collector().now_epoch_ms());
+                    // Adjust build_start_ms to be build_duration_ms before end
+                    if let Some(end) = timing.build_end_ms {
+                        timing.build_start_ms = Some(end - build_duration_ms);
+                    }
+                });
+            }
 
             if let Err(e) =
                 block_template_call_back.block_template_callback(previous_header, template)
