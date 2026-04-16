@@ -1648,53 +1648,8 @@ async fn execute_benchmark(
             benchmark_state.total_txn_count
         );
 
-        // Build ALL transactions first, then sign and import them all at once
-        let total_batches = benchmark_state.total_batches();
-        info!(
-            "Building all {} batches of transactions before signing",
-            total_batches
-        );
-
-        let expire_time = config.net().time_service().now_secs() + 3600;
-        let mut all_transactions: Vec<RawUserTransaction2> = Vec::new();
-
-        let phase_start = std::time::Instant::now();
-        for _ in 0..total_batches {
-            if let Some(batch) = benchmark_state.build_next_batch(expire_time) {
-                all_transactions.extend(batch);
-            }
-        }
-        let build_ms = phase_start.elapsed().as_millis();
-        info!(
-            "[Phase Timing] Transaction building: {}ms ({} txns)",
-            build_ms,
-            all_transactions.len()
-        );
-
-        // Sign and import ALL transactions at once
-        let phase_start = std::time::Instant::now();
-        let txn_hashes =
-            sign_and_import_transactions(&all_transactions, &account_service, &txpool).await?;
-        let sign_import_ms = phase_start.elapsed().as_millis();
-        info!(
-            "[Phase Timing] Sign + import: {}ms ({} txns)",
-            sign_import_ms,
-            txn_hashes.len()
-        );
-
-        info!(
-            "[Phase Timing] TOTAL SETUP: {}ms (create={}ms + fund={}ms + settle={}ms + build={}ms + sign={}ms)",
-            account_creation_ms + funding_ms + settle_ms + build_ms + sign_import_ms,
-            account_creation_ms, funding_ms, settle_ms, build_ms, sign_import_ms
-        );
-
-        benchmark_state.add_txn_hashes(&txn_hashes);
-
-        info!(
-            "Preloading complete: {} transactions in txpool",
-            txn_hashes.len()
-        );
-
+        // Warm up DAG topology before sending benchmark traffic, so warmup-induced forks
+        // do not interfere with first-batch execution accounting.
         induce_blue_dag_warmup(
             blue_dag_warmup_rounds,
             blue_dag_burst_size,
@@ -1705,6 +1660,15 @@ async fn execute_benchmark(
             chain_reader_service.clone(),
         )
         .await?;
+
+        // Submit first batch to kickstart the benchmark
+        let expire_time = config.net().time_service().now_secs() + 3600;
+        if let Some(batch) = benchmark_state.build_next_batch(expire_time) {
+            let txn_hashes =
+                sign_and_import_transactions(&batch, &account_service, &txpool).await?;
+            benchmark_state.add_txn_hashes(&txn_hashes);
+            info!("Submitted initial batch: {} transactions", batch.len());
+        }
 
         // Wait for benchmark to complete:
         // 1. All batches have been sent, AND
