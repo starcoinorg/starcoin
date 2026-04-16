@@ -1,0 +1,8 @@
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshot
+metadata:
+  name: barnard-migration-snapshot
+  namespace: starcoin-barnard
+spec:
+  source:
+    persistentVolumeClaimName: starcoin-volume-starcoin-0
