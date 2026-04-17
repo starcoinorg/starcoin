@@ -6,7 +6,7 @@ use move_core_types::value::{MoveStructLayout, MoveTypeLayout};
 use once_cell::sync::Lazy;
 use rustc_hash::FxHasher;
 use std::{
-    cell::{Cell, RefCell},
+    cell::RefCell,
     collections::HashMap,
     hash::{Hash, Hasher},
 };
@@ -69,21 +69,11 @@ pub(crate) fn compute_layout_has_identifier_mappings(layout: &MoveTypeLayout) ->
 
 #[derive(Default)]
 pub(crate) struct LayoutIdentifierMappingCache {
-    // Fast-path for repeated checks on the same long-lived layout reference.
-    // In vm-runtime callsites, layout references come from resolver/loader and are stable.
-    last_layout_ptr: Cell<usize>,
-    last_value: Cell<bool>,
-    has_last: Cell<bool>,
     local_entries: RefCell<HashMap<u64, LayoutBucket>>,
 }
 
 impl LayoutIdentifierMappingCache {
     pub(crate) fn has_identifier_mappings(&self, layout: &MoveTypeLayout) -> bool {
-        let ptr = layout as *const MoveTypeLayout as usize;
-        if self.has_last.get() && self.last_layout_ptr.get() == ptr {
-            return self.last_value.get();
-        }
-
         let key = hash_layout(layout);
 
         if let Some(cached) = self
@@ -92,9 +82,6 @@ impl LayoutIdentifierMappingCache {
             .get(&key)
             .and_then(|bucket| lookup_bucket(bucket, layout))
         {
-            self.last_layout_ptr.set(ptr);
-            self.last_value.set(cached);
-            self.has_last.set(true);
             return cached;
         }
 
@@ -107,9 +94,6 @@ impl LayoutIdentifierMappingCache {
                 .entry(key)
                 .and_modify(|bucket| insert_bucket(bucket, layout, cached))
                 .or_insert_with(|| vec![(layout.clone(), cached)]);
-            self.last_layout_ptr.set(ptr);
-            self.last_value.set(cached);
-            self.has_last.set(true);
             return cached;
         }
 
@@ -124,9 +108,6 @@ impl LayoutIdentifierMappingCache {
             .and_modify(|bucket| insert_bucket(bucket, layout, computed))
             .or_insert_with(|| vec![(layout.clone(), computed)]);
         maybe_trim_global_cache();
-        self.last_layout_ptr.set(ptr);
-        self.last_value.set(computed);
-        self.has_last.set(true);
         computed
     }
 

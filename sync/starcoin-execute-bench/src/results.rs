@@ -757,7 +757,7 @@ impl<'a> ResultsDumper<'a> {
 
     fn draw_latency_chart(
         &self,
-        area: &DrawingArea<SVGBackend, plotters::coord::Shift>,
+        area: &DrawingArea<SVGBackend<'_>, plotters::coord::Shift>,
         executions: &[(HashValue, u64, f64)],
         unique_txn_count: usize,
         duplicate_exec_count: usize,
@@ -919,7 +919,7 @@ impl<'a> ResultsDumper<'a> {
 
     fn draw_block_txn_chart(
         &self,
-        area: &DrawingArea<SVGBackend, plotters::coord::Shift>,
+        area: &DrawingArea<SVGBackend<'_>, plotters::coord::Shift>,
         block_stats: &[(u64, usize)],
     ) -> Result<(), Box<dyn Error>> {
         if block_stats.is_empty() {
