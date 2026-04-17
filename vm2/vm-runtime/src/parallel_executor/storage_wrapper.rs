@@ -14,7 +14,7 @@ use move_table_extension::{TableHandle, TableResolver};
 use move_vm_types::delayed_values::delayed_field_id::{
     DelayedFieldID, ExtractUniqueIndex, TryFromMoveValue,
 };
-use move_vm_types::layout_identifier_mapping::LayoutIdentifierMappingCache;
+use crate::layout_identifier_mapping_cache::LayoutIdentifierMappingCache;
 use move_vm_types::value_serde::{ValueSerDeContext, ValueToIdentifierMapping};
 use move_vm_types::value_traversal::find_identifiers_in_value;
 use starcoin_aggregator::bounded_math::{BoundedMath, SignedU128};

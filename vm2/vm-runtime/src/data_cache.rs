@@ -19,8 +19,8 @@ use move_vm_types::delayed_values::delayed_field_id::{
     DelayedFieldID, ExtractUniqueIndex, ExtractWidth, TryFromMoveValue,
 };
 #[cfg(test)]
-use move_vm_types::layout_identifier_mapping::compute_layout_has_identifier_mappings;
-use move_vm_types::layout_identifier_mapping::LayoutIdentifierMappingCache;
+use crate::layout_identifier_mapping_cache::compute_layout_has_identifier_mappings;
+use crate::layout_identifier_mapping_cache::LayoutIdentifierMappingCache;
 use move_vm_types::loaded_data::runtime_types::TypeBuilder;
 use move_vm_types::value_serde::{ValueSerDeContext, ValueToIdentifierMapping};
 use move_vm_types::value_traversal::find_identifiers_in_value;
