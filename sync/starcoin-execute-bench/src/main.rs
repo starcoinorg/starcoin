@@ -1326,7 +1326,10 @@ impl BenchmarkState {
     /// Each batch uses batch_user_count users, where first half sends to second half.
     /// Supports multiple rounds where the same accounts are reused with incrementing sequence numbers.
     /// Returns None if all batches have been sent.
-    fn build_next_batch(&self, expire_time: u64) -> Result<Option<(usize, Vec<RawUserTransaction2>)>> {
+    fn build_next_batch(
+        &self,
+        expire_time: u64,
+    ) -> Result<Option<(usize, Vec<RawUserTransaction2>)>> {
         if self.batch_user_count == 0 || self.total_batches == 0 {
             return Ok(None);
         }
@@ -2356,18 +2359,18 @@ impl ObserverService {
 
             // Only record benchmark transactions for TPS calculation
             if let Some(ref state) = self.benchmark_state {
-                if state.is_benchmark_txn(&txn_hash) {
-                    if self.is_txn_executed_in_block(txn_hash, block_id)? {
-                        self.transaction_data.entry(txn_hash).or_default().push(
-                            TransactionExecutionResult::Executed(
-                                connected_time_ms,
-                                block_number,
-                                block_id,
-                                block_timestamp_ms,
-                            ),
-                        );
-                        benchmark_txn_count += 1;
-                    }
+                if state.is_benchmark_txn(&txn_hash)
+                    && self.is_txn_executed_in_block(txn_hash, block_id)?
+                {
+                    self.transaction_data.entry(txn_hash).or_default().push(
+                        TransactionExecutionResult::Executed(
+                            connected_time_ms,
+                            block_number,
+                            block_id,
+                            block_timestamp_ms,
+                        ),
+                    );
+                    benchmark_txn_count += 1;
                 }
             }
         }
@@ -2406,13 +2409,13 @@ impl ObserverService {
 
             // Only record benchmark transactions
             if let Some(ref state) = self.benchmark_state {
-                if state.is_benchmark_txn(&txn_hash) {
-                    if self.is_txn_executed_in_block(txn_hash, block_id)? {
-                        self.transaction_data.entry(txn_hash).or_default().push(
-                            TransactionExecutionResult::Mined(mined_time_ms, block_number, block_id),
-                        );
-                        benchmark_txn_count += 1;
-                    }
+                if state.is_benchmark_txn(&txn_hash)
+                    && self.is_txn_executed_in_block(txn_hash, block_id)?
+                {
+                    self.transaction_data.entry(txn_hash).or_default().push(
+                        TransactionExecutionResult::Mined(mined_time_ms, block_number, block_id),
+                    );
+                    benchmark_txn_count += 1;
                 }
             }
         }
