@@ -5,6 +5,7 @@ use crate::parallel::parallel_info_service::ParallelInfoService;
 use crate::parallel::sender::DagBlockSender;
 use crate::store::sync_absent_ancestor::DagSyncBlock;
 use crate::store::sync_dag_store::SyncDagStore;
+use crate::sync_profiling_info_enabled;
 use crate::tasks::continue_execute_absent_block::ContinueExecuteAbsentBlock;
 use crate::tasks::{BlockConnectedEvent, BlockConnectedEventHandle, BlockFetcher, BlockLocalStore};
 use anyhow::{format_err, Context, Result};
@@ -28,7 +29,7 @@ use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use stream_task::{CollectorState, TaskError, TaskResultCollector, TaskState};
 use tokio::task;
 
@@ -36,10 +37,20 @@ use super::continue_execute_absent_block::ContinueChainOperator;
 use super::{BlockConnectAction, BlockConnectedFinishEvent};
 
 const ASYNC_BLOCK_COUNT: u64 = 1000;
+const SYNC_PROF_PREFIX: &str = "[sync-prof]";
 
 enum ParallelSign {
     NeedMoreBlocks,
     Continue,
+}
+
+#[derive(Clone, Debug, Default)]
+struct CollectStageProfile {
+    collect_count: u64,
+    ensure_parents_ms: u128,
+    apply_connect_ms: u128,
+    notify_connected_ms: u128,
+    total_collect_ms: u128,
 }
 
 #[derive(Clone, Debug)]
@@ -112,18 +123,22 @@ impl TaskState for BlockSyncTask {
 
     fn new_sub_task(self) -> BoxFuture<'static, Result<Vec<Self::Item>>> {
         async move {
+            let profiling_info = sync_profiling_info_enabled();
+            let batch_begin = Instant::now();
             let block_ids =
                 self.accumulator
                     .get_leaves(self.start_number, false, self.batch_size)?;
             if block_ids.is_empty() {
                 return Ok(vec![]);
             }
+            let requested_ids_len = block_ids.len();
             info!(
                 "[sync] fetch block ids from accumulator, start_number: {}, ids: {}",
                 self.start_number,
-                block_ids.len()
+                requested_ids_len
             );
             if self.check_local_store {
+                let local_lookup_begin = Instant::now();
                 let block_with_info = self.local_store.get_block_with_info(block_ids.clone())?;
                 let (no_exist_block_ids, result_map) =
                     block_ids.clone().into_iter().zip(block_with_info).fold(
@@ -140,23 +155,48 @@ impl TaskState for BlockSyncTask {
                             (no_exist_block_ids, result_map)
                         },
                     );
+                let local_lookup_ms = local_lookup_begin.elapsed().as_millis();
+                let local_hit_count = result_map.len();
+                let local_miss_count = no_exist_block_ids.len();
                 debug!(
                     "[sync] get_block_with_info from local store, ids: {}, found: {}",
                     block_ids.len(),
                     result_map.len()
                 );
-                let mut result_map = if no_exist_block_ids.is_empty() {
-                    result_map
-                } else {
-                    self.fetcher
-                        .fetch_blocks(no_exist_block_ids)
-                        .await?
+                let remote_fetch_begin = Instant::now();
+                let mut result_map = result_map;
+                if !no_exist_block_ids.is_empty() {
+                    let fetch_res = self.fetcher.fetch_blocks(no_exist_block_ids).await;
+                    let fetched_blocks = match fetch_res {
+                        Ok(blocks) => blocks,
+                        Err(err) => {
+                            if profiling_info {
+                                let remote_fetch_ms = remote_fetch_begin.elapsed().as_millis();
+                                let total_ms = batch_begin.elapsed().as_millis();
+                                warn!(
+                                    "{} stage=batch_fetch_blocks status=err mode=local_then_remote start_number={} requested_ids={} local_hits={} local_misses={} local_lookup_ms={} remote_fetch_ms={} total_ms={} error={:?}",
+                                    SYNC_PROF_PREFIX,
+                                    self.start_number,
+                                    requested_ids_len,
+                                    local_hit_count,
+                                    local_miss_count,
+                                    local_lookup_ms,
+                                    remote_fetch_ms,
+                                    total_ms,
+                                    err
+                                );
+                            }
+                            return Err(err);
+                        }
+                    };
+                    result_map = fetched_blocks
                         .into_iter()
                         .fold(result_map, |mut result_map, (block, peer_id)| {
                             result_map.insert(block.id(), SyncBlockData::new(block, None, peer_id));
                             result_map
-                        })
-                };
+                        });
+                }
+                let remote_fetch_ms = remote_fetch_begin.elapsed().as_millis();
                 //ensure return block's order same as request block_id's order.
                 let result: Result<Vec<SyncBlockData>> = block_ids
                     .iter()
@@ -166,15 +206,70 @@ impl TaskState for BlockSyncTask {
                             .ok_or_else(|| format_err!("Get block by id {:?} failed", block_id))
                     })
                     .collect();
+                if profiling_info {
+                    let total_ms = batch_begin.elapsed().as_millis();
+                    match &result {
+                        Ok(items) => info!(
+                            "{} stage=batch_fetch_blocks status=ok mode=local_then_remote start_number={} requested_ids={} returned_blocks={} local_hits={} local_misses={} local_lookup_ms={} remote_fetch_ms={} total_ms={}",
+                            SYNC_PROF_PREFIX,
+                            self.start_number,
+                            requested_ids_len,
+                            items.len(),
+                            local_hit_count,
+                            local_miss_count,
+                            local_lookup_ms,
+                            remote_fetch_ms,
+                            total_ms
+                        ),
+                        Err(err) => warn!(
+                            "{} stage=batch_fetch_blocks status=err mode=local_then_remote start_number={} requested_ids={} local_hits={} local_misses={} local_lookup_ms={} remote_fetch_ms={} total_ms={} error={:?}",
+                            SYNC_PROF_PREFIX,
+                            self.start_number,
+                            requested_ids_len,
+                            local_hit_count,
+                            local_miss_count,
+                            local_lookup_ms,
+                            remote_fetch_ms,
+                            total_ms,
+                            err
+                        ),
+                    }
+                }
                 result
             } else {
-                Ok(self
-                    .fetcher
-                    .fetch_blocks(block_ids)
-                    .await?
-                    .into_iter()
-                    .map(|(block, peer_id)| SyncBlockData::new(block, None, peer_id))
-                    .collect())
+                let remote_fetch_begin = Instant::now();
+                let fetch_res = self.fetcher.fetch_blocks(block_ids).await;
+                let result = fetch_res.map(|blocks| {
+                    blocks
+                        .into_iter()
+                        .map(|(block, peer_id)| SyncBlockData::new(block, None, peer_id))
+                        .collect::<Vec<_>>()
+                });
+                if profiling_info {
+                    let remote_fetch_ms = remote_fetch_begin.elapsed().as_millis();
+                    let total_ms = batch_begin.elapsed().as_millis();
+                    match &result {
+                        Ok(items) => info!(
+                            "{} stage=batch_fetch_blocks status=ok mode=remote_only start_number={} requested_ids={} returned_blocks={} remote_fetch_ms={} total_ms={}",
+                            SYNC_PROF_PREFIX,
+                            self.start_number,
+                            requested_ids_len,
+                            items.len(),
+                            remote_fetch_ms,
+                            total_ms
+                        ),
+                        Err(err) => warn!(
+                            "{} stage=batch_fetch_blocks status=err mode=remote_only start_number={} requested_ids={} remote_fetch_ms={} total_ms={} error={:?}",
+                            SYNC_PROF_PREFIX,
+                            self.start_number,
+                            requested_ids_len,
+                            remote_fetch_ms,
+                            total_ms,
+                            err
+                        ),
+                    }
+                }
+                result
             }
         }
         .boxed()
@@ -222,6 +317,8 @@ pub struct BlockCollector<N, H> {
     execute_timeout_ms: u64,
     cancel_flag: Arc<std::sync::atomic::AtomicBool>,
     parallel_info_service: Option<ServiceRef<ParallelInfoService>>,
+    profiling_info: bool,
+    profile: CollectStageProfile,
 }
 
 impl<N, H> ContinueChainOperator for BlockCollector<N, H>
@@ -330,7 +427,66 @@ where
             execute_timeout_ms,
             cancel_flag,
             parallel_info_service,
+            profiling_info: sync_profiling_info_enabled(),
+            profile: CollectStageProfile::default(),
         }
+    }
+
+    fn record_collect_profile(
+        &mut self,
+        total_collect_ms: u128,
+        ensure_parents_ms: u128,
+        apply_connect_ms: u128,
+        notify_connected_ms: u128,
+    ) {
+        self.profile.collect_count = self.profile.collect_count.saturating_add(1);
+        self.profile.ensure_parents_ms = self
+            .profile
+            .ensure_parents_ms
+            .saturating_add(ensure_parents_ms);
+        self.profile.apply_connect_ms = self
+            .profile
+            .apply_connect_ms
+            .saturating_add(apply_connect_ms);
+        self.profile.notify_connected_ms = self
+            .profile
+            .notify_connected_ms
+            .saturating_add(notify_connected_ms);
+        self.profile.total_collect_ms = self
+            .profile
+            .total_collect_ms
+            .saturating_add(total_collect_ms);
+    }
+
+    fn avg_ms(total_ms: u128, count: u64) -> u128 {
+        total_ms.checked_div(u128::from(count)).unwrap_or(0)
+    }
+
+    fn log_collect_profile_summary(&self) {
+        if !self.profiling_info {
+            return;
+        }
+        let count = self.profile.collect_count;
+        let other_ms = self.profile.total_collect_ms.saturating_sub(
+            self.profile
+                .ensure_parents_ms
+                .saturating_add(self.profile.apply_connect_ms)
+                .saturating_add(self.profile.notify_connected_ms),
+        );
+        info!(
+            "{} stage=block_collect_summary status=ok collect_count={} total_ms={} ensure_parents_ms={} apply_connect_ms={} notify_connected_ms={} other_ms={} avg_total_ms={} avg_ensure_parents_ms={} avg_apply_connect_ms={} avg_notify_connected_ms={}",
+            SYNC_PROF_PREFIX,
+            count,
+            self.profile.total_collect_ms,
+            self.profile.ensure_parents_ms,
+            self.profile.apply_connect_ms,
+            self.profile.notify_connected_ms,
+            other_ms,
+            Self::avg_ms(self.profile.total_collect_ms, count),
+            Self::avg_ms(self.profile.ensure_parents_ms, count),
+            Self::avg_ms(self.profile.apply_connect_ms, count),
+            Self::avg_ms(self.profile.notify_connected_ms, count)
+        );
     }
 
     #[cfg(test)]
@@ -601,9 +757,14 @@ where
     }
 
     async fn fetch_blocks(&self, block_ids: Vec<HashValue>) -> Result<Vec<BlockHeader>> {
+        let profiling_info = sync_profiling_info_enabled();
+        let fetch_begin = Instant::now();
+        let input_ids = block_ids.len();
         let mut result = vec![];
         let mut deduped_block_ids = Vec::with_capacity(block_ids.len());
         let mut seen = HashSet::with_capacity(block_ids.len());
+        let mut local_block_hits = 0_u64;
+        let mut local_dag_hits = 0_u64;
         for block_id in block_ids {
             if seen.insert(block_id) {
                 deduped_block_ids.push(block_id);
@@ -632,6 +793,7 @@ where
                     }
                     match self.sync_dag_store.save_block(block.clone()) {
                         Ok(_) => {
+                            local_block_hits = local_block_hits.saturating_add(1);
                             result.push(block.header().clone());
                             return false; // read from local store, remove from p2p request
                         }
@@ -653,6 +815,7 @@ where
                     if let Some(dag_sync_block) = op_dag_sync_block {
                         match self.sync_dag_store.save_block(dag_sync_block.block.clone()) {
                             Ok(_) => {
+                                local_dag_hits = local_dag_hits.saturating_add(1);
                                 result.push(dag_sync_block.block.header().clone());
                                 false // read from local store, remove from p2p request
                             }
@@ -671,8 +834,34 @@ where
                 }
             }
         });
+        let remote_request_ids = deduped_block_ids.len();
+        let remote_fetch_begin = Instant::now();
+        let mut remote_fetched_blocks = 0_u64;
         for chunk in deduped_block_ids.chunks(usize::try_from(MAX_BLOCK_REQUEST_SIZE)?) {
-            let remote_dag_sync_blocks = self.fetcher.fetch_blocks(chunk.to_vec()).await?;
+            let fetch_res = self.fetcher.fetch_blocks(chunk.to_vec()).await;
+            let remote_dag_sync_blocks = match fetch_res {
+                Ok(blocks) => blocks,
+                Err(err) => {
+                    if profiling_info {
+                        let remote_fetch_ms = remote_fetch_begin.elapsed().as_millis();
+                        let total_ms = fetch_begin.elapsed().as_millis();
+                        warn!(
+                            "{} stage=fetch_absent_blocks status=err input_ids={} deduped_ids={} local_block_hits={} local_dag_hits={} remote_request_ids={} remote_fetched_blocks={} remote_fetch_ms={} total_ms={} error={:?}",
+                            SYNC_PROF_PREFIX,
+                            input_ids,
+                            seen.len(),
+                            local_block_hits,
+                            local_dag_hits,
+                            remote_request_ids,
+                            remote_fetched_blocks,
+                            remote_fetch_ms,
+                            total_ms,
+                            err
+                        );
+                    }
+                    return Err(err);
+                }
+            };
             for (block, _) in remote_dag_sync_blocks {
                 self.local_store
                     .save_dag_sync_block(starcoin_storage::block::DagSyncBlock {
@@ -681,7 +870,25 @@ where
                     })?;
                 self.sync_dag_store.save_block(block.clone())?;
                 result.push(block.header().clone());
+                remote_fetched_blocks = remote_fetched_blocks.saturating_add(1);
             }
+        }
+        if profiling_info {
+            let remote_fetch_ms = remote_fetch_begin.elapsed().as_millis();
+            let total_ms = fetch_begin.elapsed().as_millis();
+            info!(
+                "{} stage=fetch_absent_blocks status=ok input_ids={} deduped_ids={} local_block_hits={} local_dag_hits={} remote_request_ids={} remote_fetched_blocks={} returned_headers={} remote_fetch_ms={} total_ms={}",
+                SYNC_PROF_PREFIX,
+                input_ids,
+                seen.len(),
+                local_block_hits,
+                local_dag_hits,
+                remote_request_ids,
+                remote_fetched_blocks,
+                result.len(),
+                remote_fetch_ms,
+                total_ms
+            );
         }
         Ok(result)
     }
@@ -782,13 +989,17 @@ where
     }
 
     pub fn check_enough_by_info(&self, block_info: BlockInfo) -> Result<CollectorState> {
-        if block_info.block_accumulator_info.num_leaves
-            == self.target.block_info.block_accumulator_info.num_leaves
-        {
-            Ok(CollectorState::Enough)
-        } else {
-            Ok(CollectorState::Need)
+        let current_leaves = block_info.block_accumulator_info.num_leaves;
+        let target_leaves = self.target.block_info.block_accumulator_info.num_leaves;
+        if current_leaves < target_leaves {
+            return Ok(CollectorState::Need);
         }
+        if *block_info.block_id() == self.target.target_id.id()
+            || self.chain.has_dag_block(self.target.target_id.id())?
+        {
+            return Ok(CollectorState::Enough);
+        }
+        Ok(CollectorState::Need)
     }
 
     pub fn check_enough(&self) -> Result<CollectorState> {
@@ -824,73 +1035,126 @@ where
             return Err(TaskError::Canceled.into());
         }
         let (block, block_info, peer_id) = item.into();
+        let collect_begin = Instant::now();
+        let mut apply_connect_ms = 0_u128;
+        let mut notify_connected_ms = 0_u128;
 
         // if it is a dag block, we must ensure that its dag parent blocks exist.
         // if it is not, we must pull the dag parent blocks from the peer.
         info!("now sync dag block -- ensure_dag_parent_blocks_exist");
-        match self.ensure_dag_parent_blocks_exist(block.clone())? {
-            ParallelSign::NeedMoreBlocks => return Ok(CollectorState::Need),
-            ParallelSign::Continue => (),
-        }
-        let state = self.check_enough();
-        if let anyhow::Result::Ok(CollectorState::Enough) = &state {
-            if self.chain.has_dag_block(block.header().id())? {
-                let current_header = self.chain.current_header();
-                let current_block = self
-                    .local_store
-                    .get_block(current_header.id())?
-                    .expect("failed to get the current block which should exist");
-                self.latest_block_id = block.header().id();
-                return self.notify_connected_block(
-                    current_block,
-                    self.local_store
-                        .get_block_info(current_header.id())?
-                        .expect("block info should exist"),
-                    BlockConnectAction::ConnectExecutedBlock,
-                    state?,
-                );
+        let ensure_begin = Instant::now();
+        let ensure_result = self.ensure_dag_parent_blocks_exist(block.clone());
+        let ensure_parents_ms = ensure_begin.elapsed().as_millis();
+
+        let collect_result = match ensure_result {
+            Ok(ParallelSign::NeedMoreBlocks) => Ok(CollectorState::Need),
+            Ok(ParallelSign::Continue) => {
+                match self.check_enough()? {
+                    CollectorState::Enough if self.chain.has_dag_block(block.header().id())? => {
+                        let current_header = self.chain.current_header();
+                        let current_block = self
+                            .local_store
+                            .get_block(current_header.id())?
+                            .expect("failed to get the current block which should exist");
+                        self.latest_block_id =
+                            if self.chain.has_dag_block(self.target.target_id.id())? {
+                                self.target.target_id.id()
+                            } else {
+                                current_header.id()
+                            };
+                        let notify_begin = Instant::now();
+                        let notify_result = self.notify_connected_block(
+                            current_block,
+                            self.local_store
+                                .get_block_info(current_header.id())?
+                                .expect("block info should exist"),
+                            BlockConnectAction::ConnectExecutedBlock,
+                            CollectorState::Enough,
+                        );
+                        notify_connected_ms = notify_begin.elapsed().as_millis();
+                        notify_result
+                    }
+                    _ => {
+                        info!("successfully ensure block's parents exist");
+
+                        let timestamp = block.header().timestamp();
+
+                        let block_info = if self.chain.has_dag_block(block.header().id())? {
+                            Some(match block_info {
+                                Some(block_info) => block_info,
+                                None => self
+                                    .local_store
+                                    .get_block_info(block.id())?
+                                    .ok_or_else(|| {
+                                        format_err!(
+                                            "block info should exist for already-connected dag block: {}",
+                                            block.id()
+                                        )
+                                    })?,
+                            })
+                        } else {
+                            None
+                        };
+
+                        let apply_begin = Instant::now();
+                        let (block_info, action) = match block_info {
+                            Some(block_info) => {
+                                let multi_state =
+                                    self.local_store.get_vm_multi_state(block.id())?;
+                                self.chain.connect(ExecutedBlock::new(
+                                    block.clone(),
+                                    block_info.clone(),
+                                    multi_state,
+                                ))?;
+                                (block_info, BlockConnectAction::ConnectExecutedBlock)
+                            }
+                            None => {
+                                self.apply_block(block.clone(), peer_id)?;
+                                self.chain.time_service().adjust(timestamp);
+                                (
+                                    self.chain.status().info,
+                                    BlockConnectAction::ConnectNewBlock,
+                                )
+                            }
+                        };
+                        apply_connect_ms = apply_begin.elapsed().as_millis();
+
+                        //verify target
+                        let state = self.check_enough_by_info(block_info.clone())?;
+                        self.latest_block_id = if matches!(state, CollectorState::Enough)
+                            && self.chain.has_dag_block(self.target.target_id.id())?
+                        {
+                            self.target.target_id.id()
+                        } else {
+                            self.chain.current_header().id()
+                        };
+
+                        let notify_begin = Instant::now();
+                        let notify_result =
+                            self.notify_connected_block(block, block_info, action, state);
+                        notify_connected_ms = notify_begin.elapsed().as_millis();
+                        notify_result
+                    }
+                }
             }
-        }
-        info!("successfully ensure block's parents exist");
-
-        let timestamp = block.header().timestamp();
-
-        let block_info = if self.chain.has_dag_block(block.header().id())? {
-            block_info
-        } else {
-            None
+            Err(err) => Err(err),
         };
 
-        let (block_info, action) = match block_info {
-            Some(block_info) => {
-                let multi_state = self.local_store.get_vm_multi_state(block.id())?;
-                self.chain.connect(ExecutedBlock::new(
-                    block.clone(),
-                    block_info.clone(),
-                    multi_state,
-                ))?;
-                (block_info, BlockConnectAction::ConnectExecutedBlock)
-            }
-            None => {
-                self.apply_block(block.clone(), peer_id)?;
-                self.chain.time_service().adjust(timestamp);
-                (
-                    self.chain.status().info,
-                    BlockConnectAction::ConnectNewBlock,
-                )
-            }
-        };
-        self.latest_block_id = block.header().id();
+        if self.profiling_info {
+            self.record_collect_profile(
+                collect_begin.elapsed().as_millis(),
+                ensure_parents_ms,
+                apply_connect_ms,
+                notify_connected_ms,
+            );
+        }
 
-        //verify target
-        let state: Result<CollectorState, anyhow::Error> =
-            self.check_enough_by_info(block_info.clone());
-
-        self.notify_connected_block(block, block_info, action, state?)
+        collect_result
     }
 
     fn finish(self) -> Result<Self::Output> {
         self.local_store.delete_all_dag_sync_blocks()?;
+        self.log_collect_profile_summary();
         // Fork to latest_block_id to ensure the returned chain has its head/state
         // pointing to a specific block, making it ready for subsequent operations.
         // In DAG mode, this sets the execution context to the latest processed block.

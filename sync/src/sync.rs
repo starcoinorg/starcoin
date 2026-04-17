@@ -3,6 +3,7 @@
 
 use crate::block_connector::BlockConnectorService;
 use crate::parallel::parallel_info_service::{ParallelInfoService, ResetParallelSyncStatRequest};
+use crate::set_sync_profiling_info_enabled;
 use crate::store::sync_dag_store::{SyncDagStore, SyncDagStoreConfig};
 use crate::sync_metrics::SyncMetrics;
 use crate::sync_watchdog::{update_watchdog_state, SyncWatchdogSnapshot};
@@ -191,6 +192,10 @@ impl SyncService {
         dag: BlockDAG,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
+        set_sync_profiling_info_enabled(config.sync.profiling_info());
+        if config.sync.profiling_info() {
+            info!("[sync-prof] sync profiling info logging enabled");
+        }
         let startup_info = storage
             .get_startup_info()?
             .ok_or_else(|| format_err!("can't get startup info"))?;
@@ -660,7 +665,7 @@ impl SyncService {
         let sync_task = async move {
             let result = AssertUnwindSafe(fut).catch_unwind().await;
             let mut chain_status: Option<ChainStatus> = None;
-            let cancel = match result {
+            let (cancel, recheck) = match result {
                 Ok(result) => match result {
                     Ok(Some(chain)) => {
                         info!("[sync] Sync to latest block: {:?}", chain.current_header());
@@ -668,11 +673,11 @@ impl SyncService {
                             sync_task_total.with_label_values(&["done"]).inc();
                         }
                         chain_status = Some(chain.status());
-                        false
+                        (false, true)
                     }
                     Ok(None) => {
                         debug!("[sync] Check sync task return none, do not need sync.");
-                        false
+                        (false, false)
                     }
                     Err(err) => {
                         if let Some(task_err) = err.downcast_ref::<TaskError>() {
@@ -682,7 +687,7 @@ impl SyncService {
                                     if let Some(sync_task_total) = sync_task_total.as_ref() {
                                         sync_task_total.with_label_values(&["cancel"]).inc();
                                     }
-                                    true
+                                    (true, true)
                                 }
                                 TaskError::BreakError(err) => {
                                     let reason = if let Some(rpc_verify_err) =
@@ -716,14 +721,14 @@ impl SyncService {
                                     if let Some(sync_task_total) = sync_task_total.as_ref() {
                                         sync_task_total.with_label_values(&["break"]).inc();
                                     }
-                                    false
+                                    (false, true)
                                 }
                                 task_err => {
                                     error!("[sync] Sync task error: {:?}", task_err);
                                     if let Some(sync_task_total) = sync_task_total.as_ref() {
                                         sync_task_total.with_label_values(&["error"]).inc();
                                     }
-                                    false
+                                    (false, false)
                                 }
                             }
                         } else {
@@ -731,7 +736,7 @@ impl SyncService {
                             if let Some(sync_task_total) = sync_task_total.as_ref() {
                                 sync_task_total.with_label_values(&["error"]).inc();
                             }
-                            false
+                            (false, false)
                         }
                     }
                 },
@@ -740,12 +745,13 @@ impl SyncService {
                     if let Some(sync_task_total) = sync_task_total.as_ref() {
                         sync_task_total.with_label_values(&["panic"]).inc();
                     }
-                    true
+                    (true, false)
                 }
             };
             if let Err(e) = self_ref.notify(SyncDoneEvent {
                 cancel,
                 chain_status,
+                recheck,
             }) {
                 error!("[sync] Broadcast SyncDone event error: {:?}", e);
             }
@@ -1064,6 +1070,7 @@ pub struct SyncDoneEvent {
     #[allow(unused)]
     cancel: bool,
     chain_status: Option<ChainStatus>,
+    recheck: bool,
 }
 
 impl EventHandler<Self, SyncDoneEvent> for SyncService {
@@ -1072,7 +1079,9 @@ impl EventHandler<Self, SyncDoneEvent> for SyncService {
         if msg.cancel {
             self.sync_status.sync_cancel();
             ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
-            ctx.notify(CheckSyncEvent::default());
+            if msg.recheck {
+                ctx.notify(CheckSyncEvent::default());
+            }
             return;
         }
         match previous_stage {
@@ -1102,7 +1111,9 @@ impl EventHandler<Self, SyncDoneEvent> for SyncService {
                 self.publish_sync_status(ctx);
                 // check sync again
                 //TODO do not broadcast SyncDone, if node still not synchronized after check sync.
-                ctx.notify(CheckSyncEvent::default());
+                if msg.recheck {
+                    ctx.notify(CheckSyncEvent::default());
+                }
             }
             SyncStage::Canceling => {
                 self.sync_status.sync_done();

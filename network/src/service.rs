@@ -439,6 +439,7 @@ pub(crate) struct Inner {
     network_service: Arc<network_p2p::NetworkService>,
     self_peer: Peer,
     peers: HashMap<PeerId, Peer>,
+    sync_status: Option<SyncStatus>,
     peer_message_handler: Arc<dyn PeerMessageHandler>,
     metrics: Option<NetworkMetrics>,
 }
@@ -478,12 +479,21 @@ impl Inner {
             network_service,
             self_peer: Peer::new(self_info),
             peers: HashMap::new(),
+            sync_status: None,
             peer_message_handler: Arc::new(peer_message_handler),
             metrics,
         })
     }
 
+    fn accept_transaction_messages(&self) -> bool {
+        self.sync_status
+            .as_ref()
+            .map(|status| status.is_synced())
+            .unwrap_or(false)
+    }
+
     pub(crate) fn update_chain_status(&mut self, sync_status: SyncStatus) {
+        self.sync_status = Some(sync_status.clone());
         let chain_status = sync_status.chain_status().clone();
         self.self_peer
             .peer_info
@@ -504,37 +514,45 @@ impl Inner {
         protocol: Cow<'static, str>,
         message: Bytes,
     ) -> Result<()> {
+        let accept_transaction_messages = self.accept_transaction_messages();
         if let Some(peer_info) = self.peers.get_mut(&peer_id) {
             let notification =
                 NotificationMessage::decode_notification(protocol.as_ref(), message.as_ref())?;
             let notification = match &notification {
                 NotificationMessage::Transactions(peer_transactions) => {
-                    for txn in &peer_transactions.txns {
-                        let id = txn.id();
-                        peer_info.known_transactions.insert(id, ());
-                    }
-                    let txns_after_filter = peer_transactions
-                        .txns
-                        .iter()
-                        .filter(|txn| {
-                            let txn_id = txn.id();
-                            if !self.self_peer.known_transactions.contains_key(&txn_id) {
-                                self.self_peer.known_transactions.insert(txn_id, ());
-                                true
-                            } else {
-                                false
-                            }
-                        })
-                        .collect::<Vec<_>>();
-
-                    if txns_after_filter.len() == peer_transactions.txns.len() {
-                        Some(notification)
-                    } else if txns_after_filter.is_empty() {
+                    if !accept_transaction_messages {
+                        trace!(
+                            "[network] Ignore transaction notification while node is not synchronized."
+                        );
                         None
                     } else {
-                        Some(NotificationMessage::Transactions(TransactionsMessage::new(
-                            txns_after_filter.into_iter().cloned().collect(),
-                        )))
+                        for txn in &peer_transactions.txns {
+                            let id = txn.id();
+                            peer_info.known_transactions.insert(id, ());
+                        }
+                        let txns_after_filter = peer_transactions
+                            .txns
+                            .iter()
+                            .filter(|txn| {
+                                let txn_id = txn.id();
+                                if !self.self_peer.known_transactions.contains_key(&txn_id) {
+                                    self.self_peer.known_transactions.insert(txn_id, ());
+                                    true
+                                } else {
+                                    false
+                                }
+                            })
+                            .collect::<Vec<_>>();
+
+                        if txns_after_filter.len() == peer_transactions.txns.len() {
+                            Some(notification)
+                        } else if txns_after_filter.is_empty() {
+                            None
+                        } else {
+                            Some(NotificationMessage::Transactions(TransactionsMessage::new(
+                                txns_after_filter.into_iter().cloned().collect(),
+                            )))
+                        }
                     }
                 }
                 NotificationMessage::CompactBlock(compact_block_message) => {
@@ -565,23 +583,30 @@ impl Inner {
                 NotificationMessage::Announcement(announcement) => {
                     debug!("announcement ids length: {:?}", announcement.ids.len());
                     if announcement.is_txn() {
-                        let mut fresh_ids = Vec::new();
-                        for txn_id in announcement.clone().ids() {
-                            peer_info.known_transactions.insert(txn_id, ());
-
-                            if !self.self_peer.known_transactions.contains_key(&txn_id) {
-                                self.self_peer.known_transactions.insert(txn_id, ());
-                                fresh_ids.push(txn_id);
-                            };
-                        }
-
-                        if fresh_ids.is_empty() {
+                        if !accept_transaction_messages {
+                            trace!(
+                                "[network] Ignore txn announcement while node is not synchronized."
+                            );
                             None
                         } else {
-                            Some(NotificationMessage::Announcement(Announcement::new(
-                                AnnouncementType::Txn,
-                                fresh_ids,
-                            )))
+                            let mut fresh_ids = Vec::new();
+                            for txn_id in announcement.clone().ids() {
+                                peer_info.known_transactions.insert(txn_id, ());
+
+                                if !self.self_peer.known_transactions.contains_key(&txn_id) {
+                                    self.self_peer.known_transactions.insert(txn_id, ());
+                                    fresh_ids.push(txn_id);
+                                };
+                            }
+
+                            if fresh_ids.is_empty() {
+                                None
+                            } else {
+                                Some(NotificationMessage::Announcement(Announcement::new(
+                                    AnnouncementType::Txn,
+                                    fresh_ids,
+                                )))
+                            }
                         }
                     } else {
                         None

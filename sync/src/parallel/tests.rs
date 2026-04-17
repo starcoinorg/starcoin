@@ -1,4 +1,4 @@
-use super::executor::{DagBlockExecutor, ExecuteState};
+use super::executor::{DagBlockExecutor, ExecuteState, WorkerExecuteEvent};
 use super::sender::DagBlockSender;
 use super::{set_test_assume_parents_ready, set_test_execute_delay_ms};
 use crate::store::sync_dag_store::SyncDagStore;
@@ -12,7 +12,7 @@ use starcoin_crypto::HashValue;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 use stream_task::CollectorState;
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, watch};
 
 struct ExecuteDelayGuard;
 
@@ -80,6 +80,7 @@ async fn test_execute_timeout_returns_error() -> Result<()> {
     )?;
 
     let (sender_to_main, mut receiver_from_executor) = mpsc::channel(1);
+    let (_parent_ready_tx, parent_ready_rx) = watch::channel(0_u64);
     let (sender_to_worker, executor) = DagBlockExecutor::new(
         sender_to_main,
         1,
@@ -89,17 +90,21 @@ async fn test_execute_timeout_returns_error() -> Result<()> {
         None,
         chain.head().dag(),
         1,
+        parent_ready_rx,
+        0,
     )?;
 
     let handle = executor.start_to_execute()?;
     sender_to_worker.send(Some(block)).await?;
 
-    let state = tokio::time::timeout(
+    let event: WorkerExecuteEvent = tokio::time::timeout(
         tokio::time::Duration::from_secs(5),
         receiver_from_executor.recv(),
     )
     .await?
-    .expect("expected execute state");
+    .expect("expected execute event");
+    assert_eq!(event.worker_id, 0);
+    let state = event.state;
     assert!(matches!(state, ExecuteState::Error(_)));
 
     let _ = sender_to_worker.send(None).await;

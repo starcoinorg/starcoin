@@ -10,7 +10,8 @@ use crate::tasks::mock::{
 };
 use crate::tasks::{
     full_sync_task, AccumulatorCollector, AncestorCollector, BlockAccumulatorSyncTask,
-    BlockCollector, BlockFetcher, BlockLocalStore, BlockSyncTask, FindAncestorTask, SyncFetcher,
+    BlockCollector, BlockFetcher, BlockIdRangeFetcher, BlockLocalStore, BlockSyncTask,
+    FindAncestorTask, SyncFetcher,
 };
 use anyhow::Context;
 use anyhow::{ensure, format_err, Result};
@@ -31,13 +32,14 @@ use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
+use starcoin_network_rpc_api::RangeInLocation;
 use starcoin_storage::{BlockStore, Store};
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeaderBuilder, BlockIdAndNumber, BlockInfo},
     U256,
 };
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 const EXECUTE_TIMEOUT_MS: u64 = 300_000;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -1316,5 +1318,382 @@ pub async fn test_range_location() -> Result<()> {
     let report = event_handle.get_reports().pop().unwrap();
     debug!("report: {}", report);
 
+    Ok(())
+}
+
+#[derive(Clone)]
+struct SequenceRangeLocateFetcher {
+    responses: Arc<Mutex<VecDeque<RangeLocateMockStep>>>,
+}
+
+#[derive(Clone)]
+struct RangeLocateMockStep {
+    expected_start_id: HashValue,
+    expected_end_id: Option<HashValue>,
+    response: RangeInLocation,
+}
+
+impl RangeLocateMockStep {
+    fn new(
+        expected_start_id: HashValue,
+        expected_end_id: Option<HashValue>,
+        response: RangeInLocation,
+    ) -> Self {
+        Self {
+            expected_start_id,
+            expected_end_id,
+            response,
+        }
+    }
+}
+
+impl SequenceRangeLocateFetcher {
+    fn new(responses: Vec<RangeLocateMockStep>) -> Self {
+        Self {
+            responses: Arc::new(Mutex::new(VecDeque::from(responses))),
+        }
+    }
+}
+
+impl BlockIdRangeFetcher for SequenceRangeLocateFetcher {
+    fn fetch_range_locate(
+        &self,
+        _peer: Option<PeerId>,
+        start_id: HashValue,
+        end_id: Option<HashValue>,
+    ) -> BoxFuture<'_, Result<RangeInLocation>> {
+        let responses = self.responses.clone();
+        async move {
+            let mut guard = responses
+                .lock()
+                .map_err(|_| format_err!("range locate fetcher lock poisoned"))?;
+            let response = guard
+                .pop_front()
+                .ok_or_else(|| format_err!("no more range locate mock responses"))?;
+            ensure!(
+                response.expected_start_id == start_id,
+                "unexpected range locate start_id: expected {}, got {}",
+                response.expected_start_id,
+                start_id
+            );
+            ensure!(
+                response.expected_end_id == end_id,
+                "unexpected range locate end_id: expected {:?}, got {:?}",
+                response.expected_end_id,
+                end_id
+            );
+            Ok(response.response)
+        }
+        .boxed()
+    }
+}
+
+#[stest::test(timeout = 120)]
+async fn test_range_location_direct_in_selected_chain_hit() -> Result<()> {
+    let net = ChainNetwork::new_test();
+    let mut local_chain = MockChain::new(net)?;
+    let _ = local_chain.produce_and_apply_with_tips_for_times(8)?;
+
+    let storage = local_chain.head().get_storage();
+    let head_id = local_chain.head().current_header().id();
+    let genesis_id = storage
+        .get_genesis()?
+        .ok_or_else(|| format_err!("genesis should exist"))?;
+    let fetcher = SequenceRangeLocateFetcher::new(vec![RangeLocateMockStep::new(
+        head_id,
+        None,
+        RangeInLocation::InSelectedChain(genesis_id, vec![]),
+    )]);
+
+    let task_state = FindRangeLocateTask::new(
+        local_chain.head().current_header().id(),
+        None,
+        fetcher,
+        storage.clone(),
+        local_chain.head().dag(),
+    );
+    let collector = DagAncestorCollector::new(local_chain.head().dag(), storage);
+    let event_handle = Arc::new(TaskEventCounterHandle::new());
+
+    let ancestor = TaskGenerator::new(
+        task_state,
+        1,
+        1,
+        1,
+        collector,
+        event_handle,
+        Arc::new(DefaultCustomErrorHandle),
+    )
+    .generate()
+    .await?;
+
+    assert_eq!(ancestor.id, genesis_id);
+    assert_eq!(ancestor.number, 0);
+    Ok(())
+}
+
+#[stest::test(timeout = 120)]
+async fn test_range_location_not_in_chain_then_fallback_to_genesis() -> Result<()> {
+    let net = ChainNetwork::new_test();
+    let mut local_chain = MockChain::new(net)?;
+    let _ = local_chain.produce_and_apply_with_tips_for_times(12)?;
+
+    let storage = local_chain.head().get_storage();
+    let head_id = local_chain.head().current_header().id();
+    let genesis_id = storage
+        .get_genesis()?
+        .ok_or_else(|| format_err!("genesis should exist"))?;
+    let first_header = storage
+        .get_block_header_by_hash(head_id)?
+        .ok_or_else(|| format_err!("missing header for head {}", head_id))?;
+    let fallback_start_id = if first_header.pruning_point() == HashValue::zero() {
+        genesis_id
+    } else {
+        first_header.pruning_point()
+    };
+    let fetcher = SequenceRangeLocateFetcher::new(vec![
+        RangeLocateMockStep::new(head_id, None, RangeInLocation::NotInSelectedChain),
+        RangeLocateMockStep::new(
+            fallback_start_id,
+            Some(head_id),
+            RangeInLocation::InSelectedChain(genesis_id, vec![]),
+        ),
+    ]);
+
+    let task_state = FindRangeLocateTask::new(
+        local_chain.head().current_header().id(),
+        None,
+        fetcher,
+        storage.clone(),
+        local_chain.head().dag(),
+    );
+    let collector = DagAncestorCollector::new(local_chain.head().dag(), storage);
+    let event_handle = Arc::new(TaskEventCounterHandle::new());
+
+    let ancestor = TaskGenerator::new(
+        task_state,
+        1,
+        1,
+        1,
+        collector,
+        event_handle,
+        Arc::new(DefaultCustomErrorHandle),
+    )
+    .generate()
+    .await?;
+
+    assert_eq!(ancestor.id, genesis_id);
+    assert_eq!(ancestor.number, 0);
+    Ok(())
+}
+
+#[stest::test(timeout = 120)]
+async fn test_range_location_len_one_uses_hash_value_when_no_prior_common() -> Result<()> {
+    let net = ChainNetwork::new_test();
+    let mut local_chain = MockChain::new(net)?;
+    let _ = local_chain.produce_and_apply_with_tips_for_times(6)?;
+
+    let storage = local_chain.head().get_storage();
+    let head_id = local_chain.head().current_header().id();
+    let genesis_id = storage
+        .get_genesis()?
+        .ok_or_else(|| format_err!("genesis should exist"))?;
+    let fetcher = SequenceRangeLocateFetcher::new(vec![RangeLocateMockStep::new(
+        head_id,
+        None,
+        RangeInLocation::InSelectedChain(genesis_id, vec![HashValue::from_u64(900_001)]),
+    )]);
+
+    let task_state = FindRangeLocateTask::new(
+        local_chain.head().current_header().id(),
+        None,
+        fetcher,
+        storage.clone(),
+        local_chain.head().dag(),
+    );
+    let collector = DagAncestorCollector::new(local_chain.head().dag(), storage);
+    let event_handle = Arc::new(TaskEventCounterHandle::new());
+
+    let ancestor = TaskGenerator::new(
+        task_state,
+        1,
+        1,
+        1,
+        collector,
+        event_handle,
+        Arc::new(DefaultCustomErrorHandle),
+    )
+    .generate()
+    .await?;
+
+    assert_eq!(ancestor.id, genesis_id);
+    assert_eq!(ancestor.number, 0);
+    Ok(())
+}
+
+#[stest::test(timeout = 120)]
+async fn test_range_location_all_in_range_then_len_one_returns_last_common() -> Result<()> {
+    let net = ChainNetwork::new_test();
+    let mut local_chain = MockChain::new(net)?;
+    let _ = local_chain.produce_and_apply_with_tips_for_times(20)?;
+
+    let storage = local_chain.head().get_storage();
+    let id_2 = *local_chain
+        .head()
+        .get_block_info_by_number(2)?
+        .ok_or_else(|| format_err!("missing block info #2"))?
+        .block_id();
+    let id_4 = *local_chain
+        .head()
+        .get_block_info_by_number(4)?
+        .ok_or_else(|| format_err!("missing block info #4"))?
+        .block_id();
+    let id_8 = *local_chain
+        .head()
+        .get_block_info_by_number(8)?
+        .ok_or_else(|| format_err!("missing block info #8"))?
+        .block_id();
+    let head_id = local_chain.head().current_header().id();
+
+    let fetcher = SequenceRangeLocateFetcher::new(vec![
+        RangeLocateMockStep::new(
+            head_id,
+            None,
+            RangeInLocation::InSelectedChain(id_2, vec![id_4, id_8]),
+        ),
+        RangeLocateMockStep::new(
+            id_8,
+            None,
+            RangeInLocation::InSelectedChain(id_8, vec![HashValue::from_u64(900_002)]),
+        ),
+    ]);
+
+    let task_state = FindRangeLocateTask::new(
+        local_chain.head().current_header().id(),
+        None,
+        fetcher,
+        storage.clone(),
+        local_chain.head().dag(),
+    );
+    let collector = DagAncestorCollector::new(local_chain.head().dag(), storage);
+    let event_handle = Arc::new(TaskEventCounterHandle::new());
+
+    let ancestor = TaskGenerator::new(
+        task_state,
+        1,
+        1,
+        1,
+        collector,
+        event_handle,
+        Arc::new(DefaultCustomErrorHandle),
+    )
+    .generate()
+    .await?;
+
+    assert_eq!(ancestor.id, id_8);
+    assert_eq!(ancestor.number, 8);
+    Ok(())
+}
+
+#[stest::test(timeout = 120)]
+async fn test_range_location_in_range_then_len_one_keeps_prior_common() -> Result<()> {
+    let net = ChainNetwork::new_test();
+    let mut local_chain = MockChain::new(net)?;
+    let _ = local_chain.produce_and_apply_with_tips_for_times(20)?;
+
+    let storage = local_chain.head().get_storage();
+    let id_3 = *local_chain
+        .head()
+        .get_block_info_by_number(3)?
+        .ok_or_else(|| format_err!("missing block info #3"))?
+        .block_id();
+    let head_id = local_chain.head().current_header().id();
+    let in_range_end_id = HashValue::from_u64(900_011);
+
+    let fetcher = SequenceRangeLocateFetcher::new(vec![
+        RangeLocateMockStep::new(
+            head_id,
+            None,
+            RangeInLocation::InSelectedChain(id_3, vec![id_3, in_range_end_id]),
+        ),
+        RangeLocateMockStep::new(
+            id_3,
+            Some(in_range_end_id),
+            RangeInLocation::InSelectedChain(id_3, vec![HashValue::from_u64(900_012)]),
+        ),
+    ]);
+
+    let task_state = FindRangeLocateTask::new(
+        local_chain.head().current_header().id(),
+        None,
+        fetcher,
+        storage.clone(),
+        local_chain.head().dag(),
+    );
+    let collector = DagAncestorCollector::new(local_chain.head().dag(), storage);
+    let event_handle = Arc::new(TaskEventCounterHandle::new());
+
+    let ancestor = TaskGenerator::new(
+        task_state,
+        1,
+        1,
+        1,
+        collector,
+        event_handle,
+        Arc::new(DefaultCustomErrorHandle),
+    )
+    .generate()
+    .await?;
+
+    assert_eq!(ancestor.id, id_3);
+    assert_eq!(ancestor.number, 3);
+    Ok(())
+}
+
+#[stest::test(timeout = 120)]
+async fn test_range_location_not_in_range_returns_hash_value() -> Result<()> {
+    let net = ChainNetwork::new_test();
+    let mut local_chain = MockChain::new(net)?;
+    let _ = local_chain.produce_and_apply_with_tips_for_times(6)?;
+
+    let storage = local_chain.head().get_storage();
+    let head_id = local_chain.head().current_header().id();
+    let genesis_id = storage
+        .get_genesis()?
+        .ok_or_else(|| format_err!("genesis should exist"))?;
+
+    let fetcher = SequenceRangeLocateFetcher::new(vec![RangeLocateMockStep::new(
+        head_id,
+        None,
+        RangeInLocation::InSelectedChain(
+            genesis_id,
+            vec![HashValue::from_u64(900_021), HashValue::from_u64(900_022)],
+        ),
+    )]);
+
+    let task_state = FindRangeLocateTask::new(
+        local_chain.head().current_header().id(),
+        None,
+        fetcher,
+        storage.clone(),
+        local_chain.head().dag(),
+    );
+    let collector = DagAncestorCollector::new(local_chain.head().dag(), storage);
+    let event_handle = Arc::new(TaskEventCounterHandle::new());
+
+    let ancestor = TaskGenerator::new(
+        task_state,
+        1,
+        1,
+        1,
+        collector,
+        event_handle,
+        Arc::new(DefaultCustomErrorHandle),
+    )
+    .generate()
+    .await?;
+
+    assert_eq!(ancestor.id, genesis_id);
+    assert_eq!(ancestor.number, 0);
     Ok(())
 }
