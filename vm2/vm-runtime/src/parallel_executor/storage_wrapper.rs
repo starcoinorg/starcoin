@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::layout_identifier_mapping_cache::LayoutIdentifierMappingCache;
 use bytes::Bytes;
 use dashmap::DashMap;
 use move_binary_format::errors::PartialVMError;
@@ -14,7 +15,6 @@ use move_table_extension::{TableHandle, TableResolver};
 use move_vm_types::delayed_values::delayed_field_id::{
     DelayedFieldID, ExtractUniqueIndex, TryFromMoveValue,
 };
-use crate::layout_identifier_mapping_cache::LayoutIdentifierMappingCache;
 use move_vm_types::value_serde::{ValueSerDeContext, ValueToIdentifierMapping};
 use move_vm_types::value_traversal::find_identifiers_in_value;
 use starcoin_aggregator::bounded_math::{BoundedMath, SignedU128};

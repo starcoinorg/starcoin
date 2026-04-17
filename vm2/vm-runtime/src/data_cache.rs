@@ -3,6 +3,9 @@
 //! Scratchpad for on chain values during the execution.
 
 use crate::default_gas_schedule;
+#[cfg(test)]
+use crate::layout_identifier_mapping_cache::compute_layout_has_identifier_mappings;
+use crate::layout_identifier_mapping_cache::LayoutIdentifierMappingCache;
 use crate::move_vm_ext::{resource_state_key, AsExecutorView, ResourceGroupResolver};
 use bytes::Bytes;
 use move_binary_format::deserializer::DeserializerConfig;
@@ -18,9 +21,6 @@ use move_vm_runtime::config::DEFAULT_MAX_VALUE_NEST_DEPTH;
 use move_vm_types::delayed_values::delayed_field_id::{
     DelayedFieldID, ExtractUniqueIndex, ExtractWidth, TryFromMoveValue,
 };
-#[cfg(test)]
-use crate::layout_identifier_mapping_cache::compute_layout_has_identifier_mappings;
-use crate::layout_identifier_mapping_cache::LayoutIdentifierMappingCache;
 use move_vm_types::loaded_data::runtime_types::TypeBuilder;
 use move_vm_types::value_serde::{ValueSerDeContext, ValueToIdentifierMapping};
 use move_vm_types::value_traversal::find_identifiers_in_value;
