@@ -8,7 +8,9 @@ use api_limiter::ApiLimiters;
 pub use api_limiter::Quota;
 use jsonrpc_core::middleware::NoopCallFuture;
 use starcoin_config::{ApiQuotaConfig, ApiQuotaConfiguration, QuotaDuration};
+use starcoin_logger::prelude::*;
 use starcoin_rpc_api::metadata::Metadata;
+use std::collections::HashSet;
 
 struct QuotaWrapper(Quota);
 
@@ -26,6 +28,7 @@ impl From<ApiQuotaConfig> for QuotaWrapper {
 #[derive(Debug)]
 pub struct JsonApiRateLimitMiddleware {
     limiters: ApiLimiters<MethodName, String>,
+    ip_whitelist: HashSet<String>,
 }
 
 impl JsonApiRateLimitMiddleware {
@@ -44,7 +47,18 @@ impl JsonApiRateLimitMiddleware {
                 .map(|(k, v)| (k, Into::<QuotaWrapper>::into(v).0))
                 .collect(),
         );
-        Self { limiters }
+        let ip_whitelist: HashSet<String> = quotas.ip_whitelist().into_iter().collect();
+        info!(
+            "RPC rate limit middleware initialized with {} whitelisted IP(s)",
+            ip_whitelist.len()
+        );
+        if !ip_whitelist.is_empty() {
+            debug!("Whitelisted IPs: {:?}", ip_whitelist);
+        }
+        Self {
+            limiters,
+            ip_whitelist,
+        }
     }
 }
 
@@ -64,9 +78,17 @@ impl Middleware<Metadata> for JsonApiRateLimitMiddleware {
             Call::Invalid { .. } => None,
         };
         if let Some((m, json_version, id)) = method {
+            // Bypass rate limiting for whitelisted IPs
+            if let Some(ref ip) = meta.user {
+                if self.ip_whitelist.contains(ip) {
+                    debug!("Whitelisted IP {} bypassing rate limit for method={}", ip, m);
+                    return Either::Right(next(call, meta));
+                }
+            }
             match self.limiters.check(&m, meta.user.as_ref()) {
                 Ok(_) => Either::Right(next(call, meta)),
                 Err(e) => {
+                    warn!("Rate limited: method={}, user={:?}, reason={}", m, meta.user, e);
                     let output = Output::Failure(Failure {
                         jsonrpc: json_version,
                         error: Error {

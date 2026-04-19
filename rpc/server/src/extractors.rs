@@ -3,6 +3,7 @@
 
 use jsonrpc_http_server::hyper;
 use jsonrpc_pubsub::Session;
+use starcoin_logger::prelude::*;
 use starcoin_rpc_api::metadata::Metadata;
 use std::net::IpAddr;
 use std::sync::Arc;
@@ -27,10 +28,15 @@ impl jsonrpc_http_server::MetaExtractor<Metadata> for RpcExtractor {
             }
         }
 
-        Metadata {
+        let meta = Metadata {
             session: None,
             user: client_ip.map(|ip| ip.to_string()),
-        }
+        };
+        debug!(
+            "HTTP RPC metadata: user={:?}, ip_headers={:?}",
+            meta.user, self.http_ip_headers
+        );
+        meta
     }
 }
 impl jsonrpc_ipc_server::MetaExtractor<Metadata> for RpcExtractor {
