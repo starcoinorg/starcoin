@@ -842,7 +842,8 @@ where
                 // regular selected-parent pending fetch.
                 if !legal_alternative_pending_parents.is_empty() {
                     let parent_count = legal_alternative_pending_parents.len() as u64;
-                    let per_parent_limit = ((remaining_max + parent_count - 1) / parent_count)
+                    let per_parent_limit = remaining_max
+                        .div_ceil(parent_count)
                         .max(1)
                         .min(remaining_max);
 

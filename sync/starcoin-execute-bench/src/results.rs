@@ -112,7 +112,7 @@ fn calculate_percentile(values: &[f64], percentile: f64) -> f64 {
     }
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct PhaseLatencyStats {
     pub sample_count: usize,
     pub min_ms: f64,

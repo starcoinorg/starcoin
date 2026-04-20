@@ -29,7 +29,6 @@ use starcoin_logger::{
 use starcoin_miner::MinerService;
 use starcoin_node::NodeHandle;
 use starcoin_pipeline_timing::{clear_timing, disable_timing, enable_timing, global_collector};
-use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::{
     ActorService, EventHandler, RegistryAsyncService, ServiceContext, ServiceFactory, ServiceRef,
 };
