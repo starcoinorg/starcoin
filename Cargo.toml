@@ -454,7 +454,7 @@ openrpc-schema = { git = "https://github.com/starcoinorg/openrpc-rs", rev = "ede
 ordinal = "0.4.0"
 parity-tokio-ipc = "0.9"
 parking_lot = "0.12.1"
-pbkdf2 = "0.12"
+pbkdf2 = "0.13"
 petgraph = "0.8.3"
 pin-project = "0.4.27"
 pin-utils = "0.1.0"
