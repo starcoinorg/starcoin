@@ -1,0 +1,127 @@
+name: Verify Main Seed Node Keys
+
+on:
+  push:
+    branches:
+      - codex/verify-main-seed-keys-20260430195617
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      NODE_KEYS: ${{ secrets.STARCOIN_NET_NODE_KEYS }}
+      MAIN1_PEER_ID: 12D3KooWSW8t32L6VyjPZxxe3VSD7H6Ffgh69eCaDnDyab2M6tfK
+      MAIN2_PEER_ID: 12D3KooWBWsibdKdogDpFUfSVejPdK6t4s1eEvcqjuPVJ3gSpypx
+      RECOVERY_PUBLIC_KEY_B64: >-
+        LS0tLS1CRUdJTiBQR1AgUFVCTElDIEtFWSBCTE9DSy0tLS0tCgptUUdOQkduelEyRUJEQURSQmNYMW8yY01YTm0zNzQ1T0pZTGZQTTFCSGFWN2s2MTIwdXl3MVg2TXhPK2JISitZCkdyVzNqOEI5Z2pkVE5PMTVjYjQvRm5mRDBmWW1JQ0hPKzR4ZndPRytKK2RTTVpyazZGMjdTSjFiditJbm5EZmEKRnpDaTZWOFNCemFFZ2paeCtVdnFxM3phSHRlMW5YWjhDRmNHTldsc0Faa0hnVzdVZDVESEVZc3NTbFhEU2dMbApoQmM1K0E0U0srWmpJNlYyaTZ2cEUvUjBQSnE5aDR3bXYreVFvKzJ2YkRRWC91bHVDZFVQSys5aDhlcjZjRlVWCkFQc21ZVDBtZ3dlNk1qVktRK0ZRU1E4UlgzZUYvMHlib2JiMlVzalFyejV1aWhpbWIxMzBKKzg1ejdyV2s5eWQKdE16T1p4c29sL3ZrQjNoemZrR1h4S3dma2dIZFU3UGhQZVJheDdTSHJGSGt2WFJpNHJPNFZzdGo5V2NVbHhqSwpnMksyZXV0K3VnWWVoZ3hpM2o3eDF3eFlxUWVONVoyNlpXTlZySUtBbVhxOWtWdThxa2FiOUdJVllmc3ZMdHY0CmpGckpkK2phKzBtZmp5R05PSFBIV3BUclptN0RyUy92ejlKWnU3aTVkd2NwWklQQ0hRS1FzbnJ1Q00zbjVtNjYKSGtGVEFzYUJ3NFlDQkVVQUVRRUFBYlFZYldGcGJpMXpaV1ZrTFhKbFkyOTJaWEo1UUd4dlkyRnNpUUhVQkJNQgpDZ0ErRmlFRTBzaEx6dkY5VFc2YjF4T2wyM1FFUFRjR3VEMEZBbW56UTJFQ0d3MEZDUUFCVVlBRkN3a0lCd0lHCkZRb0pDQXNDQkJZQ0F3RUNIZ0VDRjRBQUNna1EyM1FFUFRjR3VEM3B3QXYvZG1kUlVOZDJMMHRwc3lkZXhkL3EKZ3dvZXFpY1hGVE01S055bTRETHVvRFg3NGM5MitLSTlYam5uTFA5WkxQVkkyeVBjZDZFNGxKL0ZYelhmNE9ZNwpRanp3QlpNd25uUXN0b1RuMng1T3k1dDFiTVVFRXpWcENReFdOLys4dFhoVysrankxYnM0WjAraWthTUtjUnp6CkhxY0xvcW5LOE5XRXFrSEsyaVdweDlaRFVST1ByTG1YYjM5WktyUVhwa1VHcFhMZm1JbkxzK1ZxeVNuOHl0THoKVDFvY1RqeXJhMkQ0SDQrMVZTbmtFVkcybms5b1VVampoWHN4d0Z3aFhsN21ncmhDb3BVRzg2VzMzbWFxM0I4WApnRU0rTFN6ejNLZzNMRGRNdjBnakFnRGdZU3lwRTJFWk10WXp6RGhadlFqQmFiaFJ3K0JtUWlMVFk5WmZRU1dmCit2c1h1bm43d2NTekp5T0RzYkEyZG14TGxMVTFaMGM2eVRDVmV0Q2FXWXZQcnZpYUNlZm5EUGhLc016V1pUWTQKZnl6RkxMODZrcEZHYmJtTThtWnRhTEdaUzA4THpHTkIyczRHdnp1dTVFYmZ0bllYMUFzRmJlVFA3R2tKUWVHVgpvYXNXb1p4WjZETGdFaWtRNHBMdDZzUTgyZWFwTC96em5vbXdCamRUcjFqMwo9cjZUUAotLS0tLUVORCBQR1AgUFVCTElDIEtFWSBCTE9DSy0tLS0tCg==
+    steps:
+      - name: Verify and encrypt matching keys
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${NODE_KEYS:-}" ]]; then
+            echo "::error::STARCOIN_NET_NODE_KEYS is empty or unavailable"
+            exit 1
+          fi
+
+          docker pull ghcr.io/starcoinorg/starcoin:v1.13.20 >/dev/null
+
+          raw_length="$(printf '%s' "${NODE_KEYS}" | wc -c | tr -d '[:space:]')"
+          echo "Secret raw length: ${raw_length}"
+
+          candidates_file="$(mktemp)"
+          printf '%s' "${NODE_KEYS}" | grep -Eo '[0-9a-fA-F]{64}' >> "${candidates_file}" || true
+
+          decoded="$(printf '%s' "${NODE_KEYS}" | tr -d '[:space:]' | base64 -d 2>/dev/null || true)"
+          if [[ -n "${decoded}" ]]; then
+            printf '%s' "${decoded}" | grep -Eo '[0-9a-fA-F]{64}' >> "${candidates_file}" || true
+          fi
+
+          mapfile -t entries < <(awk '!seen[$0]++' "${candidates_file}")
+          rm -f "${candidates_file}"
+          echo "64-hex candidates: ${#entries[@]}"
+
+          main1_key=""
+          main2_key=""
+          main1_index=""
+          main2_index=""
+
+          for idx in "${!entries[@]}"; do
+            key="$(printf '%s' "${entries[$idx]}" | tr -d '[:space:]')"
+            if [[ -z "${key}" ]]; then
+              continue
+            fi
+            if [[ ! "${key}" =~ ^[0-9a-fA-F]{64}$ ]]; then
+              echo "::warning::entry ${idx} is not a 64-character hex node key"
+              continue
+            fi
+
+            peer="$(
+              timeout 90s docker run --rm -e KEY="${key}" ghcr.io/starcoinorg/starcoin:v1.13.20 \
+                sh -lc '/starcoin/starcoin -n dev --node-key "${KEY}" --disable-seed --disable-http-rpc --disable-tcp-rpc --disable-websocket-rpc --disable-miner-client true --listen /ip4/127.0.0.1/tcp/0 -d /tmp/sc node info 2>&1 | awk "/Self peer_id is:/ {print \$NF; exit}"' \
+                || true
+            )"
+            peer="$(printf '%s' "${peer}" | tr -d '[:space:]')"
+
+            case "${peer}" in
+              "${MAIN1_PEER_ID}")
+                main1_key="${key}"
+                main1_index="${idx}"
+                echo "entry ${idx} matches main1"
+                ;;
+              "${MAIN2_PEER_ID}")
+                main2_key="${key}"
+                main2_index="${idx}"
+                echo "entry ${idx} matches main2"
+                ;;
+              "")
+                echo "::warning::entry ${idx} did not produce a peer id"
+                ;;
+              *)
+                echo "entry ${idx} peer id: ${peer}"
+                ;;
+            esac
+          done
+
+          if [[ -z "${main1_key}" || -z "${main2_key}" ]]; then
+            echo "::error::Did not find both main1 and main2 node keys; stopping before any cluster changes."
+            exit 2
+          fi
+
+          mkdir -p out
+          {
+            printf 'main1_index=%s\n' "${main1_index}"
+            printf 'main2_index=%s\n' "${main2_index}"
+            printf 'main1_peer_id=%s\n' "${MAIN1_PEER_ID}"
+            printf 'main2_peer_id=%s\n' "${MAIN2_PEER_ID}"
+          } > out/match-summary.txt
+
+          {
+            printf 'main1=%s\n' "${main1_key}"
+            printf 'main2=%s\n' "${main2_key}"
+          } > out/main-seed-keys.env
+
+          printf '%s' "${RECOVERY_PUBLIC_KEY_B64}" | base64 -d > out/recovery-public-key.asc
+          gpg --batch --import out/recovery-public-key.asc
+          recipient="$(gpg --batch --list-keys --with-colons | awk -F: '$1 == "fpr" {print $10; exit}')"
+          gpg --batch --yes --trust-model always --recipient "${recipient}" --encrypt \
+            --output out/main-seed-keys.env.gpg out/main-seed-keys.env
+          rm -f out/main-seed-keys.env out/recovery-public-key.asc
+          base64 -w0 out/main-seed-keys.env.gpg > out/main-seed-keys.env.gpg.b64
+
+          echo "main1 matched at entry ${main1_index}"
+          echo "main2 matched at entry ${main2_index}"
+
+      - name: Upload encrypted matched keys
+        uses: actions/upload-artifact@v4
+        with:
+          name: encrypted-main-seed-keys
+          path: |
+            out/main-seed-keys.env.gpg.b64
+            out/match-summary.txt
+          if-no-files-found: error
