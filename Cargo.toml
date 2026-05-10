@@ -302,7 +302,7 @@ bcs = "=0.1.5"
 bcs-ext = { path = "commons/bcs_ext" }
 bech32 = "0.9"
 bencher = "0.1.5"
-bitflags = "2.11.0"
+bitflags = "2.11.1"
 bs58 = "0.5.1"
 byteorder = "1.5.0"
 bytes = "1"
@@ -349,7 +349,7 @@ rustc-hash = "2.1.2"
 git-version = "0.3.9"
 goldenfile = "1.8.0"
 governor = { version = "0.4.2", features = ["dashmap"] }
-hashbrown = "0.17.0"
+hashbrown = "0.17.1"
 heck = "0.5.0"
 hex = "0.4"
 hmac = "0.13.0"
@@ -357,7 +357,7 @@ hyper = { version = "0.14.12", features = ["full"] }
 include_dir = { version = "0.6.2", features = ["search"] }
 indicatif = "0.16.2"
 ip_network = "0.3.4"
-interprocess = "2.2.0"
+interprocess = "2.4.2"
 io-lifetimes = "1.0.5"
 itertools = "0.10.3"
 jpst = "0.1.1"
@@ -426,7 +426,7 @@ bulletproofs = { git = "https://github.com/zkcrypto/bulletproofs", tag = "4.0.0"
 flate2 = "1.1"
 rand_core_0_5_1 = { package = "rand_core", version = "0.5.1" }
 ripemd = "0.2.0"
-siphasher = "1.0.2"
+siphasher = "1.0.3"
 merlin = { git = "https://github.com/aptos-labs/merlin" }
 
 move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "cc98ac02caa73e64e6c8b781c61de356b45801c4" }

@@ -45,7 +45,7 @@ starcoin-dag = { workspace = true }
 [dev-dependencies]
 rcgen = "0.13.2"
 reqwest = { version = "0.11", default-features = false, features = ["blocking", "json", "rustls-tls"] }
-rustls = { version = "0.23.37", features = ["ring"] }
+rustls = { version = "0.23.40", features = ["ring"] }
 starcoin-config = { workspace = true }
 starcoin-rpc-server = { workspace = true }
 starcoin-transaction-builder = { workspace = true }
