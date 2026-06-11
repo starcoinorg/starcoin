@@ -3,6 +3,9 @@
 
 /// How to call a particular Move script (aka. an "ABI").
 use anyhow::Result;
+
+#[cfg(feature = "ai-metadata")]
+pub mod ai_semantics;
 use move_core_types::u256;
 use schemars::JsonSchema;
 use serde::de::Error;

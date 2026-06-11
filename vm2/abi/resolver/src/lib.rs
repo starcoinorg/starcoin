@@ -3,6 +3,9 @@
 
 use anyhow::anyhow;
 use anyhow::Result;
+
+#[cfg(feature = "ai-metadata")]
+pub mod ai_semantics;
 use move_model::script_into_module;
 use starcoin_vm2_abi_types::{
     FieldABI, FunctionABI, FunctionParameterABI, ModuleABI, StructABI, StructInstantiation,

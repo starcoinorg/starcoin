@@ -7,6 +7,7 @@ serde_bytes = { workspace = true }
 serde_json = { workspace = true }
 starcoin-vm2-vm-types = { workspace = true }
 move-core-types = { git = "https://github.com/starcoinorg/move", rev = "ed9d919d05fedeae9cf433d4f44f6aba526580c3" }
+sha3 = { workspace = true, optional = true }
 
 [package]
 authors = { workspace = true }
@@ -18,3 +19,7 @@ homepage = { workspace = true }
 publish = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }
+
+[features]
+default = []
+ai-metadata = ["sha3"]
