@@ -11,8 +11,8 @@
 //! It does not change consensus, storage formats, transaction execution, or
 //! production node behaviour.
 
-use serde::{Deserialize, Serialize};
 use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 
 // ---------------------------------------------------------------------------
 // Provenance – where a semantic fact originated

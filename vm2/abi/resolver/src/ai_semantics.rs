@@ -18,9 +18,7 @@ use starcoin_vm2_abi_types::ai_semantics::{
 use starcoin_vm2_resource_viewer::module_cache::ModuleCache;
 use starcoin_vm2_resource_viewer::resolver::Resolver;
 use starcoin_vm2_vm_types::access::ModuleAccess;
-use starcoin_vm2_vm_types::file_format::{
-    CompiledModule, FunctionDefinitionIndex, Visibility,
-};
+use starcoin_vm2_vm_types::file_format::{CompiledModule, FunctionDefinitionIndex, Visibility};
 use starcoin_vm2_vm_types::identifier::{IdentStr, Identifier};
 use starcoin_vm2_vm_types::language_storage::ModuleId;
 use starcoin_vm2_vm_types::normalized::{Function, Module, Struct};
@@ -98,7 +96,6 @@ impl<'a> SemanticsResolver<'a> {
         let functions = module
             .function_defs()
             .iter()
-            
             .map(|def| {
                 let (name, func) = Function::new(module, def);
                 self.function_to_semantics(name.as_ident_str(), &func)
@@ -136,11 +133,7 @@ impl<'a> SemanticsResolver<'a> {
     // Function semantics
     // ------------------------------------------------------------------
 
-    fn function_to_semantics(
-        &self,
-        name: &IdentStr,
-        func: &Function,
-    ) -> Result<FunctionSemantics> {
+    fn function_to_semantics(&self, name: &IdentStr, func: &Function) -> Result<FunctionSemantics> {
         let visibility = func.visibility;
         let is_entry = func.is_entry;
 
@@ -157,26 +150,16 @@ impl<'a> SemanticsResolver<'a> {
             .map(|(i, _)| format!("T{}", i))
             .collect();
 
-        let parameters: Vec<String> = func
-            .parameters
-            .iter()
-            .map(|t| format!("{}", t))
-            .collect();
+        let parameters: Vec<String> = func.parameters.iter().map(|t| format!("{}", t)).collect();
 
         let returns: Vec<String> = func.return_.iter().map(|t| format!("{}", t)).collect();
 
         // Conservatively derive effect hints from visibility + entry status.
         let mut effect_hints = Vec::new();
         if is_entry {
-            effect_hints.push(EffectHint::new(
-                "writes_resources",
-                Provenance::Bytecode,
-            ));
+            effect_hints.push(EffectHint::new("writes_resources", Provenance::Bytecode));
         } else if visibility == Visibility::Public {
-            effect_hints.push(EffectHint::new(
-                "may_write_resources",
-                Provenance::Bytecode,
-            ));
+            effect_hints.push(EffectHint::new("may_write_resources", Provenance::Bytecode));
         }
 
         Ok(FunctionSemantics {
@@ -196,16 +179,8 @@ impl<'a> SemanticsResolver<'a> {
     // Struct semantics
     // ------------------------------------------------------------------
 
-    fn struct_to_semantics(
-        &self,
-        name: &IdentStr,
-        s: &Struct,
-    ) -> Result<StructSemantics> {
-        let abilities: Vec<String> = s
-            .abilities
-            .into_iter()
-            .map(|a| format!("{}", a))
-            .collect();
+    fn struct_to_semantics(&self, name: &IdentStr, s: &Struct) -> Result<StructSemantics> {
+        let abilities: Vec<String> = s.abilities.into_iter().map(|a| format!("{}", a)).collect();
 
         // A struct is a resource if it has the `key` ability.
         let is_resource = s.abilities.has_key();
@@ -256,8 +231,7 @@ impl<'a> SemanticsResolver<'a> {
         writeln!(surface, "module:{}", normalized.module_id())?;
 
         // Functions – deterministic order.
-        let mut func_names: Vec<&Identifier> =
-            normalized.exposed_functions.keys().collect();
+        let mut func_names: Vec<&Identifier> = normalized.exposed_functions.keys().collect();
         func_names.sort();
 
         for name in func_names {
@@ -284,8 +258,7 @@ impl<'a> SemanticsResolver<'a> {
         }
 
         // Structs – deterministic order.
-        let mut struct_names: Vec<&Identifier> =
-            normalized.structs.keys().collect();
+        let mut struct_names: Vec<&Identifier> = normalized.structs.keys().collect();
         struct_names.sort();
 
         for name in struct_names {
@@ -376,9 +349,7 @@ mod tests {
             match state_key.inner() {
                 StateKeyInner::AccessPath(access_path) => {
                     let module_id = match &access_path.path {
-                        DataPath::Code(name) => {
-                            ModuleId::new(access_path.address, name.clone())
-                        }
+                        DataPath::Code(name) => ModuleId::new(access_path.address, name.clone()),
                         _ => return Err(StateviewError::Other("no data".to_string())),
                     };
                     Ok(self
@@ -478,8 +449,7 @@ mod tests {
         let dao = modules
             .iter()
             .find(|m| {
-                m.self_id()
-                    == ModuleId::new(genesis_address(), Identifier::new("dao").unwrap())
+                m.self_id() == ModuleId::new(genesis_address(), Identifier::new("dao").unwrap())
             })
             .expect("dao module not found in framework");
 
