@@ -23,6 +23,63 @@ use starcoin_vm2_vm_types::identifier::{IdentStr, Identifier};
 use starcoin_vm2_vm_types::language_storage::ModuleId;
 use starcoin_vm2_vm_types::normalized::{Function, Module, Struct};
 use starcoin_vm2_vm_types::state_store::StateView;
+use std::collections::BTreeMap;
+
+// ---------------------------------------------------------------------------
+// Minimal metadata types for module attribute extraction
+// ---------------------------------------------------------------------------
+
+/// Key used to store V1 runtime metadata in the compiled module's metadata section.
+const STARCOIN_METADATA_KEY_V1: &[u8] = b"starcoin::metadata_v1";
+
+/// Minimal compatible version of `RuntimeModuleMetadataV1` for deserialization.
+/// Field order and types must match `starcoin-framework::module_metadata`.
+#[derive(serde::Deserialize)]
+struct RuntimeModuleMetadataV1 {
+    #[allow(dead_code)]
+    error_map: BTreeMap<u64, ErrorDescription>,
+    #[allow(dead_code)]
+    struct_attributes: BTreeMap<String, Vec<KnownAttribute>>,
+    fun_attributes: BTreeMap<String, Vec<KnownAttribute>>,
+}
+
+/// Must match `move_core_types::errmap::ErrorDescription` for BCS compatibility.
+#[derive(serde::Deserialize)]
+struct ErrorDescription {
+    #[allow(dead_code)]
+    code_name: String,
+    #[allow(dead_code)]
+    code_description: String,
+}
+
+/// Minimal compatible version of `KnownAttribute` for deserialization.
+#[derive(serde::Deserialize)]
+struct KnownAttribute {
+    kind: u8,
+    #[allow(dead_code)]
+    args: Vec<String>,
+}
+
+impl KnownAttribute {
+    /// Returns `true` if this attribute is a `#[view]` annotation
+    /// (supports both `LegacyViewFunction = 0` and `ViewFunction = 1`).
+    fn is_view_function(&self) -> bool {
+        self.kind == 0 || self.kind == 1
+    }
+}
+
+/// Extract runtime module metadata from a compiled module's metadata section.
+///
+/// Tries V1 (with function attributes) first, then falls back to V0 (no
+/// attributes — the fun_attributes map will be empty).
+fn get_metadata_from_compiled_module(module: &CompiledModule) -> Option<RuntimeModuleMetadataV1> {
+    if let Some(data) = module.metadata.iter().find(|md| md.key == STARCOIN_METADATA_KEY_V1) {
+        return bcs::from_bytes::<RuntimeModuleMetadataV1>(&data.value).ok();
+    }
+    // V0 has no attribute data. Return None so callers know metadata is
+    // unavailable and is_view defaults to false.
+    None
+}
 
 // ---------------------------------------------------------------------------
 // Semantic resolver – thin wrapper over existing VM2 resolver
@@ -92,13 +149,22 @@ impl<'a> SemanticsResolver<'a> {
         // functions so it is stable across non-breaking bytecode changes.
         let interface_hash = self.compute_interface_hash(module, &normalized)?;
 
+        // Extract runtime metadata for #[view] attribute detection.
+        let metadata = get_metadata_from_compiled_module(module);
+        let fun_attributes: Option<&BTreeMap<String, Vec<_>>> =
+            metadata.as_ref().map(|m| &m.fun_attributes);
+
         // Collect ALL function definitions (public, entry, friend, private).
         let functions = module
             .function_defs()
             .iter()
             .map(|def| {
                 let (name, func) = Function::new(module, def);
-                self.function_to_semantics(name.as_ident_str(), &func)
+                self.function_to_semantics(
+                    name.as_ident_str(),
+                    &func,
+                    fun_attributes,
+                )
             })
             .collect::<Result<Vec<_>>>()?;
 
@@ -114,7 +180,6 @@ impl<'a> SemanticsResolver<'a> {
         let limitations = vec![
             "Effect hints are bytecode-derived only; dry-run preview effects are not included"
                 .to_string(),
-            "View function detection is not yet implemented; is_view is always false".to_string(),
             "Interface hash covers only the public/entry callable surface; private/friend functions are excluded from the hash".to_string(),
         ];
 
@@ -133,15 +198,22 @@ impl<'a> SemanticsResolver<'a> {
     // Function semantics
     // ------------------------------------------------------------------
 
-    fn function_to_semantics(&self, name: &IdentStr, func: &Function) -> Result<FunctionSemantics> {
+    fn function_to_semantics(
+        &self,
+        name: &IdentStr,
+        func: &Function,
+        fun_attributes: Option<&BTreeMap<String, Vec<KnownAttribute>>>,
+    ) -> Result<FunctionSemantics> {
         let visibility = func.visibility;
         let is_entry = func.is_entry;
 
-        // VM2 view functions are determined by the `#[view]` attribute
-        // stored in bytecode metadata.  That metadata is not yet exposed
-        // through the normalized `Function` struct, so we conservatively
-        // report is_view=false for now.
-        let is_view = false;
+        // Detect #[view] attribute from module runtime metadata.
+        // The attribute is stored in the compiled module's metadata section
+        // under "starcoin::metadata_v1", keyed by function name.
+        let is_view = fun_attributes
+            .and_then(|attrs| attrs.get(name.as_str()))
+            .map(|attrs| attrs.iter().any(|a| a.is_view_function()))
+            .unwrap_or(false);
 
         let type_parameters: Vec<String> = func
             .type_parameters
@@ -440,6 +512,48 @@ mod tests {
         // Same module → same hashes
         assert_eq!(s1.bytecode_hash, s2.bytecode_hash);
         assert_eq!(s1.interface_hash, s2.interface_hash);
+    }
+
+    #[test]
+    fn test_view_function_detection() {
+        let modules = starcoin_cached_packages::head_release_bundle().compiled_modules();
+        let view = InMemoryStateView::new(modules);
+        let resolver = SemanticsResolver::new(&view);
+
+        // chain_status::is_genesis and is_operating are #[view] functions.
+        let module_id = ModuleId::new(
+            genesis_address(),
+            Identifier::new("chain_status").unwrap(),
+        );
+        let semantics = resolver.resolve_module(&module_id).unwrap();
+
+        let is_genesis = semantics
+            .functions
+            .iter()
+            .find(|f| f.name == "is_genesis")
+            .expect("is_genesis not found");
+        assert!(is_genesis.is_view, "is_genesis should be a view function");
+
+        let is_operating = semantics
+            .functions
+            .iter()
+            .find(|f| f.name == "is_operating")
+            .expect("is_operating not found");
+        assert!(
+            is_operating.is_view,
+            "is_operating should be a view function"
+        );
+
+        // assert_operating is NOT a view function.
+        let assert_operating = semantics
+            .functions
+            .iter()
+            .find(|f| f.name == "assert_operating")
+            .expect("assert_operating not found");
+        assert!(
+            !assert_operating.is_view,
+            "assert_operating should NOT be a view function"
+        );
     }
 
     #[test]

@@ -1,9 +1,11 @@
 [dependencies]
 anyhow = { workspace = true }
+bcs = { workspace = true, optional = true }
 move-model = { git = "https://github.com/starcoinorg/move", rev = "ed9d919d05fedeae9cf433d4f44f6aba526580c3" }
 starcoin-vm2-abi-types = { workspace = true }
 starcoin-vm2-resource-viewer = { workspace = true }
 starcoin-vm2-vm-types = { workspace = true }
+serde = { workspace = true, optional = true }
 sha3 = { workspace = true, optional = true }
 
 [dev-dependencies]
@@ -24,4 +26,4 @@ rust-version = { workspace = true }
 
 [features]
 default = []
-ai-metadata = ["starcoin-vm2-abi-types/ai-metadata", "sha3"]
+ai-metadata = ["starcoin-vm2-abi-types/ai-metadata", "bcs", "serde", "sha3"]
