@@ -101,13 +101,46 @@ pub struct FieldSemantics {
     pub name: String,
     #[serde(rename = "type")]
     pub type_: String,
+    /// Where the field name and type were derived from.
+    pub source: Provenance,
 }
 
 impl FieldSemantics {
-    pub fn new(name: impl Into<String>, type_: impl Into<String>) -> Self {
+    pub fn new(name: impl Into<String>, type_: impl Into<String>, source: Provenance) -> Self {
         Self {
             name: name.into(),
             type_: type_.into(),
+            source,
+        }
+    }
+}
+
+/// AI-readable declaration of one struct type parameter.
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+pub struct StructTypeParameterSemantics {
+    /// Stable positional name because Move bytecode does not retain source names.
+    pub name: String,
+    /// Ability constraints in Move's canonical ability order.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub constraints: Vec<String>,
+    /// Whether the parameter was declared with `phantom`.
+    pub is_phantom: bool,
+    /// Where the parameter declaration was derived from.
+    pub source: Provenance,
+}
+
+impl StructTypeParameterSemantics {
+    pub fn new(
+        name: impl Into<String>,
+        constraints: Vec<String>,
+        is_phantom: bool,
+        source: Provenance,
+    ) -> Self {
+        Self {
+            name: name.into(),
+            constraints,
+            is_phantom,
+            source,
         }
     }
 }
@@ -116,33 +149,18 @@ impl FieldSemantics {
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct StructSemantics {
     pub name: String,
+    /// Abilities in Move's canonical `copy`, `drop`, `store`, `key` order.
     pub abilities: Vec<String>,
+    /// Where `abilities` were derived from.
+    pub abilities_source: Provenance,
     pub is_resource: bool,
-    /// Generic type parameter names (e.g. `["phantom CoinType"]` or `["T0"]`).
+    /// Where `is_resource` was derived from.
+    pub is_resource_source: Provenance,
+    /// Generic type parameters including constraints and phantom declarations.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub type_parameters: Vec<String>,
+    pub type_parameters: Vec<StructTypeParameterSemantics>,
     pub fields: Vec<FieldSemantics>,
     pub attributes: Vec<RuntimeAttribute>,
-}
-
-impl StructSemantics {
-    pub fn new(
-        name: impl Into<String>,
-        abilities: Vec<String>,
-        is_resource: bool,
-        type_parameters: Vec<String>,
-        fields: Vec<FieldSemantics>,
-        attributes: Vec<RuntimeAttribute>,
-    ) -> Self {
-        Self {
-            name: name.into(),
-            abilities,
-            is_resource,
-            type_parameters,
-            fields,
-            attributes,
-        }
-    }
 }
 
 // ---------------------------------------------------------------------------
@@ -281,14 +299,21 @@ mod tests {
                 effect_hints: vec![EffectHint::new("writes_resources", Provenance::Preview)],
                 attributes: vec![],
             }],
-            structs: vec![StructSemantics::new(
-                "Balance",
-                vec!["key".into(), "store".into()],
-                true,
-                vec![],
-                vec![FieldSemantics::new("value", "u128")],
-                vec![],
-            )],
+            structs: vec![StructSemantics {
+                name: "Balance".into(),
+                abilities: vec!["store".into(), "key".into()],
+                abilities_source: Provenance::Bytecode,
+                is_resource: true,
+                is_resource_source: Provenance::Bytecode,
+                type_parameters: vec![StructTypeParameterSemantics::new(
+                    "T0",
+                    vec!["store".into()],
+                    true,
+                    Provenance::Bytecode,
+                )],
+                fields: vec![FieldSemantics::new("value", "u128", Provenance::Bytecode)],
+                attributes: vec![],
+            }],
             runtime_attributes: vec![],
             limitations: vec!["read effects not fully inferred".into()],
         };
@@ -296,6 +321,9 @@ mod tests {
         let json = serde_json::to_string_pretty(&ms).unwrap();
         let back: ModuleSemantics = serde_json::from_str(&json).unwrap();
         assert_eq!(ms, back);
+        assert!(json.contains(r#""abilities_source": "bytecode""#));
+        assert!(json.contains(r#""is_phantom": true"#));
+        assert!(json.contains(r#""source": "bytecode""#));
     }
 
     #[test]

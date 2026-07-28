@@ -13,12 +13,14 @@
 use anyhow::Result;
 use starcoin_vm2_abi_types::ai_semantics::{
     sha3_256_hex, EffectHint, FieldSemantics, FunctionSemantics, ModuleSemantics, Provenance,
-    StructSemantics,
+    StructSemantics, StructTypeParameterSemantics,
 };
 use starcoin_vm2_resource_viewer::module_cache::ModuleCache;
 use starcoin_vm2_resource_viewer::resolver::Resolver;
 use starcoin_vm2_vm_types::access::ModuleAccess;
-use starcoin_vm2_vm_types::file_format::{CompiledModule, FunctionDefinitionIndex, Visibility};
+use starcoin_vm2_vm_types::file_format::{
+    AbilitySet, CompiledModule, FunctionDefinitionIndex, Visibility,
+};
 use starcoin_vm2_vm_types::identifier::{IdentStr, Identifier};
 use starcoin_vm2_vm_types::language_storage::ModuleId;
 use starcoin_vm2_vm_types::normalized::{Function, Module, Struct};
@@ -73,7 +75,11 @@ impl KnownAttribute {
 /// Tries V1 (with function attributes) first, then falls back to V0 (no
 /// attributes — the fun_attributes map will be empty).
 fn get_metadata_from_compiled_module(module: &CompiledModule) -> Option<RuntimeModuleMetadataV1> {
-    if let Some(data) = module.metadata.iter().find(|md| md.key == STARCOIN_METADATA_KEY_V1) {
+    if let Some(data) = module
+        .metadata
+        .iter()
+        .find(|md| md.key == STARCOIN_METADATA_KEY_V1)
+    {
         return bcs::from_bytes::<RuntimeModuleMetadataV1>(&data.value).ok();
     }
     // V0 has no attribute data. Return None so callers know metadata is
@@ -160,22 +166,15 @@ impl<'a> SemanticsResolver<'a> {
             .iter()
             .map(|def| {
                 let (name, func) = Function::new(module, def);
-                self.function_to_semantics(
-                    name.as_ident_str(),
-                    &func,
-                    fun_attributes,
-                )
+                self.function_to_semantics(name.as_ident_str(), &func, fun_attributes)
             })
             .collect::<Result<Vec<_>>>()?;
 
         let structs = normalized
             .structs
             .iter()
-            .map(|(name, s)| {
-                let sname = name.as_ident_str();
-                self.struct_to_semantics(sname, s)
-            })
-            .collect::<Result<Vec<_>>>()?;
+            .map(|(name, s)| struct_to_semantics(name.as_ident_str(), s))
+            .collect();
 
         let limitations = vec![
             "Effect hints are bytecode-derived only; dry-run preview effects are not included"
@@ -243,41 +242,6 @@ impl<'a> SemanticsResolver<'a> {
             parameters,
             returns,
             effect_hints,
-            attributes: Vec::new(),
-        })
-    }
-
-    // ------------------------------------------------------------------
-    // Struct semantics
-    // ------------------------------------------------------------------
-
-    fn struct_to_semantics(&self, name: &IdentStr, s: &Struct) -> Result<StructSemantics> {
-        let abilities: Vec<String> = s.abilities.into_iter().map(|a| format!("{}", a)).collect();
-
-        // A struct is a resource if it has the `key` ability.
-        let is_resource = s.abilities.has_key();
-
-        // Type parameter names (T0, T1, ...) — names from the struct handle
-        // are not exposed through the normalized representation.
-        let type_parameters: Vec<String> = s
-            .type_parameters
-            .iter()
-            .enumerate()
-            .map(|(i, _)| format!("T{}", i))
-            .collect();
-
-        let fields: Vec<FieldSemantics> = s
-            .fields
-            .iter()
-            .map(|f| FieldSemantics::new(f.name.to_string(), format!("{}", f.type_)))
-            .collect();
-
-        Ok(StructSemantics {
-            name: name.to_string(),
-            abilities,
-            is_resource,
-            type_parameters,
-            fields,
             attributes: Vec::new(),
         })
     }
@@ -356,6 +320,52 @@ impl<'a> SemanticsResolver<'a> {
 // Utility helpers
 // ---------------------------------------------------------------------------
 
+fn ability_names(abilities: AbilitySet) -> Vec<String> {
+    abilities
+        .into_iter()
+        .map(|ability| ability.to_string())
+        .collect()
+}
+
+fn struct_to_semantics(name: &IdentStr, struct_: &Struct) -> StructSemantics {
+    let type_parameters = struct_
+        .type_parameters
+        .iter()
+        .enumerate()
+        .map(|(index, parameter)| {
+            StructTypeParameterSemantics::new(
+                format!("T{}", index),
+                ability_names(parameter.constraints),
+                parameter.is_phantom,
+                Provenance::Bytecode,
+            )
+        })
+        .collect();
+
+    let fields = struct_
+        .fields
+        .iter()
+        .map(|field| {
+            FieldSemantics::new(
+                field.name.to_string(),
+                field.type_.to_string(),
+                Provenance::Bytecode,
+            )
+        })
+        .collect();
+
+    StructSemantics {
+        name: name.to_string(),
+        abilities: ability_names(struct_.abilities),
+        abilities_source: Provenance::Bytecode,
+        is_resource: struct_.abilities.has_key(),
+        is_resource_source: Provenance::Bytecode,
+        type_parameters,
+        fields,
+        attributes: Vec::new(),
+    }
+}
+
 fn visibility_to_str(v: Visibility) -> &'static str {
     match v {
         Visibility::Public => "public",
@@ -386,9 +396,12 @@ mod tests {
     use super::*;
     use starcoin_vm2_vm_types::access_path::DataPath;
     use starcoin_vm2_vm_types::account_config::genesis_address;
-    use starcoin_vm2_vm_types::file_format::CompiledModule;
+    use starcoin_vm2_vm_types::file_format::{
+        Ability, AbilitySet, CompiledModule, StructTypeParameter,
+    };
     use starcoin_vm2_vm_types::identifier::Identifier;
     use starcoin_vm2_vm_types::language_storage::ModuleId;
+    use starcoin_vm2_vm_types::normalized::{Field, Type};
     use starcoin_vm2_vm_types::state_store::errors::StateviewError;
     use starcoin_vm2_vm_types::state_store::state_key::inner::StateKeyInner;
     use starcoin_vm2_vm_types::state_store::state_key::StateKey;
@@ -488,7 +501,23 @@ mod tests {
             .find(|s| s.name == "Proposal")
             .expect("Proposal not found");
         assert!(proposal.is_resource);
-        assert!(proposal.abilities.contains(&"key".to_string()));
+        assert_eq!(proposal.abilities, vec!["key"]);
+        assert_eq!(proposal.abilities_source, Provenance::Bytecode);
+        assert_eq!(proposal.is_resource_source, Provenance::Bytecode);
+        assert_eq!(proposal.type_parameters.len(), 2);
+        assert_eq!(proposal.type_parameters[0].name, "T0");
+        assert!(proposal.type_parameters[0].constraints.is_empty());
+        assert!(proposal.type_parameters[0].is_phantom);
+        assert_eq!(proposal.type_parameters[1].name, "T1");
+        assert_eq!(proposal.type_parameters[1].constraints, vec!["store"]);
+        assert!(!proposal.type_parameters[1].is_phantom);
+        let action = proposal
+            .fields
+            .iter()
+            .find(|field| field.name == "action")
+            .expect("Proposal::action not found");
+        assert_eq!(action.type_, "0x1::option::Option<T1>");
+        assert_eq!(action.source, Provenance::Bytecode);
 
         // Limitations reported
         assert!(!semantics.limitations.is_empty());
@@ -515,16 +544,98 @@ mod tests {
     }
 
     #[test]
+    fn test_struct_semantics_preserves_all_ability_combinations() {
+        let name = Identifier::new("AbilityCarrier").unwrap();
+
+        for byte in 0..=AbilitySet::ALL.into_u8() {
+            let abilities = AbilitySet::from_u8(byte).expect("valid ability combination");
+            let struct_ = Struct {
+                abilities,
+                type_parameters: vec![],
+                fields: vec![],
+            };
+            let semantics = struct_to_semantics(name.as_ident_str(), &struct_);
+
+            let expected_abilities = [
+                (Ability::Copy, "copy"),
+                (Ability::Drop, "drop"),
+                (Ability::Store, "store"),
+                (Ability::Key, "key"),
+            ]
+            .into_iter()
+            .filter_map(|(ability, name)| abilities.has_ability(ability).then_some(name))
+            .collect::<Vec<_>>();
+
+            assert_eq!(
+                semantics.abilities, expected_abilities,
+                "ability byte {byte:#x}"
+            );
+            assert_eq!(
+                semantics.is_resource,
+                abilities.has_key(),
+                "ability byte {byte:#x}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_struct_semantics_preserves_generics_and_nested_types() {
+        let struct_ = Struct {
+            abilities: AbilitySet::EMPTY | Ability::Key,
+            type_parameters: vec![
+                StructTypeParameter {
+                    constraints: AbilitySet::EMPTY,
+                    is_phantom: true,
+                },
+                StructTypeParameter {
+                    constraints: AbilitySet::EMPTY | Ability::Copy | Ability::Drop | Ability::Store,
+                    is_phantom: false,
+                },
+            ],
+            fields: vec![Field {
+                name: Identifier::new("nested").unwrap(),
+                type_: Type::Struct {
+                    address: genesis_address(),
+                    module: Identifier::new("option").unwrap(),
+                    name: Identifier::new("Option").unwrap(),
+                    type_arguments: vec![Type::TypeParameter(1)],
+                },
+            }],
+        };
+        let name = Identifier::new("GenericResource").unwrap();
+
+        let semantics = struct_to_semantics(name.as_ident_str(), &struct_);
+
+        assert_eq!(
+            semantics.type_parameters,
+            vec![
+                StructTypeParameterSemantics::new("T0", vec![], true, Provenance::Bytecode,),
+                StructTypeParameterSemantics::new(
+                    "T1",
+                    vec!["copy".into(), "drop".into(), "store".into()],
+                    false,
+                    Provenance::Bytecode,
+                ),
+            ]
+        );
+        assert_eq!(
+            semantics.fields,
+            vec![FieldSemantics::new(
+                "nested",
+                "0x1::option::Option<T1>",
+                Provenance::Bytecode,
+            )]
+        );
+    }
+
+    #[test]
     fn test_view_function_detection() {
         let modules = starcoin_cached_packages::head_release_bundle().compiled_modules();
         let view = InMemoryStateView::new(modules);
         let resolver = SemanticsResolver::new(&view);
 
         // chain_status::is_genesis and is_operating are #[view] functions.
-        let module_id = ModuleId::new(
-            genesis_address(),
-            Identifier::new("chain_status").unwrap(),
-        );
+        let module_id = ModuleId::new(genesis_address(), Identifier::new("chain_status").unwrap());
         let semantics = resolver.resolve_module(&module_id).unwrap();
 
         let is_genesis = semantics
