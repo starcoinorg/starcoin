@@ -19,7 +19,7 @@ use starcoin_vm2_resource_viewer::module_cache::ModuleCache;
 use starcoin_vm2_resource_viewer::resolver::Resolver;
 use starcoin_vm2_vm_types::access::ModuleAccess;
 use starcoin_vm2_vm_types::file_format::{
-    AbilitySet, CompiledModule, FunctionDefinitionIndex, Visibility,
+    AbilitySet, CompiledModule, FunctionDefinitionIndex, Metadata, Visibility,
 };
 use starcoin_vm2_vm_types::identifier::{IdentStr, Identifier};
 use starcoin_vm2_vm_types::language_storage::ModuleId;
@@ -74,17 +74,29 @@ impl KnownAttribute {
 ///
 /// Tries V1 (with function attributes) first, then falls back to V0 (no
 /// attributes — the fun_attributes map will be empty).
-fn get_metadata_from_compiled_module(module: &CompiledModule) -> Option<RuntimeModuleMetadataV1> {
+///
+/// Returns:
+/// - parsed metadata when available and valid
+/// - `None` when metadata is unavailable
+/// - an error message when metadata exists but cannot be decoded
+fn get_metadata_from_compiled_module(
+    module: &CompiledModule,
+) -> (Option<RuntimeModuleMetadataV1>, Option<String>) {
     if let Some(data) = module
         .metadata
         .iter()
         .find(|md| md.key == STARCOIN_METADATA_KEY_V1)
     {
-        return bcs::from_bytes::<RuntimeModuleMetadataV1>(&data.value).ok();
+        match bcs::from_bytes::<RuntimeModuleMetadataV1>(&data.value) {
+            Ok(metadata) => return (Some(metadata), None),
+            Err(err) => {
+                return (None, Some(format!("runtime metadata decode failed: {err}")));
+            }
+        }
     }
     // V0 has no attribute data. Return None so callers know metadata is
     // unavailable and is_view defaults to false.
-    None
+    (None, None)
 }
 
 // ---------------------------------------------------------------------------
@@ -156,7 +168,7 @@ impl<'a> SemanticsResolver<'a> {
         let interface_hash = self.compute_interface_hash(module, &normalized)?;
 
         // Extract runtime metadata for #[view] attribute detection.
-        let metadata = get_metadata_from_compiled_module(module);
+        let (metadata, metadata_parse_error) = get_metadata_from_compiled_module(module);
         let fun_attributes: Option<&BTreeMap<String, Vec<_>>> =
             metadata.as_ref().map(|m| &m.fun_attributes);
 
@@ -181,6 +193,15 @@ impl<'a> SemanticsResolver<'a> {
                 .to_string(),
             "Interface hash covers only the public/entry callable surface; private/friend functions are excluded from the hash".to_string(),
         ];
+        let mut limitations = if let Some(err) = metadata_parse_error {
+            let mut limitations = limitations;
+            limitations.push(format!(
+                "Runtime metadata decode failed for module `{module_id}`: {err}"
+            ));
+            limitations
+        } else {
+            limitations
+        };
 
         Ok(ModuleSemantics {
             module: module_id.to_string(),
@@ -664,6 +685,41 @@ mod tests {
         assert!(
             !assert_operating.is_view,
             "assert_operating should NOT be a view function"
+        );
+    }
+
+    #[test]
+    fn test_invalid_runtime_metadata_is_reported_in_limitations() {
+        let modules = starcoin_cached_packages::head_release_bundle().compiled_modules();
+        let dao = modules
+            .iter()
+            .find(|m| {
+                m.self_id() == ModuleId::new(genesis_address(), Identifier::new("dao").unwrap())
+            })
+            .expect("dao module not found in framework")
+            .clone();
+
+        let mut dao = dao;
+        dao.metadata.retain(|md| md.key != STARCOIN_METADATA_KEY_V1);
+        dao.metadata.push(Metadata {
+            key: STARCOIN_METADATA_KEY_V1.to_vec(),
+            value: vec![1, 2, 3, 4],
+        });
+
+        let mut code_bytes = vec![];
+        dao.serialize(&mut code_bytes).unwrap();
+
+        let view = InMemoryStateView::new(modules);
+        let resolver = SemanticsResolver::new(&view);
+        let semantics = resolver.resolve_module_code(&code_bytes).unwrap();
+
+        assert!(
+            semantics
+                .limitations
+                .iter()
+                .any(|item| item.contains("Runtime metadata decode failed")),
+            "missing metadata decode limitation: {:?}",
+            semantics.limitations
         );
     }
 
