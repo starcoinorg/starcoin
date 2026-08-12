@@ -13757,7 +13757,9 @@ name = "starcoin-vm2-abi-resolver"
 version = "2.0.1"
 dependencies = [
  "anyhow",
+ "bcs 0.1.5",
  "move-model 0.1.0 (git+https://github.com/starcoinorg/move?rev=ed9d919d05fedeae9cf433d4f44f6aba526580c3)",
+ "serde 1.0.228",
  "serde_json",
  "sha3 0.10.8",
  "starcoin-cached-packages",
