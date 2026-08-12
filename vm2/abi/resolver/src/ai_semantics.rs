@@ -11,6 +11,8 @@
 //! Gated behind the `ai-metadata` feature (disabled by default).
 
 use anyhow::Result;
+#[cfg(feature = "ai-metadata")]
+use bcs;
 use starcoin_vm2_abi_types::ai_semantics::{
     sha3_256_hex, EffectHint, FieldSemantics, FunctionSemantics, ModuleSemantics, Provenance,
     StructSemantics, StructTypeParameterSemantics,
@@ -19,7 +21,7 @@ use starcoin_vm2_resource_viewer::module_cache::ModuleCache;
 use starcoin_vm2_resource_viewer::resolver::Resolver;
 use starcoin_vm2_vm_types::access::ModuleAccess;
 use starcoin_vm2_vm_types::file_format::{
-    AbilitySet, CompiledModule, FunctionDefinitionIndex, Metadata, Visibility,
+    AbilitySet, CompiledModule, Visibility,
 };
 use starcoin_vm2_vm_types::identifier::{IdentStr, Identifier};
 use starcoin_vm2_vm_types::language_storage::ModuleId;
@@ -153,6 +155,19 @@ impl<'a> SemanticsResolver<'a> {
     fn resolve_compiled_module(&self, module: &CompiledModule) -> Result<ModuleSemantics> {
         let normalized = Module::new(module);
         let module_id = normalized.module_id();
+        let metadata = runtime_module_metadata(module);
+
+        let mut function_defs = module
+            .function_defs()
+            .iter()
+            .enumerate()
+            .map(|(idx, def)| {
+                let handle = module.function_handle_at(def.function);
+                let name = module.identifier_at(handle.name).to_owned();
+                (name, idx)
+            })
+            .collect::<Vec<(Identifier, usize)>>();
+        function_defs.sort_by(|(name_a, _), (name_b, _)| name_a.cmp(name_b));
 
         // Compute hashes
         let bytecode_bytes = {
@@ -162,23 +177,19 @@ impl<'a> SemanticsResolver<'a> {
         };
         let bytecode_hash = sha3_256_hex(&bytecode_bytes);
 
-        // Interface hash covers: module id + callable function signatures +
-        // struct signatures + abilities.  Excludes bytecode body and private
-        // functions so it is stable across non-breaking bytecode changes.
-        let interface_hash = self.compute_interface_hash(module, &normalized)?;
-
-        // Extract runtime metadata for #[view] attribute detection.
-        let (metadata, metadata_parse_error) = get_metadata_from_compiled_module(module);
-        let fun_attributes: Option<&BTreeMap<String, Vec<_>>> =
-            metadata.as_ref().map(|m| &m.fun_attributes);
+        // Interface hash covers: module id + all function signatures +
+        // struct signatures + abilities, with deterministic ordering.
+        let interface_hash =
+            self.compute_interface_hash(module, &normalized, &function_defs, metadata.as_ref())?;
 
         // Collect ALL function definitions (public, entry, friend, private).
-        let functions = module
-            .function_defs()
+        let functions = function_defs
             .iter()
-            .map(|def| {
-                let (name, func) = Function::new(module, def);
-                self.function_to_semantics(name.as_ident_str(), &func, fun_attributes)
+            .map(|(_name, idx)| {
+                let def = &module.function_defs()[*idx];
+                let (function_name, func) = Function::new(module, def);
+                let is_view = is_view_function(metadata.as_ref(), function_name.as_ident_str());
+                self.function_to_semantics(function_name.as_ident_str(), &func, is_view)
             })
             .collect::<Result<Vec<_>>>()?;
 
@@ -191,17 +202,9 @@ impl<'a> SemanticsResolver<'a> {
         let limitations = vec![
             "Effect hints are bytecode-derived only; dry-run preview effects are not included"
                 .to_string(),
-            "Interface hash covers only the public/entry callable surface; private/friend functions are excluded from the hash".to_string(),
+            "Interface hash covers all functions (public/friend/private), function signatures, and struct signatures".to_string(),
         ];
-        let mut limitations = if let Some(err) = metadata_parse_error {
-            let mut limitations = limitations;
-            limitations.push(format!(
-                "Runtime metadata decode failed for module `{module_id}`: {err}"
-            ));
-            limitations
-        } else {
-            limitations
-        };
+        let limitations = limitations;
 
         Ok(ModuleSemantics {
             module: module_id.to_string(),
@@ -222,19 +225,10 @@ impl<'a> SemanticsResolver<'a> {
         &self,
         name: &IdentStr,
         func: &Function,
-        fun_attributes: Option<&BTreeMap<String, Vec<KnownAttribute>>>,
+        is_view: bool,
     ) -> Result<FunctionSemantics> {
         let visibility = func.visibility;
         let is_entry = func.is_entry;
-
-        // Detect #[view] attribute from module runtime metadata.
-        // The attribute is stored in the compiled module's metadata section
-        // under "starcoin::metadata_v1", keyed by function name.
-        let is_view = fun_attributes
-            .and_then(|attrs| attrs.get(name.as_str()))
-            .map(|attrs| attrs.iter().any(|a| a.is_view_function()))
-            .unwrap_or(false);
-
         let type_parameters: Vec<String> = func
             .type_parameters
             .iter()
@@ -281,6 +275,8 @@ impl<'a> SemanticsResolver<'a> {
         &self,
         module: &CompiledModule,
         normalized: &Module,
+        function_defs: &[(Identifier, usize)],
+        metadata: Option<&RuntimeMetadata>,
     ) -> Result<String> {
         use std::fmt::Write;
 
@@ -288,23 +284,20 @@ impl<'a> SemanticsResolver<'a> {
         writeln!(surface, "module:{}", normalized.module_id())?;
 
         // Functions – deterministic order.
-        let mut func_names: Vec<&Identifier> = normalized.exposed_functions.keys().collect();
-        func_names.sort();
-
-        for name in func_names {
-            let func = &normalized.exposed_functions[name];
-            let def_idx = find_function_def_in_module(module, name.as_ident_str());
-            let vis = def_idx
-                .map(|idx| module.function_def_at(idx).visibility)
-                .unwrap_or(Visibility::Private);
+        for (name, idx) in function_defs {
+            let def = &module.function_defs()[*idx];
+            let func = Function::new(module, def).1;
+            let vis = visibility_to_str(def.visibility);
+            let is_view = is_view_function(metadata, name.as_ident_str());
 
             write!(
                 surface,
-                "fn:{} vis:{} entry:{}",
-                name,
-                visibility_to_str(vis),
-                func.is_entry
+                "fn:{} vis:{} entry:{} view:{}",
+                name, vis, func.is_entry, is_view
             )?;
+            for (i, _) in func.type_parameters.iter().enumerate() {
+                write!(surface, " tparam:T{}", i)?;
+            }
             for p in &func.parameters {
                 write!(surface, " param:{}", p)?;
             }
@@ -326,6 +319,9 @@ impl<'a> SemanticsResolver<'a> {
             ability_strs.sort();
             for a in &ability_strs {
                 write!(surface, " abil:{}", a)?;
+            }
+            for (i, _) in s.type_parameters.iter().enumerate() {
+                write!(surface, " tparam:T{}", i)?;
             }
             for f in &s.fields {
                 write!(surface, " field:{}:{}", f.name, f.type_)?;
@@ -395,17 +391,80 @@ fn visibility_to_str(v: Visibility) -> &'static str {
     }
 }
 
-fn find_function_def_in_module(
-    module: &CompiledModule,
-    name: &IdentStr,
-) -> Option<FunctionDefinitionIndex> {
-    for (i, def) in module.function_defs().iter().enumerate() {
-        let handle = module.function_handle_at(def.function);
-        if module.identifier_at(handle.name) == name {
-            return Some(FunctionDefinitionIndex::new(i as u16));
+#[cfg(feature = "ai-metadata")]
+const STARCOIN_METADATA_KEY: &[u8] = b"starcoin::metadata_v0";
+#[cfg(feature = "ai-metadata")]
+const STARCOIN_METADATA_KEY_V1: &[u8] = b"starcoin::metadata_v1";
+
+#[cfg(not(feature = "ai-metadata"))]
+type RuntimeMetadata = ();
+
+#[cfg(feature = "ai-metadata")]
+type RuntimeMetadata = RuntimeModuleMetadataV1;
+
+#[cfg(feature = "ai-metadata")]
+fn runtime_module_metadata(module: &CompiledModule) -> Option<RuntimeMetadata> {
+    module.metadata.iter().find_map(|metadata| {
+        if metadata.key == STARCOIN_METADATA_KEY {
+            Some(RuntimeModuleMetadataV1::default())
+        } else if metadata.key == STARCOIN_METADATA_KEY_V1 {
+            bcs::from_bytes::<RuntimeModuleMetadataV1>(&metadata.value).ok()
+        } else {
+            None
+        }
+    })
+}
+
+#[cfg(not(feature = "ai-metadata"))]
+fn runtime_module_metadata(_module: &CompiledModule) -> Option<RuntimeMetadata> {
+    None
+}
+
+#[cfg(feature = "ai-metadata")]
+#[derive(serde::Deserialize)]
+#[cfg(feature = "ai-metadata")]
+struct RuntimeModuleMetadataV1 {
+    #[serde(default)]
+    fun_attributes: std::collections::BTreeMap<String, Vec<KnownAttribute>>,
+}
+
+#[cfg(feature = "ai-metadata")]
+impl RuntimeModuleMetadataV1 {
+    #[allow(clippy::derivable_impls)]
+    fn default() -> Self {
+        Self {
+            fun_attributes: std::collections::BTreeMap::new(),
         }
     }
-    None
+}
+
+#[derive(serde::Deserialize)]
+#[cfg(feature = "ai-metadata")]
+struct KnownAttribute {
+    kind: u8,
+    #[allow(dead_code)]
+    #[serde(default)]
+    args: Vec<String>,
+}
+
+#[cfg(feature = "ai-metadata")]
+impl KnownAttribute {
+    fn is_view_function(&self) -> bool {
+        self.kind == 0 || self.kind == 1
+    }
+}
+
+#[cfg(feature = "ai-metadata")]
+fn is_view_function(metadata: Option<&RuntimeMetadata>, name: &IdentStr) -> bool {
+    metadata
+        .and_then(|metadata| metadata.fun_attributes.get(name.as_str()))
+        .map(|attrs| attrs.iter().any(|attr| attr.is_view_function()))
+        .unwrap_or(false)
+}
+
+#[cfg(not(feature = "ai-metadata"))]
+fn is_view_function(_metadata: Option<&RuntimeMetadata>, _name: &IdentStr) -> bool {
+    false
 }
 
 // ---------------------------------------------------------------------------
