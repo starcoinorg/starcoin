@@ -68,7 +68,7 @@ jobs:
     name: TPS Benchmark
     needs: choose-runner
     runs-on: ${{ fromJSON(needs.choose-runner.outputs.runs_on_json) }}
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       # ── 1. Checkout current branch ──
       - name: Checkout current branch
@@ -83,34 +83,21 @@ jobs:
       - name: Setup build environment
         run: bash ./scripts/dev_setup.sh -b -t -m
 
-      # ── 2. Build & run benchmark on current branch ──
+      # ── 2. Build benchmark binary on current branch ──
       - name: Build benchmark binary (current branch)
         run: cargo build --release -p starcoin-execute-bench
 
-      - name: Run benchmark (current branch)
-        run: |
-          rm -f benchmark_results.json
-          STARCOIN_FIXED_BLOCK_TIME=1 ./target/release/starcoin-execute-bench \
-            --simple-transfer \
-            --fixed-block-time \
-            --rounds 10 \
-            --agent-mode \
-            --pipeline-timing \
-            2>&1 | tail -20
-          cp benchmark_results.json bench_current.json
-        env:
-          RUST_LOG: error
-          RUST_BACKTRACE: full
-
-      # ── 3. Checkout base branch & run benchmark ──
-      - name: Run benchmark on base branch (dual-verse-dag)
-        id: base_bench
+      # ── 3. Save current branch benchmark artifacts, then switch to base ──
+      - name: Save current binary and switch to base branch
+        id: prepare_base
         run: |
           set -euo pipefail
-          BASE_BRANCH="dual-verse-dag"
-          CURRENT_SHA=$(git rev-parse HEAD)
+          # Preserve the current-branch binary so the base build can overwrite target/
+          cp ./target/release/starcoin-execute-bench ./bench_current_bin
 
-          # Stash any untracked files from the current-branch run
+          BASE_BRANCH="dual-verse-dag"
+
+          # Stash any untracked files from the current-branch build
           git stash --include-untracked || true
 
           # Checkout base branch
@@ -121,15 +108,23 @@ jobs:
           if [ ! -f sync/starcoin-execute-bench/Cargo.toml ]; then
             echo "ℹ️  starcoin-execute-bench not found on $BASE_BRANCH — skipping base benchmark."
             echo "has_base=false" >> "$GITHUB_OUTPUT"
-            git checkout "$CURRENT_SHA"
-            git stash pop || true
             exit 0
           fi
 
           echo "has_base=true" >> "$GITHUB_OUTPUT"
 
-          # Build on base
-          cargo build --release -p starcoin-execute-bench
+      # ── 4. Build benchmark binary on base branch (reuses cargo cache) ──
+      - name: Build benchmark binary (base branch)
+        if: steps.prepare_base.outputs.has_base == 'true'
+        run: cargo build --release -p starcoin-execute-bench
+
+      # ── 5. Run benchmark on base branch first (we are already on it) ──
+      - name: Run benchmark (base branch)
+        id: base_bench
+        if: steps.prepare_base.outputs.has_base == 'true'
+        timeout-minutes: 10
+        run: |
+          set -euo pipefail
 
           # Detect which flags the base binary supports
           HELP_TEXT=$(./target/release/starcoin-execute-bench --help 2>&1 || true)
@@ -152,28 +147,40 @@ jobs:
 
           echo "ℹ️  Base bench args: $BASE_ARGS"
 
-          # Run on base
           rm -f benchmark_results.json
           STARCOIN_FIXED_BLOCK_TIME=1 ./target/release/starcoin-execute-bench \
             $BASE_ARGS \
             2>&1 | tail -20
 
-          # The base bench may not produce benchmark_results.json (older versions)
           if [ -f benchmark_results.json ]; then
             cp benchmark_results.json bench_base.json
+            echo "has_base=true" >> "$GITHUB_OUTPUT"
           else
             echo "⚠️  Base bench did not produce benchmark_results.json — skipping comparison."
             echo "has_base=false" >> "$GITHUB_OUTPUT"
           fi
-
-          # Return to current branch
-          git checkout "$CURRENT_SHA"
-          git stash pop || true
         env:
           RUST_LOG: error
           RUST_BACKTRACE: full
 
-      # ── 4. Compare results ──
+      # ── 6. Run benchmark on current branch (using saved binary) ──
+      - name: Run benchmark (current branch)
+        timeout-minutes: 10
+        run: |
+          rm -f benchmark_results.json
+          STARCOIN_FIXED_BLOCK_TIME=1 ./bench_current_bin \
+            --simple-transfer \
+            --fixed-block-time \
+            --rounds 10 \
+            --agent-mode \
+            --pipeline-timing \
+            2>&1 | tail -20
+          cp benchmark_results.json bench_current.json
+        env:
+          RUST_LOG: error
+          RUST_BACKTRACE: full
+
+      # ── 7. Compare results ──
       - name: Compare benchmark results
         id: compare
         run: |
@@ -206,7 +213,7 @@ jobs:
 
           echo "has_report=true" >> "$GITHUB_OUTPUT"
 
-      # ── 5. Upload artifacts ──
+      # ── 8. Upload artifacts ──
       - name: Upload benchmark artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -218,7 +225,7 @@ jobs:
             bench_report.md
           retention-days: 90
 
-      # ── 6. Post report as PR comment ──
+      # ── 9. Post report as PR comment ──
       - name: Post benchmark report to PR
         if: always() && github.event_name == 'pull_request' && steps.compare.outputs.has_report == 'true'
         uses: marocchino/sticky-pull-request-comment@v2
