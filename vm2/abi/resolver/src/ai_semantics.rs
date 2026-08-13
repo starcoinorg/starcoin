@@ -482,6 +482,7 @@ mod tests {
     use starcoin_vm2_vm_types::identifier::Identifier;
     use starcoin_vm2_vm_types::language_storage::ModuleId;
     use starcoin_vm2_vm_types::normalized::{Field, Type};
+    use starcoin_vm2_vm_types::metadata::Metadata;
     use starcoin_vm2_vm_types::state_store::errors::StateviewError;
     use starcoin_vm2_vm_types::state_store::state_key::inner::StateKeyInner;
     use starcoin_vm2_vm_types::state_store::state_key::StateKey;
@@ -573,6 +574,16 @@ mod tests {
         let entry_fns: Vec<_> = semantics.functions.iter().filter(|f| f.is_entry).collect();
         assert!(!entry_fns.is_empty(), "dao module has no entry functions");
 
+        // All declared bytecode functions are included, regardless of visibility.
+        let module = starcoin_cached_packages::head_release_bundle()
+            .compiled_modules()
+            .into_iter()
+            .find(|m| {
+                m.self_id() == ModuleId::new(genesis_address(), Identifier::new("dao").unwrap())
+            })
+            .expect("dao module not found in framework");
+        assert_eq!(semantics.functions.len(), module.function_defs().len());
+
         // Structs
         assert!(!semantics.structs.is_empty());
         let proposal = semantics
@@ -606,6 +617,61 @@ mod tests {
         let json = serde_json::to_string_pretty(&semantics).unwrap();
         let back: ModuleSemantics = serde_json::from_str(&json).unwrap();
         assert_eq!(semantics, back);
+    }
+
+    #[cfg(feature = "ai-metadata")]
+    #[test]
+    fn test_view_attribute_affects_function_semantics() {
+        let modules = starcoin_cached_packages::head_release_bundle().compiled_modules();
+        let mut module = modules
+            .into_iter()
+            .find(|m| {
+                m.self_id() == ModuleId::new(genesis_address(), Identifier::new("dao").unwrap())
+            })
+            .expect("dao module not found in framework");
+
+        let metadata_fun = module
+            .function_defs()
+            .iter()
+            .next()
+            .map(|def| {
+                module
+                    .identifier_at(module.function_handle_at(def.function).name)
+                    .to_string()
+            })
+            .expect("dao module has no function");
+
+        let mut fun_attributes = std::collections::BTreeMap::new();
+        fun_attributes.insert(
+            metadata_fun.clone(),
+            vec![KnownAttribute {
+                kind: 1,
+                args: vec![],
+            }],
+        );
+        let metadata = RuntimeModuleMetadataV1 { fun_attributes };
+        let metadata_value = bcs::to_bytes(&metadata).unwrap();
+        module.metadata.push(Metadata {
+            key: STARCOIN_METADATA_KEY_V1.to_vec(),
+            value: metadata_value,
+        });
+
+        let mut code = vec![];
+        module.serialize(&mut code).unwrap();
+        let resolver = SemanticsResolver::new(&InMemoryStateView::new(vec![]));
+        let semantics = resolver.resolve_module_code(&code).unwrap();
+
+        let target = semantics
+            .functions
+            .iter()
+            .find(|f| f.name == metadata_fun)
+            .expect("target function not found");
+        assert!(target.is_view, "injected view attribute must be observed");
+        assert!(
+            semantics.functions.iter().any(|f| !f.is_view),
+            "should keep non-view functions in output"
+        );
+        assert_eq!(semantics.functions.len(), module.function_defs().len());
     }
 
     #[test]
