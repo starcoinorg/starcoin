@@ -9,7 +9,7 @@ use starcoin_service_registry::{
 };
 use starcoin_storage::Storage2;
 use starcoin_storage::{BlockStore, Storage, Store};
-use starcoin_types::system_events::NewHeadBlock;
+use starcoin_types::system_events::{NewDagBlock, NewHeadBlock};
 use starcoin_vm2_crypto::HashValue;
 use starcoin_vm2_state_api::{
     message::{StateRequest, StateResponse},
@@ -64,12 +64,14 @@ impl ServiceFactory<Self> for ChainStateService {
 impl ActorService for ChainStateService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<NewHeadBlock>();
+        ctx.subscribe::<NewDagBlock>();
         self.service.adjust_time();
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<NewHeadBlock>();
+        ctx.unsubscribe::<NewDagBlock>();
         Ok(())
     }
 }
@@ -142,6 +144,17 @@ impl EventHandler<Self, NewHeadBlock> for ChainStateService {
     fn handle_event(&mut self, msg: NewHeadBlock, _ctx: &mut ServiceContext<Self>) {
         let state_root = msg.executed_block.multi_state();
         debug!("VM2 ChainStateActor change StateRoot to : {:?}", state_root);
+        self.service.change_root(state_root.state_root2());
+    }
+}
+
+impl EventHandler<Self, NewDagBlock> for ChainStateService {
+    fn handle_event(&mut self, msg: NewDagBlock, _ctx: &mut ServiceContext<Self>) {
+        let state_root = msg.executed_block.multi_state();
+        debug!(
+            "VM2 ChainStateActor change StateRoot to (dag): {:?}",
+            state_root
+        );
         self.service.change_root(state_root.state_root2());
     }
 }

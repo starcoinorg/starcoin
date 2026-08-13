@@ -91,17 +91,8 @@ impl ActorService for ChainReaderService {
 impl EventHandler<Self, NewDagBlock> for ChainReaderService {
     fn handle_event(&mut self, event: NewDagBlock, _ctx: &mut ServiceContext<Self>) {
         info!("NewDagBlock in chain reader service");
-        let mut main = self
-            .inner
-            .get_main()
-            .fork(self.inner.main_head_header().id())
-            .unwrap_or_else(|e| {
-                panic!(
-                    "fork error when handle NewDagBlock in chain reader service: {:?}",
-                    e
-                )
-            });
-        self.inner.main = main
+        self.inner
+            .get_main_mut()
             .select_dag_state(event.executed_block.as_ref().header())
             .unwrap_or_else(|e| {
                 panic!(
@@ -363,6 +354,10 @@ impl ChainReaderServiceInner {
 
     pub fn get_main(&self) -> &BlockChain {
         &self.main
+    }
+
+    pub fn get_main_mut(&mut self) -> &mut BlockChain {
+        &mut self.main
     }
 
     pub fn get_storages(&self) -> (Arc<dyn Store>, Arc<dyn Store2>) {

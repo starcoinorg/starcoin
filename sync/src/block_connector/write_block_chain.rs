@@ -111,6 +111,11 @@ impl<TransactionPoolServiceT> WriteBlockChainService<TransactionPoolServiceT>
 where
     TransactionPoolServiceT: TxPoolSyncService + 'static,
 {
+    pub fn apply_new_head_from_dag(&mut self, executed_block: ExecutedBlock) -> Result<()> {
+        let enacted_blocks = vec![executed_block.block().clone()];
+        self.do_new_head(executed_block, 1, enacted_blocks, 0, vec![])
+    }
+
     pub fn new(
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
@@ -175,8 +180,7 @@ where
     }
 
     pub fn switch_header(&mut self, header: &BlockHeader) -> Result<BlockHeader> {
-        let new_branch = self.main.select_dag_state(header)?; // 1
-        self.select_head(new_branch)?;
+        self.main.select_dag_state(header)?;
         self.update_startup_info(&self.main.current_header())?;
         Ok(self.main.current_header())
     }
