@@ -45,7 +45,7 @@ use starcoin_vm_types::{
     state_store::state_key::StateKey,
     state_store::StateView,
     transaction::{Transaction, TransactionOutput, TransactionStatus},
-    write_set::WriteOp,
+    write_set::{TransactionWrite, WriteOp},
 };
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::Arc;
@@ -102,27 +102,15 @@ impl PTransaction for PreprocessedTransaction {
 // Wrapper to avoid orphan rule
 pub(crate) struct StarcoinTransactionOutput {
     output: VMOutput,
-    group_read_layouts: HashMap<StateKey, BTreeMap<StructTag, Arc<MoveTypeLayout>>>,
 }
 
 impl StarcoinTransactionOutput {
-    pub fn new(
-        output: VMOutput,
-        group_read_layouts: HashMap<StateKey, BTreeMap<StructTag, Arc<MoveTypeLayout>>>,
-    ) -> Self {
-        Self {
-            output,
-            group_read_layouts,
-        }
+    pub fn new(output: VMOutput) -> Self {
+        Self { output }
     }
 
-    pub fn into_inner(
-        self,
-    ) -> (
-        VMOutput,
-        HashMap<StateKey, BTreeMap<StructTag, Arc<MoveTypeLayout>>>,
-    ) {
-        (self.output, self.group_read_layouts)
+    pub fn into_inner(self) -> VMOutput {
+        self.output
     }
 
     #[allow(dead_code)]
@@ -214,10 +202,7 @@ impl PTransactionOutput for StarcoinTransactionOutput {
 
     /// Execution output for transactions that comes after SkipRest signal.
     fn skip_output() -> Self {
-        Self::new(
-            VMOutput::empty_with_status(TransactionStatus::Retry),
-            HashMap::new(),
-        )
+        Self::new(VMOutput::empty_with_status(TransactionStatus::Retry))
     }
 
     fn delayed_field_change_set(
@@ -389,7 +374,7 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
         state_view: &S,
         max_value_nest_depth: Option<u64>,
     ) -> Result<(usize, TransactionOutput), VMStatus> {
-        let (vm_output, group_read_layouts) = output.into_inner();
+        let vm_output = output.into_inner();
         let has_delayed = vm_output.contains_delayed_fields();
         let has_group_ops = vm_output
             .resource_write_set()
@@ -416,7 +401,6 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
                 &vm_output,
                 &mapping,
                 delayed_field_cache,
-                &group_read_layouts,
                 state_view,
                 &mut group_cache,
                 has_delayed,
@@ -456,10 +440,14 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
     }
 
     let mut outputs = outputs;
+    let mut has_delayed = false;
     let mut has_agg_v1 = false;
     let mut group_touches = 0u64;
     let mut group_touch_counts: HashMap<StateKey, usize> = HashMap::new();
     for (_, output) in outputs.iter() {
+        if output.output.contains_delayed_fields() {
+            has_delayed = true;
+        }
         if !output.output.aggregator_v1_delta_set().is_empty() {
             has_agg_v1 = true;
         }
@@ -471,7 +459,7 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
         }
     }
     let has_group_dup = group_touch_counts.values().any(|count| *count > 1);
-    let needs_sequential = has_agg_v1 || has_group_dup;
+    let needs_sequential = has_delayed || has_agg_v1 || has_group_dup;
     outputs.sort_by_key(|(idx, _)| *idx);
 
     if !needs_sequential {
@@ -495,7 +483,8 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
 
     info!(
         target: "vm-bench",
-        "materialize sequential: agg_v1={} group_dup={} group_touches={}",
+        "materialize sequential: delayed={} agg_v1={} group_dup={} group_touches={}",
+        has_delayed,
         has_agg_v1,
         has_group_dup,
         group_touches
@@ -540,7 +529,7 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
     let mut results = Vec::with_capacity(ordered_indices.len());
     for txn_idx in ordered_indices {
         let txn_output = if let Some(output) = sequential_outputs.remove(&txn_idx) {
-            let (mut vm_output, group_read_layouts) = output.into_inner();
+            let mut vm_output = output.into_inner();
             let has_delayed = vm_output.contains_delayed_fields();
             let has_agg_v1 = !vm_output.aggregator_v1_delta_set().is_empty();
             let has_group_ops = vm_output
@@ -567,7 +556,6 @@ fn materialize_parallel_outputs<S: StateView + Sync>(
                     &vm_output,
                     &mapping,
                     &delayed_field_cache,
-                    &group_read_layouts,
                     &state_cache,
                     &mut group_cache,
                     has_delayed,
@@ -687,7 +675,6 @@ pub(crate) fn materialize_resource_write_set<S: StateView>(
     output: &VMOutput,
     mapping: &impl ValueToIdentifierMapping<Identifier = DelayedFieldID>,
     delayed_field_cache: &DelayedFieldCache,
-    group_read_layouts: &HashMap<StateKey, BTreeMap<StructTag, Arc<MoveTypeLayout>>>,
     state_view: &S,
     group_cache: &mut HashMap<StateKey, BTreeMap<StructTag, Bytes>>,
     materialize_delayed: bool,
@@ -742,21 +729,31 @@ pub(crate) fn materialize_resource_write_set<S: StateView>(
                 )?
             }
             AbstractResourceWriteOp::WriteResourceGroup(group_write) => {
-                if materialize_delayed {
-                    for (tag, (inner_op, _)) in group_write.inner_ops() {
-                        match inner_op {
-                            WriteOp::Creation { data, .. } | WriteOp::Modification { data, .. } => {
-                                delayed_field_cache.insert_group_member_value(
+                for (tag, (inner_op, layout)) in group_write.inner_ops() {
+                    match inner_op {
+                        WriteOp::Creation { data, .. } | WriteOp::Modification { data, .. } => {
+                            delayed_field_cache.insert_group_member_value(
+                                key.clone(),
+                                tag.clone(),
+                                data.clone(),
+                            );
+                            if let Some(layout) = layout {
+                                delayed_field_cache.insert_group_member_layout(
                                     key.clone(),
                                     tag.clone(),
-                                    data.clone(),
+                                    layout.clone(),
                                 );
                             }
-                            WriteOp::Deletion { .. } => {
-                                delayed_field_cache.remove_group_member_value(key, tag);
-                            }
+                        }
+                        WriteOp::Deletion { .. } => {
+                            delayed_field_cache.remove_group_member_value(key, tag);
+                            delayed_field_cache.remove_group_member_layout(key, tag);
                         }
                     }
+                }
+                if group_write.metadata_op().is_deletion() {
+                    delayed_field_cache.clear_group_member_values(key);
+                    delayed_field_cache.clear_group_member_layouts(key);
                 }
                 materialize_group_write(
                     key,
@@ -785,7 +782,6 @@ pub(crate) fn materialize_resource_write_set<S: StateView>(
                     metadata,
                     mapping,
                     delayed_field_cache,
-                    group_read_layouts,
                     state_view,
                     group_cache,
                     max_value_nest_depth,
@@ -920,25 +916,26 @@ fn materialize_group_in_place<S: StateView>(
     metadata: &starcoin_vm_types::state_store::state_value::StateValueMetadata,
     mapping: &impl ValueToIdentifierMapping<Identifier = DelayedFieldID>,
     delayed_field_cache: &DelayedFieldCache,
-    group_read_layouts: &HashMap<StateKey, BTreeMap<StructTag, Arc<MoveTypeLayout>>>,
     state_view: &S,
     group_cache: &mut HashMap<StateKey, BTreeMap<StructTag, Bytes>>,
     max_value_nest_depth: Option<u64>,
 ) -> Result<WriteOp, VMStatus> {
     let group_map = load_group_map_cached(state_view, group_cache, key)?;
-    let layouts = group_read_layouts.get(key).ok_or_else(|| {
-        VMStatus::error(
-            StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
-            Some(format!(
-                "Missing group read layouts for delayed field exchange: {:?}",
-                key
-            )),
-        )
-    })?;
+    let layouts = delayed_field_cache
+        .get_group_member_layouts(key)
+        .ok_or_else(|| {
+            VMStatus::error(
+                StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
+                Some(format!(
+                    "Missing cached group member layouts for delayed field exchange: {:?}",
+                    key
+                )),
+            )
+        })?;
 
     for (tag, layout) in layouts {
         let cached = delayed_field_cache
-            .get_group_member_value(key, tag)
+            .get_group_member_value(key, &tag)
             .ok_or_else(|| {
                 VMStatus::error(
                     StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
@@ -950,7 +947,7 @@ fn materialize_group_in_place<S: StateView>(
             })?;
         let bytes =
             materialize_bytes_force(&cached, layout.as_ref(), mapping, max_value_nest_depth)?;
-        group_map.insert(tag.clone(), bytes);
+        group_map.insert(tag, bytes);
     }
 
     Ok(WriteOp::Modification {
@@ -1282,10 +1279,7 @@ mod tests {
                     TransactionStatus::Keep(KeptVMStatus::Executed),
                     TransactionAuxiliaryData::None,
                 );
-                outputs.push((
-                    txn_idx,
-                    StarcoinTransactionOutput::new(vm_output, HashMap::new()),
-                ));
+                outputs.push((txn_idx, StarcoinTransactionOutput::new(vm_output)));
                 continue;
             }
 
@@ -1332,10 +1326,7 @@ mod tests {
                 TransactionStatus::Keep(KeptVMStatus::Executed),
                 TransactionAuxiliaryData::None,
             );
-            outputs.push((
-                txn_idx,
-                StarcoinTransactionOutput::new(vm_output, HashMap::new()),
-            ));
+            outputs.push((txn_idx, StarcoinTransactionOutput::new(vm_output)));
         }
 
         let mut state_data = HashMap::new();
@@ -1360,7 +1351,7 @@ mod tests {
         let mut results = Vec::with_capacity(outputs.len());
 
         for (txn_idx, output) in outputs.into_iter() {
-            let (mut vm_output, group_read_layouts) = output.into_inner();
+            let mut vm_output = output.into_inner();
             let has_delayed = vm_output.contains_delayed_fields();
             let has_agg_v1 = !vm_output.aggregator_v1_delta_set().is_empty();
             let has_group_ops = vm_output.resource_write_set().values().any(|op| {
@@ -1390,7 +1381,6 @@ mod tests {
                     &vm_output,
                     &mapping,
                     &delayed_field_cache,
-                    &group_read_layouts,
                     &state_cache,
                     &mut group_cache,
                     has_delayed,

@@ -3,6 +3,9 @@
 //! Scratchpad for on chain values during the execution.
 
 use crate::default_gas_schedule;
+#[cfg(test)]
+use crate::layout_identifier_mapping_cache::compute_layout_has_identifier_mappings;
+use crate::layout_identifier_mapping_cache::LayoutIdentifierMappingCache;
 use crate::move_vm_ext::{resource_state_key, AsExecutorView, ResourceGroupResolver};
 use bytes::Bytes;
 use move_binary_format::deserializer::DeserializerConfig;
@@ -10,7 +13,9 @@ use move_binary_format::CompiledModule;
 use move_bytecode_utils::compiled_module_viewer::CompiledModuleView;
 use move_core_types::metadata::Metadata;
 use move_core_types::resolver::{resource_size, ModuleResolver, ResourceResolver};
-use move_core_types::value::{MoveStructLayout, MoveTypeLayout};
+#[cfg(test)]
+use move_core_types::value::MoveStructLayout;
+use move_core_types::value::MoveTypeLayout;
 use move_table_extension::{TableHandle, TableResolver};
 use move_vm_runtime::config::DEFAULT_MAX_VALUE_NEST_DEPTH;
 use move_vm_types::delayed_values::delayed_field_id::{
@@ -150,7 +155,6 @@ struct GroupReadInfo {
     metadata: StateValueMetadata,
     size: u64,
     delayed_ids: HashSet<DelayedFieldID>,
-    layouts: BTreeMap<StructTag, Arc<MoveTypeLayout>>,
 }
 
 /// Adapter to convert a `ExecutorView` into a `MoveResolver`.
@@ -169,6 +173,7 @@ pub struct StorageAdapter<'e, E> {
     delayed_fields: VersionedDelayedFields<DelayedFieldID>,
     resource_reads: RefCell<HashMap<StateKey, ResourceReadInfo>>,
     group_reads: RefCell<HashMap<StateKey, GroupReadInfo>>,
+    layout_identifier_mapping_cache: LayoutIdentifierMappingCache,
     delayed_field_id_start: u32,
     delayed_field_id_counter: AtomicU32,
 }
@@ -252,23 +257,9 @@ impl<S: StateView> TStateView for StateViewCache<'_, S> {
 }
 
 impl<'a, S: StateView> StorageAdapter<'a, S> {
-    fn layout_has_identifier_mappings(layout: &MoveTypeLayout) -> bool {
-        match layout {
-            MoveTypeLayout::Native(..) => true,
-            MoveTypeLayout::Vector(inner) => Self::layout_has_identifier_mappings(inner),
-            MoveTypeLayout::Struct(struct_layout) => match struct_layout {
-                MoveStructLayout::Runtime(fields) => {
-                    fields.iter().any(Self::layout_has_identifier_mappings)
-                }
-                MoveStructLayout::WithFields(fields) => fields
-                    .iter()
-                    .any(|field| Self::layout_has_identifier_mappings(&field.layout)),
-                MoveStructLayout::WithTypes { fields, .. } => fields
-                    .iter()
-                    .any(|field| Self::layout_has_identifier_mappings(&field.layout)),
-            },
-            _ => false,
-        }
+    fn layout_has_identifier_mappings(&self, layout: &MoveTypeLayout) -> bool {
+        self.layout_identifier_mapping_cache
+            .has_identifier_mappings_stable_ref(layout)
     }
 
     pub fn new(
@@ -290,6 +281,7 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
             delayed_fields: VersionedDelayedFields::empty(),
             resource_reads: RefCell::new(HashMap::new()),
             group_reads: RefCell::new(HashMap::new()),
+            layout_identifier_mapping_cache: LayoutIdentifierMappingCache::default(),
             delayed_field_id_start,
             delayed_field_id_counter: AtomicU32::new(delayed_field_id_start),
         }
@@ -310,16 +302,6 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
         &self.delayed_fields
     }
 
-    pub fn take_group_read_layouts(
-        &self,
-    ) -> HashMap<StateKey, BTreeMap<StructTag, Arc<MoveTypeLayout>>> {
-        self.group_reads
-            .borrow_mut()
-            .drain()
-            .map(|(k, v)| (k, v.layouts))
-            .collect()
-    }
-
     fn generate_delayed_field_id(&self, width: u32) -> DelayedFieldID {
         let index = self.delayed_field_id_counter.fetch_add(1, Ordering::SeqCst);
         DelayedFieldID::new_with_width(index, width)
@@ -331,7 +313,7 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
         bytes: &Bytes,
         layout: &MoveTypeLayout,
     ) -> Result<HashSet<DelayedFieldID>, StateviewError> {
-        if !Self::layout_has_identifier_mappings(layout) {
+        if !self.layout_has_identifier_mappings(layout) {
             return Ok(HashSet::new());
         }
         let value = ValueSerDeContext::<DelayedFieldID>::new(self.max_value_nest_depth)
@@ -388,24 +370,21 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
         if delayed_ids.is_empty() {
             return;
         }
+        self.delayed_field_cache.insert_group_member_layout(
+            group_key.clone(),
+            tag.clone(),
+            Arc::new(layout.clone()),
+        );
         self.group_reads
             .borrow_mut()
             .entry(group_key.clone())
             .and_modify(|existing| {
                 existing.delayed_ids.extend(delayed_ids.iter().cloned());
-                existing
-                    .layouts
-                    .insert(tag.clone(), Arc::new(layout.clone()));
             })
-            .or_insert_with(|| {
-                let mut layouts = BTreeMap::new();
-                layouts.insert(tag.clone(), Arc::new(layout.clone()));
-                GroupReadInfo {
-                    metadata,
-                    size,
-                    delayed_ids,
-                    layouts,
-                }
+            .or_insert_with(|| GroupReadInfo {
+                metadata,
+                size,
+                delayed_ids,
             });
     }
 
@@ -478,7 +457,7 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
         state_value: &StateValue,
         layout: &MoveTypeLayout,
     ) -> Result<(StateValue, HashSet<DelayedFieldID>, bool), StateviewError> {
-        if !self.delayed_fields_enabled || !Self::layout_has_identifier_mappings(layout) {
+        if !self.delayed_fields_enabled || !self.layout_has_identifier_mappings(layout) {
             return Ok((state_value.clone(), HashSet::new(), false));
         }
         let (exchanged, delayed_ids) = self.exchange_state_value(state_value, layout)?;
@@ -535,13 +514,11 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
             delayed_fields: &self.delayed_fields,
             txn_idx: 0,
         };
-        let group_read_layouts = self.take_group_read_layouts();
         let mut group_cache: HashMap<StateKey, BTreeMap<StructTag, Bytes>> = HashMap::new();
         let patched_resource_write_set = materialize_resource_write_set(
             &output,
             &mapping,
             &self.delayed_field_cache,
-            &group_read_layouts,
             self.executor_view,
             &mut group_cache,
             has_delayed,
@@ -1140,7 +1117,10 @@ impl<S: StateView> IntoMoveResolver<S> for S {
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
+    use move_core_types::value::IdentifierMappingKind;
     use starcoin_vm_runtime_types::resource_group_adapter::GroupSizeKind;
+    use std::hint::black_box;
+    use std::time::Instant;
     //use starcoin_vm_types::on_chain_config::{Features, OnChainConfig};
 
     // Expose a method to create a storage adapter with a provided group size kind.
@@ -1168,5 +1148,76 @@ pub(crate) mod tests {
         );
 
         state_view.as_move_resolver()
+    }
+
+    fn build_complex_aggregator_like_layout() -> MoveTypeLayout {
+        // Move-like shape:
+        // struct Position { cash: Aggregator<u128>, snap: Snapshot<u128>, limit: u128 }
+        // struct Account  { positions: vector<Position>, totals: vector<Aggregator<u128>> }
+        // struct Vault    { accounts: vector<Account>, risk: Position, nonce: u64 }
+        let position = MoveTypeLayout::Struct(MoveStructLayout::Runtime(vec![
+            MoveTypeLayout::Native(
+                IdentifierMappingKind::Aggregator,
+                Box::new(MoveTypeLayout::U128),
+            ),
+            MoveTypeLayout::Native(
+                IdentifierMappingKind::Snapshot,
+                Box::new(MoveTypeLayout::U128),
+            ),
+            MoveTypeLayout::U128,
+        ]));
+        let account = MoveTypeLayout::Struct(MoveStructLayout::Runtime(vec![
+            MoveTypeLayout::Vector(Box::new(position.clone())),
+            MoveTypeLayout::Vector(Box::new(MoveTypeLayout::Native(
+                IdentifierMappingKind::Aggregator,
+                Box::new(MoveTypeLayout::U128),
+            ))),
+        ]));
+        MoveTypeLayout::Struct(MoveStructLayout::Runtime(vec![
+            MoveTypeLayout::Vector(Box::new(account)),
+            position,
+            MoveTypeLayout::U64,
+        ]))
+    }
+
+    #[test]
+    #[ignore = "benchmark-style regression probe; run manually with --ignored --nocapture"]
+    fn test_bench_layout_identifier_mapping_cache_complex_aggregator() {
+        let layout = build_complex_aggregator_like_layout();
+        let iterations = 2_000_000usize;
+
+        let start_plain = Instant::now();
+        let mut plain_acc = 0usize;
+        for _ in 0..iterations {
+            let hit = compute_layout_has_identifier_mappings(&layout);
+            plain_acc ^= usize::from(black_box(hit));
+        }
+        let plain_elapsed = start_plain.elapsed();
+
+        let cache = LayoutIdentifierMappingCache::default();
+        let start_cached = Instant::now();
+        let mut cached_acc = 0usize;
+        for _ in 0..iterations {
+            let hit = cache.has_identifier_mappings_stable_ref(&layout);
+            cached_acc ^= usize::from(black_box(hit));
+        }
+        let cached_elapsed = start_cached.elapsed();
+
+        assert_eq!(plain_acc, cached_acc, "cache must preserve semantics");
+        assert_eq!(plain_acc, 0, "xor accumulator keeps optimizer honest");
+
+        let plain_ns_per_iter = plain_elapsed.as_nanos() as f64 / iterations as f64;
+        let cached_ns_per_iter = cached_elapsed.as_nanos() as f64 / iterations as f64;
+        let speedup = plain_ns_per_iter / cached_ns_per_iter;
+
+        println!(
+            "[layout-check-bench] iters={} plain={:?} cached={:?} plain_ns/iter={:.2} cached_ns/iter={:.2} speedup={:.2}x",
+            iterations,
+            plain_elapsed,
+            cached_elapsed,
+            plain_ns_per_iter,
+            cached_ns_per_iter,
+            speedup
+        );
     }
 }

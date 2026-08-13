@@ -13548,6 +13548,7 @@ dependencies = [
  "rand 0.10.1",
  "rand_core 0.6.4",
  "rayon",
+ "rustc-hash 2.1.2",
  "serde 1.0.228",
  "serde_bytes",
  "starcoin-aggregator",
