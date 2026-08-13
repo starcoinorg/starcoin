@@ -11789,6 +11789,7 @@ dependencies = [
  "starcoin-dag",
  "starcoin-genesis",
  "starcoin-logger",
+ "starcoin-miner",
  "starcoin-node",
  "starcoin-pipeline-timing",
  "starcoin-service-registry",

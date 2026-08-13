@@ -31,6 +31,29 @@ pub struct NewBranch(pub Arc<ExecutedBlock>);
 #[derive(Clone, Debug)]
 pub struct MinedBlock(pub Arc<Block>);
 
+/// Fired when block template construction collects transactions from blue blocks
+/// (blocks in mergeset_blues excluding selected parent).
+#[derive(Clone, Debug)]
+pub struct BlockTemplateBlueTxns {
+    pub template_time_ms: u64,
+    pub blue_block_count: u32,
+    /// Number of red blocks in current template mergeset (for observability only).
+    pub red_block_count: u32,
+    pub txn_hashes: Arc<[HashValue]>,
+}
+
+/// Fired when create_block_template supplements txpool candidates from
+/// legal non-selected parents (selected_parents minus selected_parent).
+#[derive(Clone, Debug)]
+pub struct BlockTemplateLegalParentSupplementStats {
+    pub template_time_ms: u64,
+    pub legal_parent_count: u32,
+    pub candidate_vm1: u32,
+    pub candidate_vm2: u32,
+    pub included_vm1: u32,
+    pub included_vm2: u32,
+}
+
 ///Fire this event on System start and all service is init.
 #[derive(Clone, Debug)]
 pub struct SystemStarted;
