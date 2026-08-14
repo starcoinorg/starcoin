@@ -53,9 +53,10 @@ pub fn init_storage_for_test_with_temp_dir(
 
     // Load or build genesis
     let genesis = Genesis::load_or_build(net)?;
+    let genesis_hash = genesis.block().id();
 
     // Create DAG for testing
-    let dag = BlockDAG::create_for_testing()?;
+    let dag = BlockDAG::create_for_testing(genesis_hash)?;
 
     // Execute genesis block
     let chain_info =
