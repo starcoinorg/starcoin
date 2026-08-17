@@ -1,0 +1,32 @@
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: starcoin-core-critical
+value: 1000000
+globalDefault: false
+preemptionPolicy: PreemptLowerPriority
+description: Protect Starcoin main seed and mining-pool workloads from lower-priority workloads.
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: starcoin-main-seed
+  namespace: starcoin-main
+spec:
+  minAvailable: 6
+  selector:
+    matchLabels:
+      app: starcoin
+      network: main
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: default-resource-requests
+  namespace: starcoin-main
+spec:
+  limits:
+  - type: Container
+    defaultRequest:
+      cpu: 50m
+      memory: 128Mi
