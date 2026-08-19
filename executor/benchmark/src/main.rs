@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use clap::Parser;
-use starcoin_executor_benchmark::vm_exec_benchmark;
+use starcoin_executor_benchmark::vm_exec_benchmark::{self, VmStorage};
 
 #[derive(Debug, Parser)]
 struct Opt {
-    #[clap(long, default_value = "200")]
-    num_accounts: usize,
+    #[clap(long)]
+    num_accounts: Option<usize>,
 
     #[clap(long, default_value = "1000000")]
     init_account_balance: u64,
@@ -24,6 +24,14 @@ struct Opt {
     #[clap(long, default_value = "warn")]
     log_level: String,
 
+    /// Only used in VM2 benchmark; override parallel executor concurrency
+    #[clap(long)]
+    vm_concurrency: Option<usize>,
+
+    /// Only used in VM2 benchmark; choose storage backend
+    #[clap(long, value_enum, default_value = "memory")]
+    vm_storage: VmStorage,
+
     #[clap(long, default_value = "1,10")]
     serialize_txns: String,
 
@@ -37,7 +45,7 @@ fn main() {
     starcoin_logger::init_with_default_level(&opt.log_level, None);
 
     if opt.bench_vm_exec {
-        let mut manager = vm_exec_benchmark::BenchmarkManager::new();
+        let mut manager = vm_exec_benchmark::BenchmarkManager::new(opt.vm_storage);
         let serialize_txns: Vec<usize> = opt
             .serialize_txns
             .split(',')
@@ -50,16 +58,22 @@ fn main() {
             .filter(|s| !s.trim().is_empty())
             .map(|s| s.trim().parse().expect("Invalid transaction count"))
             .collect();
-        let reports = manager.run(&serialize_txns, &parallel_txns);
+        let reports = manager.run(
+            &serialize_txns,
+            &parallel_txns,
+            opt.num_accounts,
+            opt.vm_concurrency,
+        );
         manager.pretty_print_reports(&reports);
     } else {
+        let num_accounts = opt.num_accounts.unwrap_or(200);
         rayon::ThreadPoolBuilder::new()
             .thread_name(|index| format!("rayon-global-{}", index))
             .build_global()
             .expect("Failed to build rayon global thread pool.");
 
         starcoin_executor_benchmark::run_benchmark(
-            opt.num_accounts,
+            num_accounts,
             opt.init_account_balance,
             opt.block_size,
             opt.num_transfer_blocks,
