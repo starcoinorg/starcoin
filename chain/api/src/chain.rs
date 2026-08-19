@@ -29,7 +29,7 @@ pub type MintedUncleNumber = u64;
 pub trait ChainReader {
     fn info(&self) -> ChainInfo;
     fn block_permit_policy(&self) -> BlockPermitPolicy {
-        BlockPermitPolicy::for_chain_id(self.info().chain_id())
+        BlockPermitPolicy::disabled()
     }
     fn status(&self) -> ChainStatus;
     /// Get latest block with block_info

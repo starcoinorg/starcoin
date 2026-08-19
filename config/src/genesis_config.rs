@@ -17,6 +17,7 @@ use starcoin_crypto::{
 use starcoin_gas::StarcoinGasParameters;
 use starcoin_gas_algebra_ext::{CostTable, FromOnChainGasSchedule};
 use starcoin_time_service::{TimeService, TimeServiceType};
+use starcoin_types::block_permit::BlockPermitPolicy;
 use starcoin_uint::U256;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::event::EventHandle;
@@ -501,6 +502,12 @@ impl ChainNetwork {
 
     pub fn is_custom(&self) -> bool {
         self.id.is_custom()
+    }
+
+    /// Resolve consensus policy only from the configured network identity. Node startup verifies
+    /// the configured genesis against storage before services consume this value.
+    pub fn block_permit_policy(&self) -> BlockPermitPolicy {
+        BlockPermitPolicy::for_trusted_network(self.is_main(), self.chain_id())
     }
 
     pub fn boot_nodes(&self) -> &[MultiaddrWithPeerId] {
@@ -1065,6 +1072,7 @@ pub static G_LATEST_GAS_PARAMS: Lazy<StarcoinGasParameters> = Lazy::new(|| {
 
 #[cfg(test)]
 mod tests {
+    use super::{BuiltinNetworkID, ChainNetwork, ChainNetworkID};
     use starcoin_gas::StarcoinGasParameters;
     use starcoin_gas_algebra_ext::{CostTable, FromOnChainGasSchedule};
     use starcoin_vm_types::gas_schedule::{
@@ -1077,6 +1085,17 @@ mod tests {
         native_table_v2, txn_gas_schedule_test, txn_gas_schedule_v1, txn_gas_schedule_v2,
         txn_gas_schedule_v3, GasSchedule,
     };
+    use std::str::FromStr;
+
+    #[test]
+    fn block_permit_policy_requires_builtin_main_identity() {
+        let main = ChainNetwork::new_builtin(BuiltinNetworkID::Main);
+        assert!(main.block_permit_policy().is_mainnet());
+
+        let custom_id = ChainNetworkID::from_str("custom:1").unwrap();
+        let custom = ChainNetwork::new(custom_id, main.genesis_config().clone());
+        assert!(!custom.block_permit_policy().is_mainnet());
+    }
 
     fn config_entries(
         instrs: Vec<(String, u64)>,

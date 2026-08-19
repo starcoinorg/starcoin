@@ -617,7 +617,10 @@ impl BlockChain {
             .get_block_header_by_hash(genesis)?
             .ok_or_else(|| format_err!("Can not find genesis block header {:?}", genesis))?
             .chain_id();
-        let policy = BlockPermitPolicy::for_chain_id(trusted_chain_id);
+        // This constructor is retained for tests and trusted offline tools that do not carry a
+        // configured network identity. Network-facing node services use the explicit-policy
+        // constructor after configured-genesis verification.
+        let policy = BlockPermitPolicy::disabled();
         Self::new_with_uncles(
             time_service,
             head,
@@ -750,7 +753,7 @@ impl BlockChain {
             None,
             genesis_block,
             &chain_id,
-            BlockPermitPolicy::for_chain_id(chain_id),
+            BlockPermitPolicy::disabled(),
             None,
         )?;
         Self::new(time_service, executed_block.block.id(), storage, None)

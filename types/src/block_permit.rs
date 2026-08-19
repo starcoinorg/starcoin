@@ -39,8 +39,14 @@ pub struct BlockPermitPolicy {
 }
 
 impl BlockPermitPolicy {
-    pub fn for_chain_id(chain_id: ChainId) -> Self {
-        let policy = if chain_id.is_main() {
+    /// Resolve the release policy from an already trusted configured network identity. Node
+    /// startup verifies that identity against the stored genesis before constructing services.
+    pub fn for_trusted_network(configured_mainnet: bool, chain_id: ChainId) -> Self {
+        assert!(
+            !configured_mainnet || chain_id.is_main(),
+            "configured mainnet must use mainnet chain id"
+        );
+        let policy = if configured_mainnet && chain_id.is_main() {
             Self {
                 mainnet: true,
                 activation_height: MAINNET_BLOCK_PERMIT_HEIGHT,

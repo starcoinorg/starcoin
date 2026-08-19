@@ -30,7 +30,7 @@ use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceHandler, ServiceRef, ServiceRequest,
 };
 use starcoin_txpool_api::PropagateTransactions;
-use starcoin_types::block_permit::{advertised_sync_rank, BlockPermitPolicy};
+use starcoin_types::block_permit::advertised_sync_rank;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::SyncStatusChangeEvent;
@@ -556,7 +556,7 @@ impl Inner {
                     peer_info.known_blocks.put(block_id, ());
                     let candidate_status =
                         ChainStatus::new(block_header, compact_block_message.block_info.clone());
-                    let policy = BlockPermitPolicy::for_chain_id(self.config.net().chain_id());
+                    let policy = self.config.net().block_permit_policy();
                     let candidate_rank = advertised_sync_rank(
                         policy,
                         candidate_status.head().number(),
@@ -645,7 +645,7 @@ impl Inner {
         rpc_protocols: Vec<Cow<'static, str>>,
         version_string: Option<String>,
     ) {
-        let policy = BlockPermitPolicy::for_chain_id(self.config.net().chain_id());
+        let policy = self.config.net().block_permit_policy();
         self.peers
             .entry(peer_id.clone())
             .and_modify(|peer| {

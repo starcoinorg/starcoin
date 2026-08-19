@@ -98,10 +98,4 @@ spec:
       accessModes: [ "ReadWriteOnce" ]
       resources:
         requests:
-          storage: 500Gi
-      storageClassName: do-block-storage
-      volumeMode: Filesystem
-      dataSource:
-        apiGroup: snapshot.storage.k8s.io
-        kind: VolumeSnapshot
-        name: migration-seed-do-snapshot
+          storage: 300Gi

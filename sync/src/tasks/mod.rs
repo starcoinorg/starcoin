@@ -554,6 +554,8 @@ where
         .ok_or_else(|| format_err!("Can not find block header by id: {}", current_block_id))?;
     let current_block_number = current_block_header.number();
     let current_block_id = current_block_header.id();
+    let trusted_chain_id = current_block_header.chain_id();
+    let block_permit_policy = fetcher.peer_selector().block_permit_policy();
     let current_block_info = storage
         .get_block_info(current_block_id)?
         .ok_or_else(|| format_err!("Can not find block info by id: {}", current_block_id))?;
@@ -644,6 +646,8 @@ where
                 time_service.clone(),
                 peer_provider.clone(),
                 ext_error_handle.clone(),
+                trusted_chain_id,
+                block_permit_policy,
             );
             let start_now = Instant::now();
             let (block_chain, _) = inner

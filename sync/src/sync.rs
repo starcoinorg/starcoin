@@ -27,7 +27,7 @@ use starcoin_sync_api::{
     SyncProgressRequest, SyncServiceHandler, SyncStartRequest, SyncStatusRequest, SyncTarget,
 };
 use starcoin_types::block::BlockIdAndNumber;
-use starcoin_types::block_permit::{advertised_sync_rank, BlockPermitPolicy};
+use starcoin_types::block_permit::advertised_sync_rank;
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};
@@ -190,7 +190,7 @@ impl SyncService {
                 })
                 .collect();
 
-            let block_permit_policy = BlockPermitPolicy::for_chain_id(config.net().chain_id());
+            let block_permit_policy = config.net().block_permit_policy();
             let peer_selector = PeerSelector::new_with_reputation_and_policy(
                 peer_reputations,
                 peer_set,
@@ -478,7 +478,7 @@ impl EventHandler<Self, SyncBeginEvent> for SyncService {
             SyncStage::Checking => {
                 let target_total_difficulty = target.block_info.total_difficulty;
                 let current_total_difficulty = self.sync_status.chain_status().total_difficulty();
-                let policy = BlockPermitPolicy::for_chain_id(self.config.net().chain_id());
+                let policy = self.config.net().block_permit_policy();
                 let target_rank = advertised_sync_rank(
                     policy,
                     target.target_id.number(),

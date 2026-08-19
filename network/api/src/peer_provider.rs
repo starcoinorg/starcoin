@@ -225,6 +225,10 @@ impl PeerSelector {
         }
     }
 
+    pub fn block_permit_policy(&self) -> BlockPermitPolicy {
+        self.block_permit_policy
+    }
+
     fn advertised_rank(&self, peer: &PeerInfo) -> AdvertisedSyncRank {
         self.rank_for(peer.block_number(), peer.total_difficulty())
     }

@@ -84,7 +84,7 @@ impl ServiceFactory<Self> for BlockBuilderService {
             .and_then(|registry| BlockBuilderMetrics::register(registry).ok());
 
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
-        let block_permit_policy = BlockPermitPolicy::for_chain_id(config.net().chain_id());
+        let block_permit_policy = config.net().block_permit_policy();
         let block_permit_private_key = load_block_permit_private_key(
             config.miner.block_permit_private_key_file.as_ref(),
             block_permit_policy,
@@ -269,7 +269,7 @@ where
             miner_account,
             metrics,
             vm_metrics,
-            BlockPermitPolicy::for_chain_id(net.chain_id()),
+            net.block_permit_policy(),
             None,
         )
     }

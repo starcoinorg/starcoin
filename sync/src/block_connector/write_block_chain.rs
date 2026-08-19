@@ -14,7 +14,7 @@ use starcoin_service_registry::ServiceRef;
 use starcoin_storage::Store;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::block::BlockInfo;
-use starcoin_types::block_permit::{validated_chain_quality, BlockPermitPolicy};
+use starcoin_types::block_permit::validated_chain_quality;
 use starcoin_types::{
     block::{Block, BlockHeader, ExecutedBlock},
     startup_info::StartupInfo,
@@ -107,7 +107,7 @@ where
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         let net = config.net();
-        let block_permit_policy = BlockPermitPolicy::for_chain_id(net.chain_id());
+        let block_permit_policy = net.block_permit_policy();
         let main = BlockChain::new_with_block_permit_policy(
             net.time_service(),
             startup_info.main,
@@ -150,7 +150,7 @@ where
                     self.storage.clone(),
                     self.vm_metrics.clone(),
                     net.chain_id(),
-                    BlockPermitPolicy::for_chain_id(net.chain_id()),
+                    net.block_permit_policy(),
                 )?)
             }
         } else if self.block_exist(header.parent_hash())? {
@@ -161,7 +161,7 @@ where
                 self.storage.clone(),
                 self.vm_metrics.clone(),
                 net.chain_id(),
-                BlockPermitPolicy::for_chain_id(net.chain_id()),
+                net.block_permit_policy(),
             )?)
         } else {
             None
@@ -182,7 +182,7 @@ where
         let main_total_difficulty = self.main.get_total_difficulty()?;
         let branch_total_difficulty = new_branch.get_total_difficulty()?;
         let parent_is_main_head = self.is_main_head(&executed_block.header().parent_hash());
-        let policy = BlockPermitPolicy::for_chain_id(self.config.net().chain_id());
+        let policy = self.config.net().block_permit_policy();
         let main_quality = validated_chain_quality(
             policy,
             self.main.current_header().number(),
@@ -267,7 +267,7 @@ where
             self.storage.clone(),
             self.vm_metrics.clone(),
             self.config.net().chain_id(),
-            BlockPermitPolicy::for_chain_id(self.config.net().chain_id()),
+            self.config.net().block_permit_policy(),
         )?;
 
         // delete block since from block.number + 1 to latest.
@@ -306,7 +306,7 @@ where
             self.storage.clone(),
             self.vm_metrics.clone(),
             self.config.net().chain_id(),
-            BlockPermitPolicy::for_chain_id(self.config.net().chain_id()),
+            self.config.net().block_permit_policy(),
         )?;
         let verify_block = chain.verify(block)?;
         chain.execute(verify_block)
