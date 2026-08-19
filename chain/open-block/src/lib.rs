@@ -20,6 +20,7 @@ use starcoin_types::{
     account_address::AccountAddress,
     block::{BlockBody, BlockHeader, BlockInfo, BlockTemplate},
     block_metadata::BlockMetadata,
+    block_permit::{block_permit_digest, block_permit_transaction_info},
     error::BlockExecutorError,
     transaction::{
         SignedUserTransaction, Transaction, TransactionInfo, TransactionOutput, TransactionStatus,
@@ -311,6 +312,40 @@ impl OpenedBlock {
         );
         let accumulator_root = self.txn_accumulator.append(&[txn_info.id()])?;
         Ok((txn_state_root, accumulator_root))
+    }
+
+    /// Compute the permit digest after ordinary VM execution but before the permit is appended.
+    pub fn block_permit_digest(&self) -> Result<HashValue> {
+        let uncles = if self.uncles.is_empty() {
+            None
+        } else {
+            Some(self.uncles.clone())
+        };
+        let body_without_permit = BlockBody::new(self.included_user_txns.clone(), uncles);
+        block_permit_digest(
+            self.chain_id,
+            self.block_meta.number(),
+            self.block_meta.parent_hash(),
+            self.block_meta.timestamp(),
+            self.block_meta.author(),
+            self.difficulty,
+            *self
+                .previous_block_info
+                .get_block_accumulator_info()
+                .get_accumulator_root(),
+            self.state.state_root(),
+            self.gas_used,
+            &body_without_permit,
+        )
+    }
+
+    /// Commit one already validated permit to the template transaction accumulator. It has no VM
+    /// state, event, write-set, sequence, or gas effect.
+    pub fn append_block_permit(&mut self, permit: SignedUserTransaction) -> Result<()> {
+        let permit_info = block_permit_transaction_info(&permit, self.state.state_root());
+        self.txn_accumulator.append(&[permit_info.id()])?;
+        self.included_user_txns.push(permit);
+        Ok(())
     }
 
     /// Construct a block template for mining.

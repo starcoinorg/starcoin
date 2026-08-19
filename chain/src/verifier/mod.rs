@@ -10,6 +10,7 @@ use starcoin_consensus::{Consensus, ConsensusVerifyError};
 use starcoin_logger::prelude::debug;
 use starcoin_open_block::AddressFilter;
 use starcoin_types::block::{Block, BlockHeader, ALLOWED_FUTURE_BLOCKTIME};
+use starcoin_types::block_permit::validate_block_permit;
 use std::{collections::HashSet, str::FromStr};
 
 #[derive(Debug, Clone)]
@@ -74,6 +75,14 @@ pub trait BlockVerifier {
         watch(CHAIN_WATCH_NAME, "n12");
         StaticVerifier::verify_body_hash(&new_block)?;
         watch(CHAIN_WATCH_NAME, "n13");
+        let chain_info = current_chain.info();
+        validate_block_permit(
+            current_chain.block_permit_policy(),
+            chain_info.chain_id(),
+            &current_chain.current_header(),
+            &new_block,
+        )
+        .map_err(|err| ConnectBlockError::VerifyBlockFailed(VerifyBlockField::Body, err))?;
         //verify uncles
         Self::verify_uncles(
             current_chain,

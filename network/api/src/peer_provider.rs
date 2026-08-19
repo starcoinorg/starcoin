@@ -14,7 +14,8 @@ use rand::prelude::SliceRandom;
 use rand::Rng;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use starcoin_types::block::BlockHeader;
+use starcoin_types::block::{BlockHeader, BlockNumber};
+use starcoin_types::block_permit::{advertised_sync_rank, AdvertisedSyncRank, BlockPermitPolicy};
 use starcoin_types::U256;
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -133,6 +134,7 @@ pub struct PeerSelector {
     total_score: Arc<AtomicU64>,
     strategy: PeerStrategy,
     peer_score_metrics: Option<PeerScoreMetrics>,
+    block_permit_policy: BlockPermitPolicy,
 }
 
 impl Debug for PeerSelector {
@@ -153,7 +155,29 @@ impl PeerSelector {
         strategy: PeerStrategy,
         peer_score_metrics: Option<PeerScoreMetrics>,
     ) -> Self {
-        Self::new_with_reputation(Vec::new(), peers, strategy, peer_score_metrics)
+        Self::new_with_reputation_and_policy(
+            Vec::new(),
+            peers,
+            strategy,
+            peer_score_metrics,
+            BlockPermitPolicy::disabled(),
+        )
+    }
+
+    #[cfg(test)]
+    pub(crate) fn new_with_policy(
+        peers: Vec<PeerInfo>,
+        strategy: PeerStrategy,
+        peer_score_metrics: Option<PeerScoreMetrics>,
+        block_permit_policy: BlockPermitPolicy,
+    ) -> Self {
+        Self::new_with_reputation_and_policy(
+            Vec::new(),
+            peers,
+            strategy,
+            peer_score_metrics,
+            block_permit_policy,
+        )
     }
 
     pub fn new_with_reputation(
@@ -161,6 +185,22 @@ impl PeerSelector {
         peers: Vec<PeerInfo>,
         strategy: PeerStrategy,
         peer_score_metrics: Option<PeerScoreMetrics>,
+    ) -> Self {
+        Self::new_with_reputation_and_policy(
+            reputations,
+            peers,
+            strategy,
+            peer_score_metrics,
+            BlockPermitPolicy::disabled(),
+        )
+    }
+
+    pub fn new_with_reputation_and_policy(
+        reputations: Vec<(PeerId, u64)>,
+        peers: Vec<PeerInfo>,
+        strategy: PeerStrategy,
+        peer_score_metrics: Option<PeerScoreMetrics>,
+        block_permit_policy: BlockPermitPolicy,
     ) -> Self {
         let reputations = reputations.into_iter().collect::<HashMap<PeerId, u64>>();
         let mut total_score = 0u64;
@@ -181,7 +221,16 @@ impl PeerSelector {
             total_score: Arc::new(AtomicU64::new(total_score)),
             strategy,
             peer_score_metrics,
+            block_permit_policy,
         }
+    }
+
+    fn advertised_rank(&self, peer: &PeerInfo) -> AdvertisedSyncRank {
+        self.rank_for(peer.block_number(), peer.total_difficulty())
+    }
+
+    pub fn rank_for(&self, head_number: BlockNumber, total_difficulty: U256) -> AdvertisedSyncRank {
+        advertised_sync_rank(self.block_permit_policy, head_number, total_difficulty)
     }
 
     pub fn switch_strategy(&mut self, strategy: PeerStrategy) {
@@ -208,7 +257,7 @@ impl PeerSelector {
         self.details
             .lock()
             .iter()
-            .sorted_by_key(|peer| peer.peer_info.total_difficulty())
+            .sorted_by_key(|peer| self.advertised_rank(&peer.peer_info))
             .rev()
             .map(|peer| peer.peer_info.peer_id())
             .take(n)
@@ -261,25 +310,35 @@ impl PeerSelector {
 
     /// Filter by the max total_difficulty
     pub fn bests(&self, min_difficulty: U256) -> Option<Vec<PeerInfo>> {
+        self.bests_by_rank(0, min_difficulty)
+    }
+
+    pub fn bests_by_rank(
+        &self,
+        min_head_number: BlockNumber,
+        min_difficulty: U256,
+    ) -> Option<Vec<PeerInfo>> {
         if self.is_empty() {
             return None;
         }
+        let minimum_rank =
+            advertised_sync_rank(self.block_permit_policy, min_head_number, min_difficulty);
         let peers: Vec<PeerInfo> = vec![];
         let best_peers = self
             .details
             .lock()
             .iter()
-            .sorted_by_key(|peer| peer.peer_info.total_difficulty())
+            .sorted_by_key(|peer| self.advertised_rank(&peer.peer_info))
             .rev()
             .fold(peers, |mut peers, peer| {
                 if peers.is_empty()
-                    || peer.peer_info.total_difficulty() >= peers[0].total_difficulty()
+                    || self.advertised_rank(&peer.peer_info) >= self.advertised_rank(&peers[0])
                 {
                     peers.push(peer.peer_info().clone());
                 };
                 peers
             });
-        if best_peers.is_empty() || best_peers[0].total_difficulty() <= min_difficulty {
+        if best_peers.is_empty() || self.advertised_rank(&best_peers[0]) <= minimum_rank {
             None
         } else {
             Some(best_peers)
@@ -287,14 +346,24 @@ impl PeerSelector {
     }
 
     pub fn betters(&self, difficulty: U256, max_peers: u64) -> Option<Vec<PeerInfo>> {
+        self.betters_by_rank(0, difficulty, max_peers)
+    }
+
+    pub fn betters_by_rank(
+        &self,
+        head_number: BlockNumber,
+        difficulty: U256,
+        max_peers: u64,
+    ) -> Option<Vec<PeerInfo>> {
         if self.is_empty() {
             return None;
         }
+        let minimum_rank = advertised_sync_rank(self.block_permit_policy, head_number, difficulty);
         let betters: Vec<PeerInfo> = self
             .details
             .lock()
             .iter()
-            .filter(|peer| peer.peer_info().total_difficulty() > difficulty)
+            .filter(|peer| self.advertised_rank(peer.peer_info()) > minimum_rank)
             .sorted_by(|peer_1, peer_2| Ord::cmp(&peer_2.score(), &peer_1.score()))
             .take(max_peers as usize)
             .map(|peer| peer.peer_info().clone())

@@ -30,6 +30,7 @@ use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceHandler, ServiceRef, ServiceRequest,
 };
 use starcoin_txpool_api::PropagateTransactions;
+use starcoin_types::block_permit::{advertised_sync_rank, BlockPermitPolicy};
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::SyncStatusChangeEvent;
@@ -553,10 +554,23 @@ impl Inner {
                         total_difficulty, peer_info
                     );
                     peer_info.known_blocks.put(block_id, ());
-                    peer_info.peer_info.update_chain_status(ChainStatus::new(
-                        block_header,
-                        compact_block_message.block_info.clone(),
-                    ));
+                    let candidate_status =
+                        ChainStatus::new(block_header, compact_block_message.block_info.clone());
+                    let policy = BlockPermitPolicy::for_chain_id(self.config.net().chain_id());
+                    let candidate_rank = advertised_sync_rank(
+                        policy,
+                        candidate_status.head().number(),
+                        candidate_status.total_difficulty(),
+                    );
+                    let current_status = peer_info.peer_info.chain_info.status();
+                    let current_rank = advertised_sync_rank(
+                        policy,
+                        current_status.head().number(),
+                        current_status.total_difficulty(),
+                    );
+                    if candidate_rank > current_rank {
+                        peer_info.peer_info.update_chain_status(candidate_status);
+                    }
 
                     if self.self_peer.known_blocks.contains(&block_id) {
                         None
@@ -631,15 +645,25 @@ impl Inner {
         rpc_protocols: Vec<Cow<'static, str>>,
         version_string: Option<String>,
     ) {
+        let policy = BlockPermitPolicy::for_chain_id(self.config.net().chain_id());
         self.peers
             .entry(peer_id.clone())
             .and_modify(|peer| {
                 // avoid update chain status to old
                 // this many happened when multi protocol send repeat handshake.
                 //FIXME after PeerEvent refactor.
-                if chain_info.total_difficulty()
-                    > peer.peer_info.chain_info.status().info.total_difficulty
-                {
+                let candidate_rank = advertised_sync_rank(
+                    policy,
+                    chain_info.head().number(),
+                    chain_info.total_difficulty(),
+                );
+                let current_status = peer.peer_info.chain_info.status();
+                let current_rank = advertised_sync_rank(
+                    policy,
+                    current_status.head().number(),
+                    current_status.total_difficulty(),
+                );
+                if candidate_rank > current_rank {
                     peer.peer_info
                         .update_chain_status(chain_info.status().clone());
                 }

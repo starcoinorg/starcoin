@@ -16,6 +16,7 @@ use starcoin_logger::prelude::*;
 use starcoin_storage::BARNARD_HARD_FORK_HASH;
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
+use starcoin_types::block_permit::{validated_chain_quality, BlockPermitPolicy};
 use std::collections::HashMap;
 use std::sync::Arc;
 use stream_task::{CollectorState, TaskError, TaskResultCollector, TaskState};
@@ -181,12 +182,14 @@ impl TaskState for BlockSyncTask {
 pub struct BlockCollector<N, H> {
     //node's current block info
     current_block_info: BlockInfo,
+    current_block_number: BlockNumber,
     target: SyncTarget,
     // the block chain init by ancestor
     chain: BlockChain,
     event_handle: H,
     peer_provider: N,
     skip_pow_verify: bool,
+    block_permit_policy: BlockPermitPolicy,
 }
 
 impl<N, H> BlockCollector<N, H>
@@ -196,19 +199,23 @@ where
 {
     pub fn new_with_handle(
         current_block_info: BlockInfo,
+        current_block_number: BlockNumber,
         target: SyncTarget,
         chain: BlockChain,
         event_handle: H,
         peer_provider: N,
         skip_pow_verify: bool,
     ) -> Self {
+        let block_permit_policy = chain.block_permit_policy();
         Self {
             current_block_info,
+            current_block_number,
             target,
             chain,
             event_handle,
             peer_provider,
             skip_pow_verify,
+            block_permit_policy,
         }
     }
 
@@ -282,6 +289,30 @@ where
             Ok(())
         }
     }
+
+    fn notify_if_better_than_current(&mut self, block: &Block, block_info: &BlockInfo) {
+        let branch_quality = validated_chain_quality(
+            self.block_permit_policy,
+            self.chain.current_header().number(),
+            block_info.get_total_difficulty(),
+        );
+        let current_quality = validated_chain_quality(
+            self.block_permit_policy,
+            self.current_block_number,
+            self.current_block_info.total_difficulty,
+        );
+        if branch_quality > current_quality {
+            if let Err(e) = self.event_handle.handle(BlockConnectedEvent {
+                block: block.clone(),
+            }) {
+                error!(
+                    "Send BlockConnectedEvent error: {:?}, block_id: {}",
+                    e,
+                    block.id()
+                );
+            }
+        }
+    }
 }
 
 impl<N, H> TaskResultCollector<SyncBlockData> for BlockCollector<N, H>
@@ -293,32 +324,24 @@ where
 
     fn collect(&mut self, item: SyncBlockData) -> Result<CollectorState> {
         let (block, block_info, peer_id) = item.into();
-        let block_id = block.id();
         let timestamp = block.header().timestamp();
         let block_info = match block_info {
             Some(block_info) => {
                 //If block_info exists, it means that this block was already executed and try connect in the previous sync, but the sync task was interrupted.
                 //So, we just need to update chain and continue
                 self.chain.connect(ExecutedBlock {
-                    block,
+                    block: block.clone(),
                     block_info: block_info.clone(),
                 })?;
+                self.notify_if_better_than_current(&block, &block_info);
                 block_info
             }
             None => {
                 self.apply_block(block.clone(), peer_id)?;
                 self.chain.time_service().adjust(timestamp);
                 let block_info = self.chain.status().info;
-                let total_difficulty = block_info.get_total_difficulty();
-                // only try connect block when sync chain total_difficulty > node's current chain.
-                if total_difficulty > self.current_block_info.total_difficulty {
-                    if let Err(e) = self.event_handle.handle(BlockConnectedEvent { block }) {
-                        error!(
-                            "Send BlockConnectedEvent error: {:?}, block_id: {}",
-                            e, block_id
-                        );
-                    }
-                }
+                // Only locally validated quality can trigger main-chain head selection.
+                self.notify_if_better_than_current(&block, &block_info);
                 block_info
             }
         };

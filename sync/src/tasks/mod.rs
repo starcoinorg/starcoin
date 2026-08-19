@@ -32,8 +32,15 @@ use stream_task::{
 };
 
 pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoFetcher {
-    fn get_best_target(&self, min_difficulty: U256) -> Result<Option<SyncTarget>> {
-        if let Some(best_peers) = self.peer_selector().bests(min_difficulty) {
+    fn get_best_target(
+        &self,
+        min_head_number: BlockNumber,
+        min_difficulty: U256,
+    ) -> Result<Option<SyncTarget>> {
+        if let Some(best_peers) = self
+            .peer_selector()
+            .bests_by_rank(min_head_number, min_difficulty)
+        {
             //TODO fast verify best peers by accumulator
             let mut chain_statuses: Vec<(ChainStatus, Vec<PeerId>)> =
                 best_peers
@@ -81,22 +88,23 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
 
     fn get_better_target(
         &self,
+        min_head_number: BlockNumber,
         min_difficulty: U256,
         best_target: SyncTarget,
         max_peers: u64,
         begin_number: u64,
     ) -> BoxFuture<Result<SyncTarget>> {
         let fut = async move {
-            if min_difficulty >= best_target.block_info.total_difficulty {
-                return Ok(best_target);
-            }
-
-            if let Some(mut better_peers) = self
-                .peer_selector()
-                .betters(min_difficulty, MAX_BETTER_PEER_SIZE.saturating_mul(2))
-            {
+            if let Some(mut better_peers) = self.peer_selector().betters_by_rank(
+                min_head_number,
+                min_difficulty,
+                MAX_BETTER_PEER_SIZE.saturating_mul(2),
+            ) {
+                let selector = self.peer_selector();
                 better_peers.sort_by(|info_1, info_2| {
-                    info_1.total_difficulty().cmp(&info_2.total_difficulty())
+                    selector
+                        .rank_for(info_1.block_number(), info_1.total_difficulty())
+                        .cmp(&selector.rank_for(info_2.block_number(), info_2.total_difficulty()))
                 });
 
                 let mut peers = Vec::new();
@@ -615,6 +623,7 @@ where
 
             let sub_target = fetcher
                 .get_better_target(
+                    latest_ancestor.number,
                     ancestor_block_info.total_difficulty,
                     target.clone(),
                     max_peers,
@@ -640,6 +649,7 @@ where
             let (block_chain, _) = inner
                 .do_sync(
                     current_block_info.clone(),
+                    current_block_number,
                     max_retry_times,
                     delay_milliseconds_on_error,
                     skip_pow_verify,

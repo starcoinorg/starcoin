@@ -272,7 +272,9 @@ impl MinerService {
 impl EventHandler<Self, GenerateBlockEvent> for MinerService {
     fn handle_event(&mut self, event: GenerateBlockEvent, ctx: &mut ServiceContext<MinerService>) {
         debug!("Handle GenerateBlockEvent:{:?}", event);
-        if !event.break_current_task && self.is_minting() {
+        if event.break_current_task {
+            self.current_task = None;
+        } else if self.is_minting() {
             debug!("Miner has mint job so just ignore this event.");
             return;
         }
@@ -285,6 +287,7 @@ impl EventHandler<Self, GenerateBlockEvent> for MinerService {
             return;
         }
         if let Err(err) = self.dispatch_task(ctx, event) {
+            self.current_task = None;
             warn!(
                 "Failed to process generate block event:{}, delay to trigger a new event.",
                 err

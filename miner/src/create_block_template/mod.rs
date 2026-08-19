@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::create_block_template::metrics::BlockBuilderMetrics;
-use anyhow::{format_err, Result};
+use anyhow::{bail, ensure, format_err, Context, Result};
 use futures::executor::block_on;
 use starcoin_account_api::{AccountAsyncService, AccountInfo, DefaultAccountChangeEvent};
 use starcoin_account_service::AccountService;
@@ -11,7 +11,9 @@ use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_config::ChainNetwork;
 use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
-use starcoin_crypto::hash::HashValue;
+use starcoin_crypto::{
+    ed25519::Ed25519PrivateKey, hash::HashValue, PrivateKey, ValidCryptoMaterialStringExt,
+};
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
@@ -22,8 +24,11 @@ use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::{
-    block::{BlockHeader, BlockTemplate, ExecutedBlock},
+    block::{BlockHeader, BlockHeaderExtra, BlockTemplate, ExecutedBlock},
+    block_permit::{build_block_permit_raw_transaction, validate_block_permit, BlockPermitPolicy},
+    genesis_config::ChainId,
     system_events::{NewBranch, NewHeadBlock},
+    transaction::authenticator::{AccountPrivateKey, AuthenticationKey},
 };
 use starcoin_vm_types::transaction::SignedUserTransaction;
 use std::cmp::min;
@@ -79,7 +84,12 @@ impl ServiceFactory<Self> for BlockBuilderService {
             .and_then(|registry| BlockBuilderMetrics::register(registry).ok());
 
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
-        let inner = Inner::new(
+        let block_permit_policy = BlockPermitPolicy::for_chain_id(config.net().chain_id());
+        let block_permit_private_key = load_block_permit_private_key(
+            config.miner.block_permit_private_key_file.as_ref(),
+            block_permit_policy,
+        )?;
+        let inner = Inner::new_with_block_permit_signer(
             config.net(),
             storage,
             startup_info.main,
@@ -88,9 +98,48 @@ impl ServiceFactory<Self> for BlockBuilderService {
             miner_account,
             metrics,
             vm_metrics,
+            block_permit_policy,
+            block_permit_private_key,
         )?;
         Ok(Self { inner })
     }
+}
+
+fn load_block_permit_private_key(
+    path: Option<&std::path::PathBuf>,
+    policy: BlockPermitPolicy,
+) -> Result<Option<Arc<Ed25519PrivateKey>>> {
+    let Some(path) = path else {
+        return Ok(None);
+    };
+
+    ensure!(
+        policy.release_configured(),
+        "block permit private key was supplied, but the production permit policy is not configured"
+    );
+    let encoded = std::fs::read_to_string(path).with_context(|| {
+        format!(
+            "failed to read block permit private key file {}",
+            path.display()
+        )
+    })?;
+    let encoded = encoded.trim();
+    ensure!(
+        !encoded.is_empty(),
+        "block permit private key file is empty"
+    );
+    let private_key = match AccountPrivateKey::from_encoded_string(encoded)
+        .context("failed to decode block permit private key")?
+    {
+        AccountPrivateKey::Single(private_key) => private_key,
+        AccountPrivateKey::Multi(_) => bail!("block permit private key must be Ed25519"),
+    };
+    let authentication_key = AuthenticationKey::ed25519(&private_key.public_key());
+    ensure!(
+        policy.authentication_key(policy.activation_height()) == Some(authentication_key),
+        "block permit private key does not match the compiled authentication key"
+    );
+    Ok(Some(Arc::new(private_key)))
 }
 
 impl ActorService for BlockBuilderService {
@@ -191,12 +240,16 @@ pub struct Inner<P> {
     miner_account: AccountInfo,
     metrics: Option<BlockBuilderMetrics>,
     vm_metrics: Option<VMMetrics>,
+    trusted_chain_id: ChainId,
+    block_permit_policy: BlockPermitPolicy,
+    block_permit_private_key: Option<Arc<Ed25519PrivateKey>>,
 }
 
 impl<P> Inner<P>
 where
     P: TemplateTxProvider,
 {
+    #[allow(dead_code)]
     pub fn new(
         net: &ChainNetwork,
         storage: Arc<dyn Store>,
@@ -207,11 +260,40 @@ where
         metrics: Option<BlockBuilderMetrics>,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
-        let chain = BlockChain::new(
+        Self::new_with_block_permit_signer(
+            net,
+            storage,
+            block_id,
+            tx_provider,
+            local_block_gas_limit,
+            miner_account,
+            metrics,
+            vm_metrics,
+            BlockPermitPolicy::for_chain_id(net.chain_id()),
+            None,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn new_with_block_permit_signer(
+        net: &ChainNetwork,
+        storage: Arc<dyn Store>,
+        block_id: HashValue,
+        tx_provider: P,
+        local_block_gas_limit: Option<u64>,
+        miner_account: AccountInfo,
+        metrics: Option<BlockBuilderMetrics>,
+        vm_metrics: Option<VMMetrics>,
+        block_permit_policy: BlockPermitPolicy,
+        block_permit_private_key: Option<Arc<Ed25519PrivateKey>>,
+    ) -> Result<Self> {
+        let chain = BlockChain::new_with_block_permit_policy(
             net.time_service(),
             block_id,
             storage.clone(),
             vm_metrics.clone(),
+            net.chain_id(),
+            block_permit_policy,
         )?;
 
         Ok(Inner {
@@ -224,6 +306,9 @@ where
             miner_account,
             metrics,
             vm_metrics,
+            trusted_chain_id: net.chain_id(),
+            block_permit_policy,
+            block_permit_private_key,
         })
     }
 
@@ -246,11 +331,13 @@ where
         if self.chain.can_connect(&block) {
             self.chain.connect(block)?;
         } else {
-            self.chain = BlockChain::new(
+            self.chain = BlockChain::new_with_block_permit_policy(
                 self.chain.time_service(),
                 block.header().id(),
                 self.storage.clone(),
                 self.vm_metrics.clone(),
+                self.trusted_chain_id,
+                self.block_permit_policy,
             )?;
             //current block possible be uncle.
             self.uncles.insert(current_id, current_header);
@@ -347,7 +434,36 @@ where
             self.vm_metrics.clone(),
         )?;
         let excluded_txns = opened_block.push_txns(txns)?;
+        let block_permit_active = self
+            .block_permit_policy
+            .is_active(opened_block.block_number());
+        if block_permit_active {
+            let private_key = self.block_permit_private_key.as_ref().ok_or_else(|| {
+                format_err!(
+                    "active mainnet block template requires --block-permit-private-key-file"
+                )
+            })?;
+            let digest = opened_block.block_permit_digest()?;
+            let public_key = private_key.public_key();
+            let raw_txn = build_block_permit_raw_transaction(
+                &public_key,
+                author,
+                digest,
+                self.trusted_chain_id,
+            )?;
+            let permit = raw_txn.sign(private_key.as_ref(), public_key)?.into_inner();
+            opened_block.append_block_permit(permit)?;
+        }
         let template = opened_block.finalize()?;
+        if block_permit_active {
+            let candidate = template.clone().into_block(0, BlockHeaderExtra::default());
+            validate_block_permit(
+                self.block_permit_policy,
+                self.trusted_chain_id,
+                &previous_header,
+                &candidate,
+            )?;
+        }
         for invalid_txn in excluded_txns.discarded_txns {
             self.tx_provider.remove_invalid_txn(invalid_txn.id());
         }

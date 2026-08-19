@@ -5,6 +5,7 @@ use crate::{BaseConfig, ConfigModule, StarcoinOpt};
 use anyhow::Result;
 use clap::Parser;
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 use std::sync::Arc;
 
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize, Parser)]
@@ -30,6 +31,11 @@ pub struct MinerConfig {
     #[clap(long = "miner-thread")]
     /// Miner client thread number, not work for dev network, default is 1
     pub miner_thread: Option<u16>,
+
+    #[serde(skip)]
+    #[clap(long = "block-permit-private-key-file", parse(from_os_str))]
+    /// Dedicated Ed25519 block-permit key file. This is a CLI-only operational secret path.
+    pub block_permit_private_key_file: Option<PathBuf>,
 
     #[serde(skip)]
     #[clap(skip)]
@@ -101,6 +107,9 @@ impl ConfigModule for MinerConfig {
         }
         if opt.miner.block_gas_limit.is_some() {
             self.block_gas_limit = opt.miner.block_gas_limit;
+        }
+        if opt.miner.block_permit_private_key_file.is_some() {
+            self.block_permit_private_key_file = opt.miner.block_permit_private_key_file.clone();
         }
 
         Ok(())

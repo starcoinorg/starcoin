@@ -10,7 +10,7 @@ use starcoin_executor::VMMetrics;
 use starcoin_storage::Store;
 use starcoin_sync_api::SyncTarget;
 use starcoin_time_service::TimeService;
-use starcoin_types::block::{BlockIdAndNumber, BlockInfo};
+use starcoin_types::block::{BlockIdAndNumber, BlockInfo, BlockNumber};
 use std::cmp::min;
 use std::sync::Arc;
 use stream_task::{
@@ -78,6 +78,7 @@ where
     pub async fn do_sync(
         self,
         current_block_info: BlockInfo,
+        current_block_number: BlockNumber,
         max_retry_times: u64,
         delay_milliseconds_on_error: u64,
         skip_pow_verify_when_sync: bool,
@@ -135,6 +136,7 @@ where
             )?;
             let block_collector = BlockCollector::new_with_handle(
                 current_block_info.clone(),
+                current_block_number,
                 self.target.clone(),
                 chain,
                 self.block_event_handle.clone(),

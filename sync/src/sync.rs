@@ -27,6 +27,7 @@ use starcoin_sync_api::{
     SyncProgressRequest, SyncServiceHandler, SyncStartRequest, SyncStatusRequest, SyncTarget,
 };
 use starcoin_types::block::BlockIdAndNumber;
+use starcoin_types::block_permit::{advertised_sync_rank, BlockPermitPolicy};
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};
@@ -189,11 +190,13 @@ impl SyncService {
                 })
                 .collect();
 
-            let peer_selector = PeerSelector::new_with_reputation(
+            let block_permit_policy = BlockPermitPolicy::for_chain_id(config.net().chain_id());
+            let peer_selector = PeerSelector::new_with_reputation_and_policy(
                 peer_reputations,
                 peer_set,
                 peer_select_strategy,
                 peer_score_metrics,
+                block_permit_policy,
             );
 
             peer_selector.retain_rpc_peers();
@@ -212,14 +215,20 @@ impl SyncService {
                 storage.get_block_info(current_block_id)?.ok_or_else(|| {
                     format_err!("Can not find block info by id: {}", current_block_id)
                 })?;
+            let current_block_header = storage
+                .get_block_header_by_hash(current_block_id)?
+                .ok_or_else(|| {
+                    format_err!("Can not find block header by id: {}", current_block_id)
+                })?;
 
             let rpc_client = Arc::new(VerifiedRpcClient::new(
                 peer_selector.clone(),
                 network.clone(),
             ));
-            if let Some(target) =
-                rpc_client.get_best_target(current_block_info.get_total_difficulty())?
-            {
+            if let Some(target) = rpc_client.get_best_target(
+                current_block_header.number(),
+                current_block_info.get_total_difficulty(),
+            )? {
                 info!("[sync] Find target({}), total_difficulty:{}, current head({})'s total_difficulty({})", target.target_id.id(), target.block_info.total_difficulty, current_block_id, current_block_info.total_difficulty);
 
                 let (fut, task_handle, task_event_handle) = full_sync_task(
@@ -469,7 +478,19 @@ impl EventHandler<Self, SyncBeginEvent> for SyncService {
             SyncStage::Checking => {
                 let target_total_difficulty = target.block_info.total_difficulty;
                 let current_total_difficulty = self.sync_status.chain_status().total_difficulty();
-                if target_total_difficulty <= current_total_difficulty {
+                let policy = BlockPermitPolicy::for_chain_id(self.config.net().chain_id());
+                let target_rank = advertised_sync_rank(
+                    policy,
+                    target.target_id.number(),
+                    target_total_difficulty,
+                );
+                let current_status = self.sync_status.chain_status();
+                let current_rank = advertised_sync_rank(
+                    policy,
+                    current_status.head().number(),
+                    current_total_difficulty,
+                );
+                if target_rank <= current_rank {
                     info!("[sync] target block({})'s total_difficulty({}) is <= current's total_difficulty({}), cancel sync task.", target.target_id.number(), target_total_difficulty, current_total_difficulty);
                     task_handle.cancel();
                 } else {

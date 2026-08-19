@@ -22,6 +22,7 @@ thiserror = { workspace = true }
 [features]
 default = []
 fuzzing = ["proptest", "proptest-derive", "starcoin-vm-types/fuzzing"]
+block-permit-test-utils = []
 
 [package]
 authors = { workspace = true }
