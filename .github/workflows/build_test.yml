@@ -17,7 +17,10 @@ jobs:
           submodules: recursive
       - name: setup environment
         run: |
-          bash ./scripts/dev_setup.sh -b -t -y -m
+          # Move prover tests already fall back to generate-only mode when the
+          # external Boogie toolchain is unavailable. Installing legacy .NET 5
+          # here fails on the current Ubuntu 22.04 runner (OpenSSL 3).
+          bash ./scripts/dev_setup.sh -b -t -m
           echo "${CARGO_HOME:-$HOME/.cargo}/bin" >> "$GITHUB_PATH"
       - name: run fmt check
         run: cargo fmt -- --check
