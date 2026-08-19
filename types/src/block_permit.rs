@@ -375,6 +375,8 @@ mod tests {
     use std::convert::TryFrom;
 
     const ACTIVATION_HEIGHT: BlockNumber = 10;
+    const PRE_ACTIVATION_HEIGHT: BlockNumber = 9;
+    const POST_ACTIVATION_HEIGHT: BlockNumber = 11;
 
     struct Fixture {
         policy: BlockPermitPolicy,
@@ -395,7 +397,7 @@ mod tests {
         let parent = BlockHeader::new(
             HashValue::new([1; 32]),
             1_234_000,
-            ACTIVATION_HEIGHT - 1,
+            PRE_ACTIVATION_HEIGHT,
             AccountAddress::new([0x22; 16]),
             HashValue::new([2; 32]),
             HashValue::new([3; 32]),
@@ -526,7 +528,7 @@ mod tests {
         );
         assert!(validate_block_permit(
             BlockPermitPolicy::new_for_test(
-                ACTIVATION_HEIGHT + 1,
+                POST_ACTIVATION_HEIGHT,
                 AuthenticationKey::ed25519(&fixture.private_key.public_key()),
             ),
             ChainId::new(1),
@@ -800,11 +802,11 @@ mod tests {
         let fixture = fixture();
         assert!(
             validated_chain_quality(fixture.policy, ACTIVATION_HEIGHT, U256::from(1u64),)
-                > validated_chain_quality(fixture.policy, ACTIVATION_HEIGHT - 1, U256::max_value(),)
+                > validated_chain_quality(fixture.policy, PRE_ACTIVATION_HEIGHT, U256::max_value(),)
         );
         assert!(
             advertised_sync_rank(fixture.policy, ACTIVATION_HEIGHT, U256::from(1u64),)
-                > advertised_sync_rank(fixture.policy, ACTIVATION_HEIGHT - 1, U256::max_value(),)
+                > advertised_sync_rank(fixture.policy, PRE_ACTIVATION_HEIGHT, U256::max_value(),)
         );
         assert!(
             validated_chain_quality(
@@ -813,7 +815,7 @@ mod tests {
                 U256::from(1u64),
             ) < validated_chain_quality(
                 BlockPermitPolicy::disabled(),
-                ACTIVATION_HEIGHT - 1,
+                PRE_ACTIVATION_HEIGHT,
                 U256::from(2u64),
             )
         );
