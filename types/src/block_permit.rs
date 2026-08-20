@@ -22,49 +22,71 @@ use starcoin_vm_types::{
     transaction::ScriptFunction,
 };
 
-/// Release inputs. These sentinel values deliberately leave the production rule inactive until
-/// the coordinated mainnet height and authentication key are supplied.
-pub const MAINNET_BLOCK_PERMIT_HEIGHT: BlockNumber = BlockNumber::MAX;
-pub const MAINNET_BLOCK_PERMIT_AUTH_KEY: AuthenticationKey =
-    AuthenticationKey::new(AuthenticationKey::DUMMY_KEY);
+/// Release inputs. Each height/key pair must be fixed together before building the immutable
+/// artifact promoted through Halley, Barnard, and Main.
+pub const HALLEY_BLOCK_PERMIT_HEIGHT: BlockNumber = 2_894_400;
+pub const HALLEY_BLOCK_PERMIT_AUTH_KEY: AuthenticationKey = AuthenticationKey::new([
+    0x15, 0x7b, 0x42, 0xa6, 0x65, 0x60, 0xe8, 0x31, 0x44, 0xde, 0xec, 0xdb, 0x43, 0xd5, 0xba, 0xc7,
+    0x0a, 0x5e, 0x11, 0x6b, 0x09, 0x38, 0xd2, 0x77, 0x19, 0x2d, 0xe7, 0xd0, 0x16, 0x17, 0xe2, 0xac,
+]);
+pub const BARNARD_BLOCK_PERMIT_HEIGHT: BlockNumber = 19_667_300;
+pub const BARNARD_BLOCK_PERMIT_AUTH_KEY: AuthenticationKey = AuthenticationKey::new([
+    0xca, 0x72, 0xd0, 0xee, 0x15, 0xcf, 0x78, 0xc1, 0x23, 0x22, 0x18, 0xc8, 0xd4, 0xc2, 0x41, 0xc8,
+    0x7e, 0x6c, 0xdc, 0x69, 0x53, 0xfe, 0xa8, 0x13, 0xc7, 0xbe, 0x21, 0x91, 0xf9, 0x38, 0x8e, 0x67,
+]);
+pub const MAINNET_BLOCK_PERMIT_HEIGHT: BlockNumber = 32_283_000;
+pub const MAINNET_BLOCK_PERMIT_AUTH_KEY: AuthenticationKey = AuthenticationKey::new([
+    0x6e, 0xa5, 0x44, 0x07, 0x8e, 0xfc, 0xba, 0xc8, 0x1e, 0x9d, 0x61, 0x97, 0x09, 0x0b, 0x1a, 0x10,
+    0x6c, 0xd6, 0x9f, 0x2f, 0xef, 0x83, 0x20, 0x4a, 0x2d, 0xde, 0xcf, 0x05, 0x98, 0x06, 0x01, 0xcd,
+]);
 
 const BLOCK_PERMIT_DOMAIN: &[u8] = b"STARCOIN_BLOCK_PERMIT_V1";
 
 /// Non-serialized consensus policy. There is no production CLI/TOML override for these values.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct BlockPermitPolicy {
-    mainnet: bool,
+    trusted_chain_id: Option<ChainId>,
     activation_height: BlockNumber,
     authentication_key: AuthenticationKey,
 }
 
 impl BlockPermitPolicy {
-    /// Resolve the release policy from an already trusted configured network identity. Node
-    /// startup verifies that identity against the stored genesis before constructing services.
-    pub fn for_trusted_network(configured_mainnet: bool, chain_id: ChainId) -> Self {
+    /// Resolve a release policy only after the caller has matched a trusted built-in network
+    /// identity. Node startup verifies that identity against stored genesis before constructing
+    /// services; custom networks must use `disabled` even if they claim a built-in chain id.
+    pub fn for_trusted_builtin(chain_id: ChainId) -> Self {
         assert!(
-            !configured_mainnet || chain_id.is_main(),
-            "configured mainnet must use mainnet chain id"
+            chain_id.is_halley() || chain_id.is_barnard() || chain_id.is_main(),
+            "block permit release policy requires halley, barnard, or main"
         );
-        let policy = if configured_mainnet && chain_id.is_main() {
-            Self {
-                mainnet: true,
+        let policy = match chain_id.id() {
+            253 => Self {
+                trusted_chain_id: Some(chain_id),
+                activation_height: HALLEY_BLOCK_PERMIT_HEIGHT,
+                authentication_key: HALLEY_BLOCK_PERMIT_AUTH_KEY,
+            },
+            251 => Self {
+                trusted_chain_id: Some(chain_id),
+                activation_height: BARNARD_BLOCK_PERMIT_HEIGHT,
+                authentication_key: BARNARD_BLOCK_PERMIT_AUTH_KEY,
+            },
+            1 => Self {
+                trusted_chain_id: Some(chain_id),
                 activation_height: MAINNET_BLOCK_PERMIT_HEIGHT,
                 authentication_key: MAINNET_BLOCK_PERMIT_AUTH_KEY,
-            }
-        } else {
-            Self::disabled()
+            },
+            _ => unreachable!("supported chain id checked above"),
         };
         assert!(
             policy.release_inputs_consistent(),
-            "mainnet block permit height and authentication key must be configured together"
+            "block permit height and authentication key must be configured together"
         );
         policy
     }
 
     pub const fn disabled() -> Self {
         Self {
-            mainnet: false,
+            trusted_chain_id: None,
             activation_height: BlockNumber::MAX,
             authentication_key: AuthenticationKey::new(AuthenticationKey::DUMMY_KEY),
         }
@@ -72,19 +94,29 @@ impl BlockPermitPolicy {
 
     /// Explicit constructor for focused cross-crate tests.
     #[cfg(any(test, feature = "block-permit-test-utils"))]
-    pub const fn new_for_test(
+    pub fn new_for_test(
+        activation_height: BlockNumber,
+        authentication_key: AuthenticationKey,
+    ) -> Self {
+        Self::new_for_chain_test(ChainId::new(1), activation_height, authentication_key)
+    }
+
+    /// Explicit constructor for focused non-main built-in network tests.
+    #[cfg(any(test, feature = "block-permit-test-utils"))]
+    pub fn new_for_chain_test(
+        trusted_chain_id: ChainId,
         activation_height: BlockNumber,
         authentication_key: AuthenticationKey,
     ) -> Self {
         Self {
-            mainnet: true,
+            trusted_chain_id: Some(trusted_chain_id),
             activation_height,
             authentication_key,
         }
     }
 
-    pub const fn is_mainnet(self) -> bool {
-        self.mainnet
+    pub const fn trusted_chain_id(self) -> Option<ChainId> {
+        self.trusted_chain_id
     }
 
     pub const fn activation_height(self) -> BlockNumber {
@@ -92,13 +124,13 @@ impl BlockPermitPolicy {
     }
 
     pub fn release_configured(self) -> bool {
-        self.mainnet
+        self.trusted_chain_id.is_some()
             && self.activation_height != BlockNumber::MAX
             && !self.authentication_key.is_dummy()
     }
 
     fn release_inputs_consistent(self) -> bool {
-        !self.mainnet
+        self.trusted_chain_id.is_none()
             || ((self.activation_height != BlockNumber::MAX) != self.authentication_key.is_dummy())
     }
 
@@ -265,10 +297,9 @@ pub fn validate_block_permit(
 
     let header = block.header();
     ensure!(
-        policy.is_mainnet(),
-        "active block permit policy is not mainnet"
+        policy.trusted_chain_id() == Some(trusted_chain_id),
+        "active block permit policy does not match trusted chain"
     );
-    ensure!(trusted_chain_id.is_main(), "trusted chain is not mainnet");
     ensure!(
         parent_header.chain_id() == trusted_chain_id,
         "block permit parent chain id mismatch"
@@ -798,7 +829,7 @@ mod tests {
     }
 
     #[test]
-    fn generation_precedes_difficulty_only_for_configured_mainnet_policy() {
+    fn generation_precedes_difficulty_only_for_configured_release_policy() {
         let fixture = fixture();
         assert!(
             validated_chain_quality(fixture.policy, ACTIVATION_HEIGHT, U256::from(1u64),)
@@ -827,17 +858,42 @@ mod tests {
         let dummy_key = AuthenticationKey::new(AuthenticationKey::DUMMY_KEY);
         assert!(BlockPermitPolicy::disabled().release_inputs_consistent());
         assert!(!BlockPermitPolicy {
-            mainnet: true,
+            trusted_chain_id: Some(ChainId::new(1)),
             activation_height: ACTIVATION_HEIGHT,
             authentication_key: dummy_key,
         }
         .release_inputs_consistent());
         assert!(!BlockPermitPolicy {
-            mainnet: true,
+            trusted_chain_id: Some(ChainId::new(1)),
             activation_height: BlockNumber::MAX,
             authentication_key: AuthenticationKey::ed25519(&fixture.private_key.public_key()),
         }
         .release_inputs_consistent());
         assert!(fixture.policy.release_inputs_consistent());
+    }
+
+    #[test]
+    fn release_network_inputs_are_fixed_and_distinct() {
+        let policies = [
+            BlockPermitPolicy::for_trusted_builtin(ChainId::new(253)),
+            BlockPermitPolicy::for_trusted_builtin(ChainId::new(251)),
+            BlockPermitPolicy::for_trusted_builtin(ChainId::new(1)),
+        ];
+        assert_eq!(policies[0].activation_height(), HALLEY_BLOCK_PERMIT_HEIGHT);
+        assert_eq!(policies[1].activation_height(), BARNARD_BLOCK_PERMIT_HEIGHT);
+        assert_eq!(policies[2].activation_height(), MAINNET_BLOCK_PERMIT_HEIGHT);
+        assert!(policies.iter().all(|policy| policy.release_configured()));
+
+        let keys = policies
+            .iter()
+            .map(|policy| {
+                policy
+                    .authentication_key(policy.activation_height())
+                    .unwrap()
+            })
+            .collect::<Vec<_>>();
+        assert_ne!(keys[0], keys[1]);
+        assert_ne!(keys[0], keys[2]);
+        assert_ne!(keys[1], keys[2]);
     }
 }

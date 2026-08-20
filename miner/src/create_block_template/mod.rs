@@ -439,9 +439,7 @@ where
             .is_active(opened_block.block_number());
         if block_permit_active {
             let private_key = self.block_permit_private_key.as_ref().ok_or_else(|| {
-                format_err!(
-                    "active mainnet block template requires --block-permit-private-key-file"
-                )
+                format_err!("active block template requires --block-permit-private-key-file")
             })?;
             let digest = opened_block.block_permit_digest()?;
             let public_key = private_key.public_key();

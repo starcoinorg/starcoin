@@ -507,7 +507,12 @@ impl ChainNetwork {
     /// Resolve consensus policy only from the configured network identity. Node startup verifies
     /// the configured genesis against storage before services consume this value.
     pub fn block_permit_policy(&self) -> BlockPermitPolicy {
-        BlockPermitPolicy::for_trusted_network(self.is_main(), self.chain_id())
+        match self.id() {
+            ChainNetworkID::Builtin(
+                BuiltinNetworkID::Halley | BuiltinNetworkID::Barnard | BuiltinNetworkID::Main,
+            ) => BlockPermitPolicy::for_trusted_builtin(self.chain_id()),
+            _ => BlockPermitPolicy::disabled(),
+        }
     }
 
     pub fn boot_nodes(&self) -> &[MultiaddrWithPeerId] {
@@ -1075,6 +1080,7 @@ mod tests {
     use super::{BuiltinNetworkID, ChainNetwork, ChainNetworkID};
     use starcoin_gas::StarcoinGasParameters;
     use starcoin_gas_algebra_ext::{CostTable, FromOnChainGasSchedule};
+    use starcoin_types::block_permit::BlockPermitPolicy;
     use starcoin_vm_types::gas_schedule::{
         latest_cost_table, G_GAS_CONSTANTS_V1, G_GAS_CONSTANTS_V2, G_LATEST_GAS_COST_TABLE,
         G_TEST_GAS_CONSTANTS,
@@ -1088,13 +1094,26 @@ mod tests {
     use std::str::FromStr;
 
     #[test]
-    fn block_permit_policy_requires_builtin_main_identity() {
-        let main = ChainNetwork::new_builtin(BuiltinNetworkID::Main);
-        assert!(main.block_permit_policy().is_mainnet());
+    fn block_permit_policy_requires_supported_builtin_identity() {
+        for network in [
+            BuiltinNetworkID::Halley,
+            BuiltinNetworkID::Barnard,
+            BuiltinNetworkID::Main,
+        ] {
+            let chain = ChainNetwork::new_builtin(network);
+            assert_eq!(
+                chain.block_permit_policy().trusted_chain_id(),
+                Some(network.chain_id())
+            );
+        }
 
+        let proxima = ChainNetwork::new_builtin(BuiltinNetworkID::Proxima);
+        assert_eq!(proxima.block_permit_policy(), BlockPermitPolicy::disabled());
+
+        let main = ChainNetwork::new_builtin(BuiltinNetworkID::Main);
         let custom_id = ChainNetworkID::from_str("custom:1").unwrap();
         let custom = ChainNetwork::new(custom_id, main.genesis_config().clone());
-        assert!(!custom.block_permit_policy().is_mainnet());
+        assert_eq!(custom.block_permit_policy(), BlockPermitPolicy::disabled());
     }
 
     fn config_entries(

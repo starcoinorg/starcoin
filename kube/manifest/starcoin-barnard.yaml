@@ -11,7 +11,7 @@ spec:
     matchLabels:
       app: starcoin
   serviceName: starcoin-svc
-  replicas: 2
+  replicas: 1
   template:
     metadata:
       name: starcoin
@@ -23,7 +23,7 @@ spec:
         starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
-        image: ghcr.io/starcoinorg/starcoin:barnard_rollback_block_fix_force_upgrade_02
+        image: ghcr.io/starcoinorg/starcoin:v1.13.21
         imagePullPolicy: Always
         command:
           - bash
@@ -36,7 +36,7 @@ spec:
             if [ ! -z $node_key ]; then
               node_key_flag="--node-key ${node_key}";
             fi;
-            /starcoin/starcoin -n barnard --discover-local true --min-peers-to-propagate 512 --max-peers-to-propagate 1024 --max-outgoing-peers 512 --max-incoming-peers 512 -d /sc-data $node_key_flag;
+            /starcoin/starcoin -n barnard --discover-local true --min-peers-to-propagate 512 --max-peers-to-propagate 1024 --max-outgoing-peers 512 --max-incoming-peers 512 --block-permit-private-key-file /run/secrets/starcoin/block-permit/private-key -d /sc-data $node_key_flag;
             ret=$?;
             db_corruption="SST file is ahead of WALs";
             if [ $ret -ne 0 ]; then
@@ -54,6 +54,9 @@ spec:
         volumeMounts:
         - name: starcoin-volume
           mountPath: /sc-data
+        - name: block-permit-signer
+          mountPath: /run/secrets/starcoin/block-permit
+          readOnly: true
         env:
           - name: POD_NAME
             valueFrom:
@@ -84,6 +87,11 @@ spec:
           timeoutSeconds: 2
           failureThreshold: 3
           successThreshold: 1
+      volumes:
+        - name: block-permit-signer
+          secret:
+            secretName: block-permit-signer-g1
+            defaultMode: 0400
   volumeClaimTemplates:
   - metadata:
       name: starcoin-volume

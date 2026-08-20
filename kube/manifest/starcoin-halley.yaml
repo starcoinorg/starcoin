@@ -23,7 +23,7 @@ spec:
         starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
-        image: starcoin/starcoin:halley24_force_upgrade_v11
+        image: ghcr.io/starcoinorg/starcoin:v1.13.21
         imagePullPolicy: Always
         command:
           - bash
@@ -36,7 +36,7 @@ spec:
             if [ ! -z $node_key ]; then
               node_key_flag="--node-key ${node_key}";
             fi;
-            /starcoin/starcoin -n halley -d /sc-data --discover-local=true $node_key_flag;
+            /starcoin/starcoin -n halley -d /sc-data --discover-local=true --block-permit-private-key-file /run/secrets/starcoin/block-permit/private-key $node_key_flag;
             ret=$?;
             if [ $ret -ne 0 ]; then
               echo "Node start fail, try to remove config and data.";
@@ -50,6 +50,9 @@ spec:
         volumeMounts:
         - name: starcoin-volume
           mountPath: /sc-data
+        - name: block-permit-signer
+          mountPath: /run/secrets/starcoin/block-permit
+          readOnly: true
         env:
           - name: POD_NAME
             valueFrom:
@@ -80,6 +83,11 @@ spec:
           timeoutSeconds: 2
           failureThreshold: 3
           successThreshold: 1
+      volumes:
+        - name: block-permit-signer
+          secret:
+            secretName: block-permit-signer-g1
+            defaultMode: 0400
   volumeClaimTemplates:
   - metadata:
       name: starcoin-volume

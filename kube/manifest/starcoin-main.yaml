@@ -36,7 +36,7 @@ spec:
               topologyKey: kubernetes.io/hostname
       containers:
       - name: starcoin
-        image: ghcr.io/starcoinorg/starcoin:v1.13.20
+        image: ghcr.io/starcoinorg/starcoin:v1.13.21
         imagePullPolicy: Always
         resources:
           requests:
