@@ -79,8 +79,10 @@ kubectl -n "$namespace" create secret generic block-permit-signer-g1 \
 
 Repeat with the fixed Barnard and Main release inputs. Never reuse a Secret
 object or key across namespaces. A rotation creates a new key, a new secret
-generation such as `block-permit-signer-g2`, and a new compiled release; an
-immutable secret is never edited in place.
+generation such as `block-permit-signer-g2`, and a new compiled release. Secret
+data is never edited in place. If the pre-activation schedule changes while the
+key stays fixed, patch only the public activation/release annotations and verify
+that a hash of the `private-key` data item is identical before and after.
 
 ## Mount only where block templates are signed
 
@@ -102,6 +104,10 @@ Main is a single-writer deployment, not an active/standby signer pair:
 - Never put multiple Starcoin nodes behind the pool upstream. Mining jobs are
   process-local; a template obtained from one node can be rejected as
   `TaskMisMatch` or `TaskEmpty` by another node.
+- Override `NODE_RPC_URL` only on the ASIC and CPU stratum StatefulSets, using
+  `ws://starcoin-main-block-permit-signer.starcoin-main.svc.cluster.local:9870`.
+  Do not change the shared mining-pool ConfigMap: pool, payout, and unrelated
+  workloads do not need the signer endpoint or a restart.
 - A warm recovery node may synchronize with no private-key volume, no signer
   Service label, and no path from the pool. It must not be promoted
   automatically.
