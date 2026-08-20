@@ -5,6 +5,14 @@ authentication keys and activation heights are consensus release inputs in
 `types/src/block_permit.rs`; private keys must never enter Git, an image, a
 ConfigMap, a command-line value, or a pod environment variable.
 
+The frozen generation-1 release inputs are:
+
+| Network | Activation height | Authentication key |
+| --- | ---: | --- |
+| Halley | 2,894,400 | `0x157b42a66560e83144deecdb43d5bac70a5e116b0938d277192de7d01617e2ac` |
+| Barnard | 19,667,300 | `0xca72d0ee15cf78c1232218c8d4c241c87e6cdc6953fea813c7be2191f9388e67` |
+| Main | 32,213,000 | `0x6ea544078efcbac81e9d6197090b1a106cd69f2fef83204a2ddecf05980601cd` |
+
 ## Generate and freeze release inputs
 
 Generate every key on a trusted operator host with a release-built Starcoin
@@ -81,6 +89,31 @@ their single block-template node. The Main StatefulSet has multiple seed nodes,
 so its namespace Secret must remain unmounted until a single Main template
 signer workload is selected. Do not add the Main secret to the shared seed-node
 pod template.
+
+Main is a single-writer deployment, not an active/standby signer pair:
+
+- `starcoin-main-block-permit-signer` must have exactly one replica. Its startup
+  command must refuse to run unless `POD_NAME` is
+  `starcoin-main-block-permit-signer-0`.
+- The pool-facing Service must select both the signer application label and
+  `statefulset.kubernetes.io/pod-name: starcoin-main-block-permit-signer-0`.
+  Before routing pool traffic, its EndpointSlice must contain exactly one ready,
+  non-terminating endpoint.
+- Never put multiple Starcoin nodes behind the pool upstream. Mining jobs are
+  process-local; a template obtained from one node can be rejected as
+  `TaskMisMatch` or `TaskEmpty` by another node.
+- A warm recovery node may synchronize with no private-key volume, no signer
+  Service label, and no path from the pool. It must not be promoted
+  automatically.
+- Normal restart and node rescheduling use the same replica and ReadWriteOnce
+  PVC. For manual recovery, first fence the old signer and confirm that the
+  Service has zero endpoints and the old PVC is detached. Only then may the key
+  be mounted on the recovery workload. Restart every stratum process after the
+  Service again has exactly one ready endpoint so no process-local job survives
+  the cutover.
+
+Do not test signer failover on Main. Exercise restart and adversarial block
+rejection on Halley; on Main, use read-only preflight checks and fail closed.
 
 Safe audit commands inspect only metadata:
 

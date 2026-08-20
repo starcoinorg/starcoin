@@ -4,8 +4,6 @@ on:
     branches:
       - master
   workflow_dispatch:
-  release:
-    types: [ published ]
 
 jobs:
   build-starcoin-docker:
