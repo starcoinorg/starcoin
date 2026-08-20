@@ -4,7 +4,7 @@
 use anyhow::{format_err, Result};
 use futures_timer::Delay;
 use network_api::messages::PeerMessage;
-use network_api::{MultiaddrWithPeerId, PeerId, PeerMessageHandler, RpcInfo};
+use network_api::{MultiaddrWithPeerId, PeerId, PeerMessageHandler, PeerProvider, RpcInfo};
 use network_p2p_types::{OutgoingResponse, ProtocolRequest};
 use starcoin_config::NodeConfig;
 use starcoin_genesis::Genesis;
@@ -21,7 +21,7 @@ use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use std::any::Any;
 use std::borrow::Cow;
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use futures::channel::mpsc::{unbounded, UnboundedReceiver, UnboundedSender};
 pub use starcoin_network::NetworkServiceRef;
@@ -125,12 +125,36 @@ pub async fn build_network_pair() -> Result<(TestNetworkService, TestNetworkServ
 pub async fn build_network_cluster(n: usize) -> Result<Vec<TestNetworkService>> {
     let seed_service = build_network(None, None).await?;
     let seed = seed_service.config.network.self_address();
+    let seed_peer_id = seed_service.peer_id();
     let mut nodes = vec![seed_service];
     for _i in 1..n {
         let service = build_network(Some(seed.clone()), None).await?;
+        wait_for_peer(&nodes[0], service.peer_id()).await?;
+        wait_for_peer(&service, seed_peer_id.clone()).await?;
         nodes.push(service);
     }
     Ok(nodes)
+}
+
+async fn wait_for_peer(service: &TestNetworkService, peer_id: PeerId) -> Result<()> {
+    let deadline = Instant::now() + Duration::from_secs(10);
+    loop {
+        if service
+            .service_ref
+            .get_peer(peer_id.clone())
+            .await?
+            .is_some()
+        {
+            return Ok(());
+        }
+        if Instant::now() >= deadline {
+            return Err(format_err!(
+                "network test peer {} did not become ready within 10 seconds",
+                peer_id
+            ));
+        }
+        Delay::new(Duration::from_millis(50)).await;
+    }
 }
 
 pub async fn build_network_with_config(

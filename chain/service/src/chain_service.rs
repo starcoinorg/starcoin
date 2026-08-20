@@ -252,11 +252,13 @@ impl ChainReaderServiceInner {
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         let net = config.net();
-        let main = BlockChain::new(
+        let main = BlockChain::new_with_block_permit_policy(
             net.time_service(),
             startup_info.main,
             storage.clone(),
             vm_metrics.clone(),
+            net.chain_id(),
+            net.block_permit_policy(),
         )?;
         Ok(Self {
             config,
@@ -278,11 +280,13 @@ impl ChainReaderServiceInner {
 
     pub fn switch_main(&mut self, new_head_id: HashValue) -> Result<()> {
         let net = self.config.net();
-        self.main = BlockChain::new(
+        self.main = BlockChain::new_with_block_permit_policy(
             net.time_service(),
             new_head_id,
             self.storage.clone(),
             self.vm_metrics.clone(),
+            net.chain_id(),
+            net.block_permit_policy(),
         )?;
         Ok(())
     }

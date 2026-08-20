@@ -7,6 +7,7 @@ use starcoin_state_api::ChainStateReader;
 use starcoin_statedb::ChainStateDB;
 use starcoin_time_service::TimeService;
 use starcoin_types::block::BlockIdAndNumber;
+use starcoin_types::block_permit::BlockPermitPolicy;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::RichTransactionInfo;
 use starcoin_types::{
@@ -27,6 +28,9 @@ pub type MintedUncleNumber = u64;
 
 pub trait ChainReader {
     fn info(&self) -> ChainInfo;
+    fn block_permit_policy(&self) -> BlockPermitPolicy {
+        BlockPermitPolicy::disabled()
+    }
     fn status(&self) -> ChainStatus;
     /// Get latest block with block_info
     fn head_block(&self) -> ExecutedBlock;

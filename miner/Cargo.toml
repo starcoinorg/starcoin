@@ -29,6 +29,7 @@ tokio = { features = ["full"], workspace = true }
 starcoin-types = { package = "starcoin-types", workspace = true }
 
 [dev-dependencies]
+starcoin-types = { workspace = true, features = ["block-permit-test-utils"] }
 starcoin-network-rpc = { package = "starcoin-network-rpc", workspace = true }
 starcoin-genesis = { workspace = true }
 starcoin-network-rpc-api = { workspace = true }

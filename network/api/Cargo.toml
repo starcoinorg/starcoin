@@ -17,6 +17,9 @@ starcoin-metrics = { workspace = true }
 starcoin-service-registry = { workspace = true }
 starcoin-types = { workspace = true }
 
+[dev-dependencies]
+starcoin-types = { workspace = true, features = ["block-permit-test-utils"] }
+
 [package]
 authors = { workspace = true }
 edition = { workspace = true }

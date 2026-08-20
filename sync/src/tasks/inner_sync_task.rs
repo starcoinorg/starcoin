@@ -10,7 +10,9 @@ use starcoin_executor::VMMetrics;
 use starcoin_storage::Store;
 use starcoin_sync_api::SyncTarget;
 use starcoin_time_service::TimeService;
-use starcoin_types::block::{BlockIdAndNumber, BlockInfo};
+use starcoin_types::block::{BlockIdAndNumber, BlockInfo, BlockNumber};
+use starcoin_types::block_permit::BlockPermitPolicy;
+use starcoin_vm_types::genesis_config::ChainId;
 use std::cmp::min;
 use std::sync::Arc;
 use stream_task::{
@@ -32,6 +34,8 @@ where
     time_service: Arc<dyn TimeService>,
     peer_provider: N,
     custom_error_handle: Arc<dyn CustomErrorHandle>,
+    trusted_chain_id: ChainId,
+    block_permit_policy: BlockPermitPolicy,
 }
 
 impl<H, F, N> InnerSyncTask<H, F, N>
@@ -50,6 +54,8 @@ where
         time_service: Arc<dyn TimeService>,
         peer_provider: N,
         custom_error_handle: Arc<dyn CustomErrorHandle>,
+        trusted_chain_id: ChainId,
+        block_permit_policy: BlockPermitPolicy,
     ) -> Self {
         Self {
             ancestor,
@@ -61,6 +67,8 @@ where
             time_service,
             peer_provider,
             custom_error_handle,
+            trusted_chain_id,
+            block_permit_policy,
         }
     }
 
@@ -78,6 +86,7 @@ where
     pub async fn do_sync(
         self,
         current_block_info: BlockInfo,
+        current_block_number: BlockNumber,
         max_retry_times: u64,
         delay_milliseconds_on_error: u64,
         skip_pow_verify_when_sync: bool,
@@ -127,14 +136,17 @@ where
                 self.storage.clone(),
                 1,
             );
-            let chain = BlockChain::new(
+            let chain = BlockChain::new_with_block_permit_policy(
                 self.time_service.clone(),
                 ancestor.id,
                 self.storage.clone(),
                 vm_metrics,
+                self.trusted_chain_id,
+                self.block_permit_policy,
             )?;
             let block_collector = BlockCollector::new_with_handle(
                 current_block_info.clone(),
+                current_block_number,
                 self.target.clone(),
                 chain,
                 self.block_event_handle.clone(),

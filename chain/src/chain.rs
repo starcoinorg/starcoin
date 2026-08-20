@@ -24,6 +24,9 @@ use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
 use starcoin_time_service::TimeService;
 use starcoin_types::block::BlockIdAndNumber;
+use starcoin_types::block_permit::{
+    active_block_permit, block_permit_transaction_info, validate_block_permit, BlockPermitPolicy,
+};
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
@@ -34,6 +37,7 @@ use starcoin_types::{
     contract_event::ContractEvent,
     error::BlockExecutorError,
     transaction::{SignedUserTransaction, Transaction},
+    write_set::WriteSet,
     U256,
 };
 use starcoin_vm_runtime::force_upgrade_management::get_force_upgrade_block_number;
@@ -583,6 +587,8 @@ pub struct ChainStatusWithBlock {
 
 pub struct BlockChain {
     genesis_hash: HashValue,
+    trusted_chain_id: ChainId,
+    block_permit_policy: BlockPermitPolicy,
     txn_accumulator: MerkleAccumulator,
     block_accumulator: MerkleAccumulator,
     status: ChainStatusWithBlock,
@@ -604,7 +610,51 @@ impl BlockChain {
         let head = storage
             .get_block_by_hash(head_block_hash)?
             .ok_or_else(|| format_err!("Can not find block by hash {:?}", head_block_hash))?;
-        Self::new_with_uncles(time_service, head, None, storage, vm_metrics)
+        let genesis = storage
+            .get_genesis()?
+            .ok_or_else(|| format_err!("Can not find genesis hash in storage."))?;
+        let trusted_chain_id = storage
+            .get_block_header_by_hash(genesis)?
+            .ok_or_else(|| format_err!("Can not find genesis block header {:?}", genesis))?
+            .chain_id();
+        // This constructor is retained for tests and trusted offline tools that do not carry a
+        // configured network identity. Network-facing node services use the explicit-policy
+        // constructor after configured-genesis verification.
+        let policy = BlockPermitPolicy::disabled();
+        Self::new_with_uncles(
+            time_service,
+            head,
+            None,
+            storage,
+            vm_metrics,
+            trusted_chain_id,
+            policy,
+        )
+    }
+
+    /// Construct a chain with an already resolved, immutable permit policy. Production callers
+    /// resolve it from their trusted `ChainNetwork`; focused tests use this to exercise the fork
+    /// boundary without changing release constants.
+    pub fn new_with_block_permit_policy(
+        time_service: Arc<dyn TimeService>,
+        head_block_hash: HashValue,
+        storage: Arc<dyn Store>,
+        vm_metrics: Option<VMMetrics>,
+        trusted_chain_id: ChainId,
+        block_permit_policy: BlockPermitPolicy,
+    ) -> Result<Self> {
+        let head = storage
+            .get_block_by_hash(head_block_hash)?
+            .ok_or_else(|| format_err!("Can not find block by hash {:?}", head_block_hash))?;
+        Self::new_with_uncles(
+            time_service,
+            head,
+            None,
+            storage,
+            vm_metrics,
+            trusted_chain_id,
+            block_permit_policy,
+        )
     }
 
     fn new_with_uncles(
@@ -613,6 +663,8 @@ impl BlockChain {
         uncles: Option<HashMap<HashValue, MintedUncleNumber>>,
         storage: Arc<dyn Store>,
         vm_metrics: Option<VMMetrics>,
+        trusted_chain_id: ChainId,
+        block_permit_policy: BlockPermitPolicy,
     ) -> Result<Self> {
         let block_info = storage
             .get_block_info(head_block.id())?
@@ -626,9 +678,27 @@ impl BlockChain {
         let genesis = storage
             .get_genesis()?
             .ok_or_else(|| format_err!("Can not find genesis hash in storage."))?;
+        if block_permit_policy.is_active(head_block.header().number()) {
+            let parent_header = storage
+                .get_block_header_by_hash(head_block.header().parent_hash())?
+                .ok_or_else(|| {
+                    format_err!(
+                        "Can not find active head parent by hash {:?}",
+                        head_block.header().parent_hash()
+                    )
+                })?;
+            validate_block_permit(
+                block_permit_policy,
+                trusted_chain_id,
+                &parent_header,
+                &head_block,
+            )?;
+        }
         watch(CHAIN_WATCH_NAME, "n1253");
         let mut chain = Self {
             genesis_hash: genesis,
+            trusted_chain_id,
+            block_permit_policy,
             time_service,
             txn_accumulator: info_2_accumulator(
                 txn_accumulator_info.clone(),
@@ -683,6 +753,7 @@ impl BlockChain {
             None,
             genesis_block,
             &chain_id,
+            BlockPermitPolicy::disabled(),
             None,
         )?;
         Self::new(time_service, executed_block.block.id(), storage, None)
@@ -890,6 +961,58 @@ impl BlockChain {
         self.connect(ExecutedBlock { block, block_info })
     }
 
+    fn validate_child_block_permit(&self, block: &Block) -> Result<()> {
+        validate_block_permit(
+            self.block_permit_policy,
+            self.trusted_chain_id,
+            &self.current_header(),
+            block,
+        )
+        .map_err(|err| ConnectBlockError::VerifyBlockFailed(VerifyBlockField::Body, err).into())
+    }
+
+    fn block_transactions_for_execution(
+        parent_status: &Option<ChainStatus>,
+        block: &Block,
+        block_permit_policy: BlockPermitPolicy,
+    ) -> (Vec<Transaction>, Option<SignedUserTransaction>) {
+        let permit = active_block_permit(block_permit_policy, block).cloned();
+        let ordinary_len = block
+            .transactions()
+            .len()
+            .saturating_sub(usize::from(permit.is_some()));
+
+        // Genesis does not generate a BlockMetadata transaction.
+        let mut transactions = match parent_status {
+            None => vec![],
+            Some(parent) => {
+                let block_metadata = block.to_metadata(parent.head().gas_used());
+                vec![Transaction::BlockMetadata(block_metadata)]
+            }
+        };
+        transactions.extend(
+            block.transactions()[..ordinary_len]
+                .iter()
+                .cloned()
+                .map(Transaction::UserTransaction),
+        );
+        (transactions, permit)
+    }
+
+    fn append_block_permit_output(
+        executed_data: &mut BlockExecutedData,
+        permit: Option<&SignedUserTransaction>,
+    ) {
+        if let Some(permit) = permit {
+            executed_data.txn_infos.push(block_permit_transaction_info(
+                permit,
+                executed_data.state_root,
+            ));
+            executed_data.txn_events.push(vec![]);
+            executed_data.write_sets.push(WriteSet::default());
+        }
+    }
+
     //TODO consider move this logic to BlockExecutor
     fn execute_block_and_save(
         storage: &dyn Store,
@@ -900,38 +1023,28 @@ impl BlockChain {
         parent_status: Option<ChainStatus>,
         block: Block,
         chain_id: &ChainId,
+        block_permit_policy: BlockPermitPolicy,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<ExecutedBlock> {
         let header = block.header();
         debug_assert!(header.is_genesis() || parent_status.is_some());
         debug_assert!(!header.is_genesis() || parent_status.is_none());
         let block_id = header.id();
-        let transactions = {
-            // genesis block do not generate BlockMetadata transaction.
-            let mut t = match &parent_status {
-                None => vec![],
-                Some(parent) => {
-                    let block_metadata = block.to_metadata(parent.head().gas_used());
-                    vec![Transaction::BlockMetadata(block_metadata)]
-                }
-            };
-            t.extend(
-                block
-                    .transactions()
-                    .iter()
-                    .cloned()
-                    .map(Transaction::UserTransaction),
-            );
-            t
-        };
+        let (vm_transactions, permit) =
+            Self::block_transactions_for_execution(&parent_status, &block, block_permit_policy);
 
         watch(CHAIN_WATCH_NAME, "n21");
-        let executed_data = starcoin_executor::block_execute(
+        let mut executed_data = starcoin_executor::block_execute(
             &statedb,
-            transactions.clone(),
+            vm_transactions.clone(),
             epoch.block_gas_limit(),
             vm_metrics,
         )?;
+        Self::append_block_permit_output(&mut executed_data, permit.as_ref());
+        let mut stored_transactions = vm_transactions;
+        if let Some(permit) = permit {
+            stored_transactions.push(Transaction::UserTransaction(permit));
+        }
         watch(CHAIN_WATCH_NAME, "n22");
         let state_root = executed_data.state_root;
         let vec_transaction_info = &executed_data.txn_infos;
@@ -954,9 +1067,9 @@ impl BlockChain {
             VerifyBlockField::State,
             {
                 if header.number() == get_force_upgrade_block_number(chain_id) {
-                    vec_transaction_info.len() == transactions.len().checked_add(1).unwrap()
+                    vec_transaction_info.len() == stored_transactions.len().checked_add(1).unwrap()
                 } else {
-                    vec_transaction_info.len() == transactions.len()
+                    vec_transaction_info.len() == stored_transactions.len()
                 }
             },
             "invalid txn num in the block"
@@ -1045,12 +1158,12 @@ impl BlockChain {
                 .collect(),
         )?;
 
-        let txn_id_vec = transactions
+        let txn_id_vec = stored_transactions
             .iter()
             .map(|user_txn| user_txn.id())
             .collect::<Vec<HashValue>>();
         // save transactions
-        storage.save_transaction_batch(transactions)?;
+        storage.save_transaction_batch(stored_transactions)?;
 
         // save block's transactions
         storage.save_block_transaction_ids(block_id, txn_id_vec)?;
@@ -1220,38 +1333,28 @@ impl BlockChain {
         epoch: &Epoch,
         parent_status: Option<ChainStatus>,
         block: Block,
+        block_permit_policy: BlockPermitPolicy,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<ExecutedBlock> {
         let header = block.header();
         debug_assert!(header.is_genesis() || parent_status.is_some());
         debug_assert!(!header.is_genesis() || parent_status.is_none());
         let block_id = header.id();
-        let transactions = {
-            // genesis block do not generate BlockMetadata transaction.
-            let mut t = match &parent_status {
-                None => vec![],
-                Some(parent) => {
-                    let block_metadata = block.to_metadata(parent.head().gas_used());
-                    vec![Transaction::BlockMetadata(block_metadata)]
-                }
-            };
-            t.extend(
-                block
-                    .transactions()
-                    .iter()
-                    .cloned()
-                    .map(Transaction::UserTransaction),
-            );
-            t
-        };
+        let (vm_transactions, permit) =
+            Self::block_transactions_for_execution(&parent_status, &block, block_permit_policy);
 
         watch(CHAIN_WATCH_NAME, "n21");
-        let executed_data = starcoin_executor::block_execute(
+        let mut executed_data = starcoin_executor::block_execute(
             &statedb,
-            transactions.clone(),
+            vm_transactions.clone(),
             epoch.block_gas_limit(),
             vm_metrics,
         )?;
+        Self::append_block_permit_output(&mut executed_data, permit.as_ref());
+        let stored_transaction_len = vm_transactions
+            .len()
+            .checked_add(usize::from(permit.is_some()))
+            .expect("stored transaction length overflow");
         watch(CHAIN_WATCH_NAME, "n22");
         let state_root = executed_data.state_root;
         let vec_transaction_info = &executed_data.txn_infos;
@@ -1272,7 +1375,7 @@ impl BlockChain {
 
         verify_block!(
             VerifyBlockField::State,
-            vec_transaction_info.len() == transactions.len(),
+            vec_transaction_info.len() == stored_transaction_len,
             "invalid txn num in the block"
         );
 
@@ -1339,10 +1442,14 @@ impl BlockChain {
 impl ChainReader for BlockChain {
     fn info(&self) -> ChainInfo {
         ChainInfo::new(
-            self.status.head.header().chain_id(),
+            self.trusted_chain_id,
             self.genesis_hash,
             self.status.status.clone(),
         )
+    }
+
+    fn block_permit_policy(&self) -> BlockPermitPolicy {
+        self.block_permit_policy
     }
 
     fn status(&self) -> ChainStatus {
@@ -1533,6 +1640,8 @@ impl ChainReader for BlockChain {
             uncles,
             self.storage.clone(),
             self.vm_metrics.clone(),
+            self.trusted_chain_id,
+            self.block_permit_policy,
         )
     }
 
@@ -1568,6 +1677,7 @@ impl ChainReader for BlockChain {
     }
 
     fn execute(&self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
+        self.validate_child_block_permit(&verified_block.0)?;
         if let Some((executed_data, block_info)) =
             MAIN_DIRECT_SAVE_BLOCK_HASH_MAP.get(&verified_block.0.header.id())
         {
@@ -1591,12 +1701,14 @@ impl ChainReader for BlockChain {
                 Some(self.status.status.clone()),
                 verified_block.0,
                 &self.info().chain_id(),
+                self.block_permit_policy,
                 self.vm_metrics.clone(),
             )
         }
     }
 
     fn execute_without_save(&self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
+        self.validate_child_block_permit(&verified_block.0)?;
         Self::execute_block_without_save(
             self.statedb.fork(),
             self.txn_accumulator.fork(None),
@@ -1604,6 +1716,7 @@ impl ChainReader for BlockChain {
             &self.epoch,
             Some(self.status.status.clone()),
             verified_block.0,
+            self.block_permit_policy,
             self.vm_metrics.clone(),
         )
     }
@@ -1817,7 +1930,14 @@ impl ChainWriter for BlockChain {
 
     fn connect(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock> {
         let (block, block_info) = (executed_block.block(), executed_block.block_info());
-        debug_assert!(block.header().parent_hash() == self.status.status.head().id());
+        ensure!(
+            block.header().parent_hash() == self.status.status.head().id(),
+            "Can not connect block {}: parent {}, expected {}",
+            block.id(),
+            block.header().parent_hash(),
+            self.status.status.head().id(),
+        );
+        self.validate_child_block_permit(block)?;
         //TODO try reuse accumulator and state db.
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
         let block_accumulator_info = block_info.get_block_accumulator_info();

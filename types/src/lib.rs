@@ -23,6 +23,7 @@ pub mod account_state;
 
 #[allow(clippy::too_many_arguments)]
 pub mod block;
+pub mod block_permit;
 pub mod compact_block;
 
 pub mod block_metadata {

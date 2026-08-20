@@ -19,9 +19,13 @@ starcoin-uint = { workspace = true }
 starcoin-vm-types = { workspace = true }
 thiserror = { workspace = true }
 
+[dev-dependencies]
+starcoin-vm-types = { workspace = true, features = ["fuzzing"] }
+
 [features]
 default = []
 fuzzing = ["proptest", "proptest-derive", "starcoin-vm-types/fuzzing"]
+block-permit-test-utils = []
 
 [package]
 authors = { workspace = true }

@@ -11,7 +11,9 @@ spec:
     matchLabels:
       app: starcoin
   serviceName: starcoin-svc
-  replicas: 9
+  replicas: 7
+  updateStrategy:
+    type: OnDelete
   template:
     metadata:
       name: starcoin
@@ -19,12 +21,27 @@ spec:
         app: starcoin
         network: main
     spec:
+      priorityClassName: starcoin-core-critical
       nodeSelector:
         starcoin/node-pool: seed-pool
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app: starcoin
+                  network: main
+              topologyKey: kubernetes.io/hostname
       containers:
       - name: starcoin
-        image: ghcr.io/starcoinorg/starcoin:v1.13.20
+        image: ghcr.io/starcoinorg/starcoin:v1.13.21
         imagePullPolicy: Always
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1536Mi
         command:
           - bash
           - -c

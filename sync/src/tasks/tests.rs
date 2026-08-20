@@ -191,6 +191,7 @@ pub async fn test_failed_block() -> Result<()> {
     };
     let mut block_collector = BlockCollector::new_with_handle(
         chain_info.status().info.clone(),
+        chain_info.head().number(),
         target,
         chain,
         sender,
@@ -973,11 +974,20 @@ async fn test_sync_target() {
         peer_selector,
     ));
     let full_target = node2
-        .get_best_target(genesis_chain_info.total_difficulty())
+        .get_best_target(
+            genesis_chain_info.head().number(),
+            genesis_chain_info.total_difficulty(),
+        )
         .unwrap()
         .unwrap();
     let target = node2
-        .get_better_target(genesis_chain_info.total_difficulty(), full_target, 10, 0)
+        .get_better_target(
+            genesis_chain_info.head().number(),
+            genesis_chain_info.total_difficulty(),
+            full_target,
+            10,
+            0,
+        )
         .await
         .unwrap();
     assert_eq!(target.peers.len(), 2);

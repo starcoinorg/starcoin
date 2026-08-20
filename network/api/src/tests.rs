@@ -5,9 +5,11 @@ use crate::peer_provider::{PeerSelector, PeerStrategy};
 use crate::peer_score::{InverseScore, Score};
 use network_p2p_types::peer_id::PeerId;
 use network_types::peer_info::PeerInfo;
-use starcoin_crypto::HashValue;
+use starcoin_crypto::{ed25519::Ed25519PrivateKey, HashValue, PrivateKey};
 use starcoin_logger::prelude::*;
+use starcoin_types::block_permit::BlockPermitPolicy;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
+use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_types::U256;
 
 #[test]
@@ -95,4 +97,52 @@ fn test_better_peer() {
                 assert!(peer.total_difficulty() <= first_peer.total_difficulty());
             })
     }
+}
+
+#[test]
+fn test_peer_selector_prefers_advertised_authorization_generation() {
+    let private_key = Ed25519PrivateKey::try_from(&[7u8; 32][..]).unwrap();
+    let policy =
+        BlockPermitPolicy::new_for_test(10, AuthenticationKey::ed25519(&private_key.public_key()));
+    let mut unauthorized_status = mock_chain_status(U256::max_value());
+    unauthorized_status.head = unauthorized_status
+        .head
+        .as_builder()
+        .with_number(9)
+        .with_chain_id(1.into())
+        .build();
+    let mut authorized_status = mock_chain_status(1.into());
+    authorized_status.head = authorized_status
+        .head
+        .as_builder()
+        .with_number(10)
+        .with_chain_id(1.into())
+        .build();
+    let unauthorized = PeerInfo::new(
+        PeerId::random(),
+        ChainInfo::new(1.into(), HashValue::zero(), unauthorized_status),
+        vec![],
+        vec![],
+        None,
+    );
+    let authorized = PeerInfo::new(
+        PeerId::random(),
+        ChainInfo::new(1.into(), HashValue::zero(), authorized_status),
+        vec![],
+        vec![],
+        None,
+    );
+    let selector = PeerSelector::new_with_policy(
+        vec![unauthorized.clone(), authorized.clone()],
+        PeerStrategy::Best,
+        None,
+        policy,
+    );
+
+    let best = selector
+        .bests_by_rank(unauthorized.block_number(), unauthorized.total_difficulty())
+        .unwrap();
+    assert_eq!(best.len(), 1);
+    assert_eq!(best[0].peer_id(), authorized.peer_id());
+    assert_eq!(selector.top(1), vec![authorized.peer_id()]);
 }

@@ -20,8 +20,12 @@ cargo nextest -V >/dev/null 2>&1 || cargo install cargo-nextest --version "0.9.5
 # --test-threads 12, proper test concurrency level, balance failure rate and test speed
 # --failure-output immediate-final, make error log output immediate & at the end of the run
 # --retries 2, a correct test case usually takes no more than 3 tries to pass
-# --build-jobs 8, a little (~20s) faster than 5 or 10 build jobs 
-cargo nextest run --workspace --retries 2 --build-jobs 8 --test-threads 12 --failure-output immediate-final
+# --build-jobs 8, a little (~20s) faster than 5 or 10 build jobs
+# The Halley API fixture depends on mutable public-network state and is run
+# separately when that network is available; it must not gate hermetic CI.
+cargo nextest run --workspace --retries 2 --build-jobs 8 --test-threads 12 \
+  --failure-output immediate-final \
+  -E 'not test(/call_api_cmd_halley/)'
 
 
 # please ensure the two test commands' arguments (e.g. `-j 15`) are the same to avoid recompilation
@@ -40,4 +44,3 @@ cargo nextest run --workspace --retries 2 --build-jobs 8 --test-threads 12 --fai
 # 	fi
 # done <"$TEST_RESULT_FAILED_FILE"
 # exit $status
-
