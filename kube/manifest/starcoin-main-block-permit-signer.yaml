@@ -1,0 +1,136 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: starcoin-main-block-permit-signer
+  namespace: starcoin-main
+  labels:
+    app.kubernetes.io/name: starcoin
+    starcoin.org/role: block-permit-signer
+spec:
+  selector:
+    app: starcoin-main-block-permit-signer
+    statefulset.kubernetes.io/pod-name: starcoin-main-block-permit-signer-0
+  ports:
+    - name: p2p
+      port: 9840
+      targetPort: 9840
+    - name: http-rpc
+      port: 9850
+      targetPort: 9850
+    - name: ws-rpc
+      port: 9870
+      targetPort: 9870
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: starcoin-main-block-permit-signer
+  namespace: starcoin-main
+  labels:
+    app: starcoin-main-block-permit-signer
+    network: main
+    starcoin.org/role: block-permit-signer
+spec:
+  replicas: 1
+  serviceName: starcoin-main-block-permit-signer
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: OnDelete
+  selector:
+    matchLabels:
+      app: starcoin-main-block-permit-signer
+  template:
+    metadata:
+      labels:
+        app: starcoin-main-block-permit-signer
+        network: main
+        starcoin.org/role: block-permit-signer
+      annotations:
+        starcoin.org/activation-height: "32165300"
+        starcoin.org/image-digest: sha256:c324b0b18548a0f1f511c585872ad0768325f569c2aaa25018beeef9a7c652da
+        starcoin.org/mining-upstream: single-endpoint
+        starcoin.org/release-commit: ab47660581d42c3731d79754ed83a34b1b97b5d1
+        starcoin.org/release-version: v1.13.21
+    spec:
+      priorityClassName: starcoin-core-critical
+      terminationGracePeriodSeconds: 60
+      nodeSelector:
+        starcoin/node-pool: seed-pool
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: starcoin
+                  network: main
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: starcoin
+          image: ghcr.io/starcoinorg/starcoin@sha256:c324b0b18548a0f1f511c585872ad0768325f569c2aaa25018beeef9a7c652da
+          imagePullPolicy: IfNotPresent
+          command:
+            - bash
+            - -ec
+          args:
+            - |
+              if [ "${POD_NAME}" != "starcoin-main-block-permit-signer-0" ]; then
+                echo "refusing to start a second keyed block-permit signer: ${POD_NAME}" >&2
+                exit 64
+              fi
+              rm -f /sc-data/main/starcoin.ipc \
+                /sc-data/main/starcoindb/db/starcoindb/LOCK \
+                /sc-data/main/network_key
+              exec /starcoin/starcoin \
+                -n main \
+                --discover-local true \
+                --disable-miner-client true \
+                --block-permit-private-key-file /run/secrets/starcoin/block-permit/private-key \
+                -d /sc-data
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          ports:
+            - name: p2p
+              containerPort: 9840
+            - name: http-rpc
+              containerPort: 9850
+            - name: ws-rpc
+              containerPort: 9870
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1536Mi
+          livenessProbe:
+            tcpSocket:
+              port: 9840
+            initialDelaySeconds: 120
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - /starcoin/starcoin -n main -d /sc-data node sync status | grep Synchronized
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 12
+          volumeMounts:
+            - name: starcoin-data
+              mountPath: /sc-data
+            - name: block-permit-signer
+              mountPath: /run/secrets/starcoin/block-permit
+              readOnly: true
+      volumes:
+        - name: starcoin-data
+          persistentVolumeClaim:
+            claimName: starcoin-main-block-permit-signer-g1
+        - name: block-permit-signer
+          secret:
+            secretName: block-permit-signer-g1
+            defaultMode: 0400

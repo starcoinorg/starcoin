@@ -20,6 +20,11 @@ spec:
       labels:
         app: starcoin
         network: main
+      annotations:
+        starcoin.org/activation-height: "32165300"
+        starcoin.org/image-digest: sha256:c324b0b18548a0f1f511c585872ad0768325f569c2aaa25018beeef9a7c652da
+        starcoin.org/release-commit: ab47660581d42c3731d79754ed83a34b1b97b5d1
+        starcoin.org/release-version: v1.13.21
     spec:
       priorityClassName: starcoin-core-critical
       nodeSelector:
@@ -36,7 +41,7 @@ spec:
               topologyKey: kubernetes.io/hostname
       containers:
       - name: starcoin
-        image: ghcr.io/starcoinorg/starcoin:v1.13.21
+        image: ghcr.io/starcoinorg/starcoin@sha256:c324b0b18548a0f1f511c585872ad0768325f569c2aaa25018beeef9a7c652da
         imagePullPolicy: Always
         resources:
           requests:
@@ -96,6 +101,11 @@ spec:
       namespace: starcoin-main
     spec:
       accessModes: [ "ReadWriteOnce" ]
+      storageClassName: do-block-storage
+      dataSource:
+        apiGroup: snapshot.storage.k8s.io
+        kind: VolumeSnapshot
+        name: migration-seed-do-snapshot
       resources:
         requests:
-          storage: 300Gi
+          storage: 500Gi
