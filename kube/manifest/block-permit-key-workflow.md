@@ -11,7 +11,7 @@ The frozen generation-1 release inputs are:
 | --- | ---: | --- |
 | Halley | 2,894,400 | `0x157b42a66560e83144deecdb43d5bac70a5e116b0938d277192de7d01617e2ac` |
 | Barnard | 19,667,300 | `0xca72d0ee15cf78c1232218c8d4c241c87e6cdc6953fea813c7be2191f9388e67` |
-| Main | 32,213,000 | `0x6ea544078efcbac81e9d6197090b1a106cd69f2fef83204a2ddecf05980601cd` |
+| Main | 32,165,300 | `0x6ea544078efcbac81e9d6197090b1a106cd69f2fef83204a2ddecf05980601cd` |
 
 ## Generate and freeze release inputs
 
