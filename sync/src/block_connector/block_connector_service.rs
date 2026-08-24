@@ -7,7 +7,7 @@ use crate::tasks::{BlockConnectedEvent, BlockDiskCheckEvent};
 use anyhow::{format_err, Result};
 use network_api::PeerProvider;
 use starcoin_chain_api::{ConnectBlockError, WriteableChainService};
-use starcoin_config::{NodeConfig, G_CRATE_VERSION};
+use starcoin_config::{NodeConfig, G_CONSENSUS_BUILD_FINGERPRINT};
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
@@ -232,7 +232,7 @@ impl EventHandler<Self, PeerNewBlock> for BlockConnectorService {
                                     msg.get_block().clone(),
                                     Some(peer_id.clone()),
                                     format!("{:?}", e),
-                                    G_CRATE_VERSION.to_string(),
+                                    G_CONSENSUS_BUILD_FINGERPRINT.to_string(),
                                 )
                             {
                                 warn!(

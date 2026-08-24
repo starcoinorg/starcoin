@@ -40,7 +40,7 @@ use starcoin_types::{
     write_set::WriteSet,
     U256,
 };
-use starcoin_vm_runtime::force_upgrade_management::get_force_upgrade_block_number;
+use starcoin_vm_runtime::force_upgrade_management::is_force_upgrade_block;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy};
@@ -1066,7 +1066,7 @@ impl BlockChain {
         verify_block!(
             VerifyBlockField::State,
             {
-                if header.number() == get_force_upgrade_block_number(chain_id) {
+                if is_force_upgrade_block(chain_id, header.number()) {
                     vec_transaction_info.len() == stored_transactions.len().checked_add(1).unwrap()
                 } else {
                     vec_transaction_info.len() == stored_transactions.len()

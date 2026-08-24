@@ -15,7 +15,7 @@ use starcoin_types::identifier::Identifier;
 use starcoin_types::transaction::TransactionStatus;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
 use starcoin_vm_runtime::force_upgrade_management::{
-    get_force_upgrade_account, get_force_upgrade_block_number,
+    get_force_upgrade_account, is_force_upgrade_block,
 };
 use starcoin_vm_runtime::metrics::VMMetrics;
 use starcoin_vm_types::access_path::AccessPath;
@@ -154,22 +154,21 @@ fn create_force_upgrade_extra_txn<S: ChainStateReader + ChainStateWriter>(
     let chain_id = statedb.get_chain_id()?;
     let block_timestamp = statedb.get_timestamp()?.seconds();
     let block_number = statedb.get_block_metadata()?.number;
-    Ok(
-        if block_number == get_force_upgrade_block_number(&chain_id) {
-            let account = get_force_upgrade_account(&chain_id)?;
-            let sequence_number = statedb.get_sequence_number(*account.address())?;
-            let extra_txn = ForceUpgrade::force_deploy_txn(
-                account,
-                sequence_number,
-                block_timestamp + DEFAULT_EXPIRATION_TIME,
-                &chain_id,
-            )?;
-            info!("extra txn to execute ({:?})", extra_txn.id());
-            Some(Transaction::UserTransaction(extra_txn))
-        } else {
-            None
-        },
-    )
+    Ok(if is_force_upgrade_block(&chain_id, block_number) {
+        let account = get_force_upgrade_account(&chain_id)?;
+        let sequence_number = statedb.get_sequence_number(*account.address())?;
+        let extra_txn = ForceUpgrade::force_deploy_txn_at(
+            account,
+            sequence_number,
+            block_timestamp + DEFAULT_EXPIRATION_TIME,
+            block_number,
+            &chain_id,
+        )?;
+        info!("extra txn to execute ({:?})", extra_txn.id());
+        Some(Transaction::UserTransaction(extra_txn))
+    } else {
+        None
+    })
 }
 
 // todo: check the execute_extra_txn in OpenedBlock, and merge with it

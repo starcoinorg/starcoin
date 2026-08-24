@@ -11,7 +11,7 @@ use network_api::PeerProvider;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::{verifier::BasicVerifier, BlockChain};
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, ExecutedBlock};
-use starcoin_config::G_CRATE_VERSION;
+use starcoin_config::G_CONSENSUS_BUILD_FINGERPRINT;
 use starcoin_logger::prelude::*;
 use starcoin_storage::BARNARD_HARD_FORK_HASH;
 use starcoin_sync_api::SyncTarget;
@@ -224,23 +224,25 @@ where
         self.apply_block(block, None)
     }
 
+    #[cfg(test)]
+    pub fn apply_block_from_peer_for_test(&mut self, block: Block, peer_id: PeerId) -> Result<()> {
+        self.apply_block(block, Some(peer_id))
+    }
+
     fn apply_block(&mut self, block: Block, peer_id: Option<PeerId>) -> Result<()> {
         if let Some((_failed_block, pre_peer_id, err, version)) = self
             .chain
             .get_storage()
             .get_failed_block_by_id(block.id())?
         {
-            if version == *G_CRATE_VERSION {
+            if version == G_CONSENSUS_BUILD_FINGERPRINT.as_str() {
                 warn!(
-                    "[sync] apply a previous failed block: {}, previous_peer_id:{:?}, err: {}",
+                    "[sync] apply a previous failed block: {}, previous_peer_id:{:?}, current_peer_id:{:?}, err: {}",
                     block.id(),
                     pre_peer_id,
+                    peer_id,
                     err
                 );
-                if let Some(peer) = peer_id {
-                    self.peer_provider
-                        .report_peer(peer, ConnectBlockError::REP_VERIFY_BLOCK_FAILED);
-                }
                 return Err(format_err!("collect previous failed block:{}", block.id()));
             }
         }
@@ -274,7 +276,7 @@ where
                             block,
                             peer_id.clone(),
                             error_msg,
-                            G_CRATE_VERSION.to_string(),
+                            G_CONSENSUS_BUILD_FINGERPRINT.to_string(),
                         )?;
                         if let Some(peer) = peer_id {
                             self.peer_provider.report_peer(peer, e.reputation());

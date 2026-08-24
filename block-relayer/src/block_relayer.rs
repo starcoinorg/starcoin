@@ -7,8 +7,7 @@ use futures::FutureExt;
 use network_api::messages::{CompactBlockMessage, NotificationMessage, PeerCompactBlockMessage};
 use network_api::{NetworkService, PeerId, PeerProvider, PeerSelector, PeerStrategy};
 use starcoin_chain::verifier::StaticVerifier;
-use starcoin_config::NodeConfig;
-use starcoin_config::G_CRATE_VERSION;
+use starcoin_config::{NodeConfig, G_CONSENSUS_BUILD_FINGERPRINT};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
@@ -32,6 +31,24 @@ use starcoin_types::{
 use std::collections::{HashMap, HashSet};
 use std::convert::TryInto;
 use std::sync::Arc;
+
+#[derive(Debug, Eq, PartialEq)]
+enum FailedBlockAction<'a> {
+    Process,
+    RetryPreviousBuild { stored_fingerprint: &'a str },
+    Suppress,
+}
+
+fn failed_block_action<'a>(
+    failed_block_fingerprint: Option<&'a str>,
+    current_fingerprint: &str,
+) -> FailedBlockAction<'a> {
+    match failed_block_fingerprint {
+        Some(fingerprint) if fingerprint == current_fingerprint => FailedBlockAction::Suppress,
+        Some(stored_fingerprint) => FailedBlockAction::RetryPreviousBuild { stored_fingerprint },
+        None => FailedBlockAction::Process,
+    }
+}
 
 pub struct BlockRelayer {
     txpool: TxPoolService,
@@ -211,13 +228,38 @@ impl BlockRelayer {
             let peer_id = compact_block_msg.peer_id;
             debug!("Receive peer compact block event from peer id:{}", peer_id);
             let block_id = compact_block.header.id();
-            if let Ok(Some((_, _, _, version))) =
-                txpool.get_store().get_failed_block_by_id(block_id)
-            {
-                if version == *G_CRATE_VERSION {
-                    warn!("Block is failed block : {:?}", block_id);
+            let failed_block = match txpool.get_store().get_failed_block_by_id(block_id) {
+                Ok(failed_block) => failed_block,
+                Err(error) => {
+                    warn!(
+                        "[block-relay] Failed to load failed block record for {:?}: {:?}; process the block through normal validation",
+                        block_id, error
+                    );
+                    None
                 }
-            } else {
+            };
+            let failed_block_fingerprint = failed_block
+                .as_ref()
+                .map(|(_, _, _, version)| version.as_str());
+            let current_fingerprint = G_CONSENSUS_BUILD_FINGERPRINT.as_str();
+            let should_process = match failed_block_action(
+                failed_block_fingerprint,
+                current_fingerprint,
+            ) {
+                FailedBlockAction::Suppress => {
+                    warn!("Block is failed block : {:?}", block_id);
+                    false
+                }
+                FailedBlockAction::RetryPreviousBuild { stored_fingerprint } => {
+                    info!(
+                        "[block-relay] Retry failed block {:?} after build change (stored fingerprint: {:?}, current fingerprint: {:?})",
+                        block_id, stored_fingerprint, current_fingerprint
+                    );
+                    true
+                }
+                FailedBlockAction::Process => true,
+            };
+            if should_process {
                 let peer = network.get_peer(peer_id.clone()).await?.ok_or_else(|| {
                     format_err!(
                         "CompatBlockMessage's peer {} is not connected",
@@ -248,6 +290,53 @@ impl BlockRelayer {
             }
         }));
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{failed_block_action, FailedBlockAction};
+
+    #[test]
+    fn processes_block_without_failed_record() {
+        assert_eq!(
+            failed_block_action(None, "2.0.0"),
+            FailedBlockAction::Process
+        );
+    }
+
+    #[test]
+    fn suppresses_block_failed_by_current_build() {
+        let current = "consensus-validation-v1:1.13.21 (build:commit-b)";
+        assert_eq!(
+            failed_block_action(Some(current), current),
+            FailedBlockAction::Suppress
+        );
+    }
+
+    #[test]
+    fn retries_block_failed_by_different_same_semver_build() {
+        let previous = "consensus-validation-v1:1.13.21 (build:commit-a)";
+        let current = "consensus-validation-v1:1.13.21 (build:commit-b)";
+        assert_eq!(
+            failed_block_action(Some(previous), current),
+            FailedBlockAction::RetryPreviousBuild {
+                stored_fingerprint: previous
+            }
+        );
+    }
+
+    #[test]
+    fn retries_legacy_failed_records() {
+        let current = "consensus-validation-v1:1.13.21 (build:commit-b)";
+        for legacy in ["", "1.13.21"] {
+            assert_eq!(
+                failed_block_action(Some(legacy), current),
+                FailedBlockAction::RetryPreviousBuild {
+                    stored_fingerprint: legacy
+                }
+            );
+        }
     }
 }
 

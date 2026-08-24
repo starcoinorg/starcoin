@@ -85,8 +85,41 @@ pub static G_APP_VERSION: Lazy<String> = Lazy::new(|| {
     }
 });
 
+/// Identifies the exact node build whose validation rules rejected a block.
+///
+/// Keep the explicit prefix and build field: failed-block rows written by older
+/// releases contain only the crate version (for example, `1.13.21`) and must not
+/// be mistaken for failures produced by this build.
+pub static G_CONSENSUS_BUILD_FINGERPRINT: Lazy<String> =
+    Lazy::new(|| consensus_build_fingerprint(G_CRATE_VERSION, G_GIT_VERSION));
+
+fn consensus_build_fingerprint(crate_version: &str, git_version: &str) -> String {
+    format!(
+        "consensus-validation-v1:{} (build:{})",
+        crate_version, git_version
+    )
+}
+
 pub static G_APP_NAME_WITH_VERSION: Lazy<String> =
     Lazy::new(|| format!("{}/{}", G_APP_NAME, G_APP_VERSION.clone()));
+
+#[cfg(test)]
+mod consensus_build_fingerprint_tests {
+    use super::consensus_build_fingerprint;
+
+    #[test]
+    fn fingerprint_distinguishes_legacy_and_exact_builds() {
+        let first = consensus_build_fingerprint("1.13.21", "commit-a");
+        let second = consensus_build_fingerprint("1.13.21", "commit-b");
+
+        assert_ne!(first, "1.13.21");
+        assert_ne!(first, second);
+        assert_eq!(
+            consensus_build_fingerprint("1.13.21", "unknown"),
+            "consensus-validation-v1:1.13.21 (build:unknown)"
+        );
+    }
+}
 
 /// Default data dir
 pub static G_DEFAULT_BASE_DATA_DIR: Lazy<PathBuf> = Lazy::new(|| {

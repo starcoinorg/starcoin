@@ -12,10 +12,11 @@ use crate::verified_rpc_client::RpcVerifyError;
 use anyhow::Context;
 use anyhow::{format_err, Result};
 use futures::channel::mpsc::unbounded;
+use futures::channel::oneshot::{channel, Receiver};
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use futures_timer::Delay;
-use network_api::{PeerId, PeerInfo, PeerSelector, PeerStrategy};
+use network_api::{PeerId, PeerInfo, PeerProvider, PeerSelector, PeerStrategy, ReputationChange};
 use pin_utils::core_reexport::time::Duration;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::tree_store::mock::MockAccumulatorStore;
@@ -23,7 +24,9 @@ use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::ChainReader;
 use starcoin_chain_mock::MockChain;
-use starcoin_config::{BuiltinNetworkID, ChainNetwork};
+use starcoin_config::{
+    BuiltinNetworkID, ChainNetwork, G_CONSENSUS_BUILD_FINGERPRINT, G_CRATE_VERSION,
+};
 use starcoin_crypto::HashValue;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
@@ -39,6 +42,67 @@ use stream_task::{
     DefaultCustomErrorHandle, Generator, TaskError, TaskEventCounterHandle, TaskGenerator,
 };
 use test_helper::DummyNetworkService;
+
+#[derive(Clone, Default)]
+struct TestPeerProvider {
+    reports: Arc<Mutex<Vec<(PeerId, ReputationChange)>>>,
+    bans: Arc<Mutex<Vec<(PeerId, bool)>>>,
+}
+
+impl TestPeerProvider {
+    fn reports(&self) -> Vec<(PeerId, ReputationChange)> {
+        self.reports
+            .lock()
+            .expect("test report lock must be available")
+            .clone()
+    }
+
+    fn bans(&self) -> Vec<(PeerId, bool)> {
+        self.bans
+            .lock()
+            .expect("test ban lock must be available")
+            .clone()
+    }
+}
+
+impl PeerProvider for TestPeerProvider {
+    fn peer_set(&self) -> BoxFuture<Result<Vec<PeerInfo>>> {
+        async { Ok(Vec::new()) }.boxed()
+    }
+
+    fn get_peer(&self, _peer_id: PeerId) -> BoxFuture<Result<Option<PeerInfo>>> {
+        async { Ok(None) }.boxed()
+    }
+
+    fn get_self_peer(&self) -> BoxFuture<Result<PeerInfo>> {
+        async { Err(format_err!("test peer set is empty")) }.boxed()
+    }
+
+    fn report_peer(&self, peer_id: PeerId, cost_benefit: ReputationChange) {
+        self.reports
+            .lock()
+            .expect("test report lock must be available")
+            .push((peer_id, cost_benefit));
+    }
+
+    fn reputations(
+        &self,
+        _reputation_threshold: i32,
+    ) -> BoxFuture<'_, Result<Receiver<Vec<(PeerId, i32)>>>> {
+        let (sender, receiver) = channel();
+        sender
+            .send(Vec::new())
+            .expect("test reputation receiver must remain available");
+        async move { Ok(receiver) }.boxed()
+    }
+
+    fn ban_peer(&self, peer_id: PeerId, ban: bool) {
+        self.bans
+            .lock()
+            .expect("test ban lock must be available")
+            .push((peer_id, ban));
+    }
+}
 
 #[stest::test(timeout = 120)]
 pub async fn test_full_sync_new_node() -> Result<()> {
@@ -208,6 +272,143 @@ pub async fn test_failed_block() -> Result<()> {
     } else {
         Err(format_err!("test FailedBlock fail."))
     }
+}
+
+#[stest::test]
+pub async fn test_failed_block_from_previous_version_is_retried() -> Result<()> {
+    let net = ChainNetwork::new_builtin(BuiltinNetworkID::Halley);
+    let mock_chain = MockChain::new(net)?;
+    let block = mock_chain.produce()?;
+    let block_id = block.id();
+    let chain = mock_chain.fork_new_branch(None)?;
+    let storage = chain.get_storage();
+    let chain_status = chain.status();
+    let target = SyncTarget {
+        target_id: BlockIdAndNumber::new(chain_status.head.id(), chain_status.head.number()),
+        block_info: chain_status.info.clone(),
+        peers: vec![PeerId::random()],
+    };
+    let (sender, _receiver) = unbounded();
+    let mut block_collector = BlockCollector::new_with_handle(
+        chain_status.info,
+        chain_status.head.number(),
+        target,
+        chain,
+        sender,
+        DummyNetworkService::default(),
+        true,
+    );
+
+    storage.save_failed_block(
+        block_id,
+        block.clone(),
+        None,
+        "failed under current build".to_string(),
+        G_CONSENSUS_BUILD_FINGERPRINT.to_string(),
+    )?;
+    assert!(storage.get_block_by_hash(block_id)?.is_none());
+    let error = block_collector
+        .apply_block_for_test(block.clone())
+        .expect_err("a failed block from the current build must be rejected");
+    assert_eq!(
+        error.to_string(),
+        format!("collect previous failed block:{}", block_id)
+    );
+    assert!(storage.get_block_by_hash(block_id)?.is_none());
+
+    // Failed-block rows written before build fingerprints were introduced contain
+    // only the semantic crate version and must be retried by the current build.
+    let legacy_version = G_CRATE_VERSION.to_string();
+    storage.save_failed_block(
+        block_id,
+        block.clone(),
+        None,
+        "failed under a legacy semver-only build".to_string(),
+        legacy_version.clone(),
+    )?;
+    assert_eq!(
+        storage
+            .get_failed_block_by_id(block_id)?
+            .expect("the failed-block record must exist")
+            .3,
+        legacy_version
+    );
+
+    block_collector.apply_block_for_test(block)?;
+    assert!(storage.get_block_by_hash(block_id)?.is_some());
+
+    Ok(())
+}
+
+#[stest::test]
+pub async fn test_cached_failed_block_does_not_penalize_current_supplier() -> Result<()> {
+    let net = ChainNetwork::new_builtin(BuiltinNetworkID::Halley);
+    let (storage, chain_info, _) = Genesis::init_storage_for_test(&net)?;
+    let chain = BlockChain::new(
+        net.time_service(),
+        chain_info.head().id(),
+        storage.clone(),
+        None,
+    )?;
+    let chain_status = chain.status();
+    let supplier = PeerId::random();
+    let target = SyncTarget {
+        target_id: BlockIdAndNumber::new(chain_status.head.id(), chain_status.head.number()),
+        block_info: chain_status.info.clone(),
+        peers: vec![supplier.clone()],
+    };
+    let peer_provider = TestPeerProvider::default();
+    let (sender, _receiver) = unbounded();
+    let mut block_collector = BlockCollector::new_with_handle(
+        chain_status.info,
+        chain_status.head.number(),
+        target,
+        chain,
+        sender,
+        peer_provider.clone(),
+        true,
+    );
+
+    let header = BlockHeaderBuilder::random().with_number(1).build();
+    let failed_block = Block::new(header, BlockBody::new(Vec::new(), None));
+    let failed_block_id = failed_block.id();
+    storage.save_failed_block(
+        failed_block_id,
+        failed_block.clone(),
+        Some(PeerId::random()),
+        "cached failure from this build".to_string(),
+        G_CONSENSUS_BUILD_FINGERPRINT.to_string(),
+    )?;
+
+    let cached_error = block_collector
+        .apply_block_from_peer_for_test(failed_block.clone(), supplier.clone())
+        .expect_err("the current build's cached failure must short-circuit");
+    assert_eq!(
+        cached_error.to_string(),
+        format!("collect previous failed block:{}", failed_block_id)
+    );
+    assert!(peer_provider.reports().is_empty());
+    assert!(peer_provider.bans().is_empty());
+
+    // A legacy fingerprint forces a real apply attempt. The same invalid block
+    // must still exercise the existing fresh-failure reputation penalty.
+    storage.save_failed_block(
+        failed_block_id,
+        failed_block.clone(),
+        None,
+        "legacy cached failure".to_string(),
+        G_CRATE_VERSION.to_string(),
+    )?;
+    block_collector
+        .apply_block_from_peer_for_test(failed_block, supplier.clone())
+        .expect_err("the invalid block must fail a fresh apply attempt");
+
+    let reports = peer_provider.reports();
+    assert_eq!(reports.len(), 1);
+    assert_eq!(reports[0].0, supplier);
+    assert!(reports[0].1.value < 0);
+    assert!(peer_provider.bans().is_empty());
+    Ok(())
 }
 
 #[stest::test(timeout = 120)]

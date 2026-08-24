@@ -17,6 +17,18 @@ use starcoin_vm_types::genesis_config::ChainId;
 ///
 pub const FORCE_UPGRADE_BLOCK_NUMBER: u64 = 23009355;
 
+/// Immutable historical Main block whose force-upgrade transaction used the
+/// original, metered execution semantics. This must not move when a future
+/// Main force-upgrade height is configured.
+pub const MAIN_LEGACY_FORCE_UPGRADE_BLOCK_NUMBER: u64 = 23_009_355;
+
+/// Main's force-upgrade block was produced with the original, metered
+/// transaction semantics. Preserve those historical consensus rules when the
+/// block is replayed by a node syncing from below the upgrade height.
+pub fn is_legacy_main_force_upgrade(chain_id: &ChainId, block_number: u64) -> bool {
+    chain_id.is_main() && block_number == MAIN_LEGACY_FORCE_UPGRADE_BLOCK_NUMBER
+}
+
 pub fn get_force_upgrade_block_number(chain_id: &ChainId) -> u64 {
     if chain_id.is_main() {
         FORCE_UPGRADE_BLOCK_NUMBER
@@ -34,6 +46,34 @@ pub fn get_force_upgrade_block_number(chain_id: &ChainId) -> u64 {
     } else {
         FORCE_UPGRADE_BLOCK_NUMBER
     }
+}
+
+fn is_force_upgrade_block_with_configured_height(
+    chain_id: &ChainId,
+    block_number: u64,
+    configured_block_number: u64,
+) -> bool {
+    is_legacy_main_force_upgrade(chain_id, block_number) || block_number == configured_block_number
+}
+
+/// Whether this block must execute the implicit force-upgrade transaction.
+///
+/// The historical Main block remains part of this set independently of the
+/// currently configured force-upgrade height so that old blocks stay
+/// replayable after a future upgrade is scheduled.
+pub fn is_force_upgrade_block(chain_id: &ChainId, block_number: u64) -> bool {
+    is_force_upgrade_block_with_configured_height(
+        chain_id,
+        block_number,
+        get_force_upgrade_block_number(chain_id),
+    )
+}
+
+/// Whether the force-upgrade transaction at this height uses the newer
+/// gas-free execution path.
+pub fn is_gas_free_force_upgrade(chain_id: &ChainId, block_number: u64) -> bool {
+    is_force_upgrade_block(chain_id, block_number)
+        && !is_legacy_main_force_upgrade(chain_id, block_number)
 }
 
 pub fn create_account(private_hex: &str) -> anyhow::Result<Account> {
@@ -106,5 +146,70 @@ mod tests {
         );
 
         Ok(())
+    }
+
+    #[test]
+    fn test_main_force_upgrade_preserves_legacy_gas_semantics_only_at_history_height() {
+        let main = ChainId::new(1);
+        assert_eq!(MAIN_LEGACY_FORCE_UPGRADE_BLOCK_NUMBER, 23_009_355);
+        assert!(is_legacy_main_force_upgrade(
+            &main,
+            MAIN_LEGACY_FORCE_UPGRADE_BLOCK_NUMBER
+        ));
+        assert!(!is_gas_free_force_upgrade(
+            &main,
+            MAIN_LEGACY_FORCE_UPGRADE_BLOCK_NUMBER
+        ));
+
+        assert!(!is_legacy_main_force_upgrade(
+            &main,
+            MAIN_LEGACY_FORCE_UPGRADE_BLOCK_NUMBER - 1
+        ));
+        assert!(!is_gas_free_force_upgrade(
+            &main,
+            MAIN_LEGACY_FORCE_UPGRADE_BLOCK_NUMBER - 1
+        ));
+        assert!(!is_legacy_main_force_upgrade(
+            &main,
+            MAIN_LEGACY_FORCE_UPGRADE_BLOCK_NUMBER + 1
+        ));
+        assert!(!is_gas_free_force_upgrade(
+            &main,
+            MAIN_LEGACY_FORCE_UPGRADE_BLOCK_NUMBER + 1
+        ));
+
+        let halley = ChainId::new(253);
+        let halley_force_height = get_force_upgrade_block_number(&halley);
+        assert!(!is_legacy_main_force_upgrade(&halley, halley_force_height));
+        assert!(is_gas_free_force_upgrade(&halley, halley_force_height));
+    }
+
+    #[test]
+    fn test_main_legacy_force_upgrade_remains_dispatched_after_future_height_change() {
+        let main = ChainId::new(1);
+        let future_configured_height = MAIN_LEGACY_FORCE_UPGRADE_BLOCK_NUMBER + 1_000_000;
+
+        assert!(is_force_upgrade_block_with_configured_height(
+            &main,
+            MAIN_LEGACY_FORCE_UPGRADE_BLOCK_NUMBER,
+            future_configured_height,
+        ));
+        assert!(is_force_upgrade_block_with_configured_height(
+            &main,
+            future_configured_height,
+            future_configured_height,
+        ));
+        assert!(!is_force_upgrade_block_with_configured_height(
+            &main,
+            MAIN_LEGACY_FORCE_UPGRADE_BLOCK_NUMBER + 1,
+            future_configured_height,
+        ));
+
+        let halley = ChainId::new(253);
+        assert!(!is_force_upgrade_block_with_configured_height(
+            &halley,
+            MAIN_LEGACY_FORCE_UPGRADE_BLOCK_NUMBER,
+            future_configured_height,
+        ));
     }
 }
