@@ -13,7 +13,7 @@ metadata:
   name: starcoin-main-seed
   namespace: starcoin-main
 spec:
-  minAvailable: 6
+  minAvailable: 5
   selector:
     matchLabels:
       app: starcoin
