@@ -57,7 +57,24 @@ spec:
       terminationGracePeriodSeconds: 60
       nodeSelector:
         starcoin/node-pool: seed-pool
+      # Keep the signer on a node of its own. The node carries the label and a
+      # NoSchedule taint starcoin.org/dedicated=block-permit-signer; other
+      # workloads do not tolerate it. Both live on the node object, so a
+      # recycled node must be relabelled and retainted.
+      tolerations:
+        - key: starcoin.org/dedicated
+          operator: Equal
+          value: block-permit-signer
+          effect: NoSchedule
       affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: starcoin.org/dedicated
+                    operator: In
+                    values: [block-permit-signer]
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             - labelSelector:
