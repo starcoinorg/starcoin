@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: starcoin-runner
+  namespace: actions-runner-system
+automountServiceAccountToken: false
+---
+apiVersion: actions.summerwind.dev/v1alpha1
+kind: RunnerDeployment
+metadata:
+  name: starcoin-runners
+  namespace: actions-runner-system
+spec:
+  replicas: 0
+  template:
+    spec:
+      image: ghcr.io/starcoinorg/starcoin-builder:latest
+      repository: starcoinorg/starcoin
+      ephemeral: true
+      # CI jobs run pull-request code. Do not run them as the namespace's
+      # default service account: the controller binds it to manager-role,
+      # which can read every secret in the cluster. Jobs need no Kubernetes
+      # API access, so the runner pod gets no token at all.
+      serviceAccountName: starcoin-runner
+      automountServiceAccountToken: false
+      containerMode: dind
+      labels:
+        - self-hosted
+        - linux
+        - x64
+        - k8s
+        
+      nodeSelector:
+         doks.digitalocean.com/node-pool: pool-ci
+      resources:
+        requests:
+          cpu: "7000m"
+          memory: "27Gi"
+        limits:
+          memory: "27Gi"
+          cpu: "7500m"
