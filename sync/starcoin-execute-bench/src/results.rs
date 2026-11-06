@@ -16,12 +16,23 @@ pub enum TransactionExecutionResult {
     Culled(String),
     /// Mined(mined_time_ms, block_number, block_id) - epoch ms when MinedBlock event received
     Mined(u64, u64, HashValue),
+    /// BlueTemplateSelected(timestamp_ms) - epoch ms when tx appears in blue_txns during create_block_template
+    BlueTemplateSelected(u64),
     /// Executed(connected_time_ms, block_number, block_id, block_timestamp_ms) - epoch ms from NewHeadBlock
     /// block_timestamp_ms is the block's timestamp (when it was created)
     Executed(u64, u64, HashValue, u64),
     #[allow(dead_code)]
     ExecutedNotInMain(String),
     Other(String),
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct LegalParentSupplementSample {
+    pub legal_parent_count: u32,
+    pub candidate_vm1: u32,
+    pub candidate_vm2: u32,
+    pub included_vm1: u32,
+    pub included_vm2: u32,
 }
 
 /// Helper function to format epoch millis to readable string
@@ -79,6 +90,50 @@ fn calculate_trimmed_mean(values: &[f64], trim_pct: f64) -> f64 {
     trimmed.iter().sum::<f64>() / trimmed.len() as f64
 }
 
+fn calculate_percentile(values: &[f64], percentile: f64) -> f64 {
+    if values.is_empty() {
+        return 0.0;
+    }
+    let mut sorted = values.to_vec();
+    sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    let n = sorted.len();
+    if n == 1 {
+        return sorted[0];
+    }
+    let p = percentile.clamp(0.0, 100.0) / 100.0;
+    let rank = p * (n - 1) as f64;
+    let lower = rank.floor() as usize;
+    let upper = rank.ceil() as usize;
+    if lower == upper {
+        sorted[lower]
+    } else {
+        let weight = rank - lower as f64;
+        sorted[lower] * (1.0 - weight) + sorted[upper] * weight
+    }
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct PhaseLatencyStats {
+    pub sample_count: usize,
+    pub min_ms: f64,
+    pub max_ms: f64,
+    pub avg_ms: f64,
+    pub median_ms: f64,
+}
+
+impl PhaseLatencyStats {
+    fn from_samples(samples: &[f64]) -> Self {
+        let (min_ms, max_ms, avg_ms, median_ms) = calculate_statistics(samples);
+        Self {
+            sample_count: samples.len(),
+            min_ms: if min_ms.is_finite() { min_ms } else { 0.0 },
+            max_ms,
+            avg_ms,
+            median_ms,
+        }
+    }
+}
+
 impl std::fmt::Debug for TransactionExecutionResult {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -99,6 +154,9 @@ impl std::fmt::Debug for TransactionExecutionResult {
                     block_number,
                     block_id
                 )
+            }
+            TransactionExecutionResult::BlueTemplateSelected(ts_ms) => {
+                write!(f, "BlueTemplateSelected({})", format_epoch_ms(*ts_ms))
             }
             TransactionExecutionResult::Executed(ts_ms, block_number, block_id, block_ts) => {
                 write!(
@@ -148,6 +206,44 @@ pub struct BenchmarkStats {
     pub unique_txn_count: usize,
     pub duplicate_exec_count: usize,
     pub duplicate_pct: f64,
+    pub txpool_to_mined_latency: PhaseLatencyStats,
+    pub txpool_to_mined_excluding_target_latency: Option<PhaseLatencyStats>,
+    pub mined_to_executed_latency: PhaseLatencyStats,
+    pub txpool_to_final_executed_latency: PhaseLatencyStats,
+    pub txpool_to_final_executed_excluding_target_latency: Option<PhaseLatencyStats>,
+    pub mining_target_ms: Option<u64>,
+    pub blue_template_unique_txn_count: usize,
+    pub blue_template_final_executed_count: usize,
+    pub blue_template_duplicate_exec_count: usize,
+    pub blue_template_final_latency: PhaseLatencyStats,
+    pub blue_block_count_samples: usize,
+    pub blue_block_count_non_zero_samples: usize,
+    pub blue_block_count_min: f64,
+    pub blue_block_count_max: f64,
+    pub blue_block_count_avg: f64,
+    pub blue_block_count_median: f64,
+    pub red_block_count_samples: usize,
+    pub red_block_count_non_zero_samples: usize,
+    pub red_block_count_min: f64,
+    pub red_block_count_max: f64,
+    pub red_block_count_avg: f64,
+    pub red_block_count_median: f64,
+    pub legal_parent_supp_samples: usize,
+    pub legal_parent_supp_non_zero_parent_samples: usize,
+    pub legal_parent_supp_candidate_vm1_total: usize,
+    pub legal_parent_supp_candidate_vm2_total: usize,
+    pub legal_parent_supp_candidate_total: usize,
+    pub legal_parent_supp_included_vm1_total: usize,
+    pub legal_parent_supp_included_vm2_total: usize,
+    pub legal_parent_supp_included_total: usize,
+    pub legal_parent_supp_inclusion_rate_pct: f64,
+    pub legal_parent_supp_candidate_per_template_p50: f64,
+    pub legal_parent_supp_candidate_per_template_p95: f64,
+    pub legal_parent_supp_candidate_per_non_zero_parent_template_p50: f64,
+    pub legal_parent_supp_candidate_per_non_zero_parent_template_p95: f64,
+    pub direct_cross_branch_included_count: usize,
+    pub direct_cross_branch_executed_total: usize,
+    pub direct_cross_branch_included_pct: f64,
     pub min_latency_ms: f64,
     pub max_latency_ms: f64,
     pub avg_latency_ms: f64,
@@ -177,8 +273,145 @@ impl std::fmt::Display for BenchmarkStats {
         )?;
         writeln!(
             f,
-            "Latency - Min: {:.2}ms | Max: {:.2}ms | Avg: {:.2}ms | Median: {:.2}ms",
+            "Txpool->Final Executed Latency - Min: {:.2}ms | Max: {:.2}ms | Avg: {:.2}ms | Median: {:.2}ms",
             self.min_latency_ms, self.max_latency_ms, self.avg_latency_ms, self.median_latency_ms
+        )?;
+        writeln!(
+            f,
+            "Stage Latency [TxpoolWrite->BlockMined] (n={}) - Min: {:.2}ms | Max: {:.2}ms | Avg: {:.2}ms | Median: {:.2}ms",
+            self.txpool_to_mined_latency.sample_count,
+            self.txpool_to_mined_latency.min_ms,
+            self.txpool_to_mined_latency.max_ms,
+            self.txpool_to_mined_latency.avg_ms,
+            self.txpool_to_mined_latency.median_ms
+        )?;
+        if let (Some(target_ms), Some(adjusted)) = (
+            self.mining_target_ms,
+            self.txpool_to_mined_excluding_target_latency.as_ref(),
+        ) {
+            writeln!(
+                f,
+                "Stage Latency [TxpoolWrite->BlockMined, minus target mining {}ms] (n={}) - Min: {:.2}ms | Max: {:.2}ms | Avg: {:.2}ms | Median: {:.2}ms",
+                target_ms,
+                adjusted.sample_count,
+                adjusted.min_ms,
+                adjusted.max_ms,
+                adjusted.avg_ms,
+                adjusted.median_ms
+            )?;
+        }
+        writeln!(
+            f,
+            "Stage Latency [BlockMined->FinalExecuted] (n={}) - Min: {:.2}ms | Max: {:.2}ms | Avg: {:.2}ms | Median: {:.2}ms",
+            self.mined_to_executed_latency.sample_count,
+            self.mined_to_executed_latency.min_ms,
+            self.mined_to_executed_latency.max_ms,
+            self.mined_to_executed_latency.avg_ms,
+            self.mined_to_executed_latency.median_ms
+        )?;
+        writeln!(
+            f,
+            "Stage Latency [TxpoolWrite->FinalExecuted] (n={}) - Min: {:.2}ms | Max: {:.2}ms | Avg: {:.2}ms | Median: {:.2}ms",
+            self.txpool_to_final_executed_latency.sample_count,
+            self.txpool_to_final_executed_latency.min_ms,
+            self.txpool_to_final_executed_latency.max_ms,
+            self.txpool_to_final_executed_latency.avg_ms,
+            self.txpool_to_final_executed_latency.median_ms
+        )?;
+        if let (Some(target_ms), Some(adjusted)) = (
+            self.mining_target_ms,
+            self.txpool_to_final_executed_excluding_target_latency
+                .as_ref(),
+        ) {
+            writeln!(
+                f,
+                "Stage Latency [TxpoolWrite->FinalExecuted, minus target mining {}ms] (n={}) - Min: {:.2}ms | Max: {:.2}ms | Avg: {:.2}ms | Median: {:.2}ms",
+                target_ms,
+                adjusted.sample_count,
+                adjusted.min_ms,
+                adjusted.max_ms,
+                adjusted.avg_ms,
+                adjusted.median_ms
+            )?;
+        }
+        writeln!(
+            f,
+            "Blue Txns (from create_block_template blue_txns) - Unique: {} | Final Executed: {} | Duplicate Executions: {}",
+            self.blue_template_unique_txn_count,
+            self.blue_template_final_executed_count,
+            self.blue_template_duplicate_exec_count
+        )?;
+        writeln!(
+            f,
+            "Blue Txns Final Latency [Added->FinalExecuted] (n={}) - Min: {:.2}ms | Max: {:.2}ms | Avg: {:.2}ms | Median: {:.2}ms",
+            self.blue_template_final_latency.sample_count,
+            self.blue_template_final_latency.min_ms,
+            self.blue_template_final_latency.max_ms,
+            self.blue_template_final_latency.avg_ms,
+            self.blue_template_final_latency.median_ms
+        )?;
+        writeln!(
+            f,
+            "Blue Blocks (from create_block_template) - Samples: {} | NonZero: {}",
+            self.blue_block_count_samples, self.blue_block_count_non_zero_samples
+        )?;
+        writeln!(
+            f,
+            "Blue Block Count Per Template (n={}) - Min: {:.2} | Max: {:.2} | Avg: {:.2} | Median: {:.2}",
+            self.blue_block_count_samples,
+            self.blue_block_count_min,
+            self.blue_block_count_max,
+            self.blue_block_count_avg,
+            self.blue_block_count_median
+        )?;
+        writeln!(
+            f,
+            "Red Blocks (from create_block_template) - Samples: {} | NonZero: {}",
+            self.red_block_count_samples, self.red_block_count_non_zero_samples
+        )?;
+        writeln!(
+            f,
+            "Red Block Count Per Template (n={}) - Min: {:.2} | Max: {:.2} | Avg: {:.2} | Median: {:.2}",
+            self.red_block_count_samples,
+            self.red_block_count_min,
+            self.red_block_count_max,
+            self.red_block_count_avg,
+            self.red_block_count_median
+        )?;
+        writeln!(
+            f,
+            "Legal Parent Supplement - Samples: {} | NonZeroParents: {}",
+            self.legal_parent_supp_samples, self.legal_parent_supp_non_zero_parent_samples
+        )?;
+        writeln!(
+            f,
+            "Legal Parent Supplement Txns - Candidate: {} (VM1={}, VM2={}) | Included: {} (VM1={}, VM2={}) | Inclusion Rate: {:.2}%",
+            self.legal_parent_supp_candidate_total,
+            self.legal_parent_supp_candidate_vm1_total,
+            self.legal_parent_supp_candidate_vm2_total,
+            self.legal_parent_supp_included_total,
+            self.legal_parent_supp_included_vm1_total,
+            self.legal_parent_supp_included_vm2_total,
+            self.legal_parent_supp_inclusion_rate_pct
+        )?;
+        writeln!(
+            f,
+            "Legal Parent Supplement Candidate Dist (per template) - P50: {:.2} | P95: {:.2}",
+            self.legal_parent_supp_candidate_per_template_p50,
+            self.legal_parent_supp_candidate_per_template_p95
+        )?;
+        writeln!(
+            f,
+            "Legal Parent Supplement Candidate Dist (non-zero-parent templates) - P50: {:.2} | P95: {:.2}",
+            self.legal_parent_supp_candidate_per_non_zero_parent_template_p50,
+            self.legal_parent_supp_candidate_per_non_zero_parent_template_p95
+        )?;
+        writeln!(
+            f,
+            "DirectCrossBranchIncluded (final executed without BlueTemplateSelected before execution) - Count: {} / {} ({:.2}%)",
+            self.direct_cross_branch_included_count,
+            self.direct_cross_branch_executed_total,
+            self.direct_cross_branch_included_pct
         )?;
         writeln!(f, "========================================")?;
         Ok(())
@@ -210,11 +443,27 @@ pub struct TopLatencyBlock {
 
 pub struct ResultsDumper<'a> {
     transaction_data: &'a HashMap<HashValue, Vec<TransactionExecutionResult>>,
+    blue_block_counts: &'a [u32],
+    red_block_counts: &'a [u32],
+    legal_parent_supplement_samples: &'a [LegalParentSupplementSample],
+    mining_target_ms: Option<u64>,
 }
 
 impl<'a> ResultsDumper<'a> {
-    pub fn new(transaction_data: &'a HashMap<HashValue, Vec<TransactionExecutionResult>>) -> Self {
-        Self { transaction_data }
+    pub fn with_mining_target(
+        transaction_data: &'a HashMap<HashValue, Vec<TransactionExecutionResult>>,
+        blue_block_counts: &'a [u32],
+        red_block_counts: &'a [u32],
+        legal_parent_supplement_samples: &'a [LegalParentSupplementSample],
+        mining_target_ms: Option<u64>,
+    ) -> Self {
+        Self {
+            transaction_data,
+            blue_block_counts,
+            red_block_counts,
+            legal_parent_supplement_samples,
+            mining_target_ms,
+        }
     }
 
     /// Calculate and return benchmark statistics
@@ -248,7 +497,76 @@ impl<'a> ResultsDumper<'a> {
         info!("DEBUG: total_txn_entries={}, added_events={}, executed_events={}, unique_with_added={}, matched_with_latency={}",
             total_txn_entries, added_count, executed_count, unique_txn_count, total_txns);
 
-        let (min_delay, max_delay, avg_delay, median_delay) = calculate_statistics(&all_delays);
+        let (txpool_to_mined_samples, mined_to_executed_samples) =
+            self.collect_stage_latency_samples();
+        let txpool_to_mined_latency = PhaseLatencyStats::from_samples(&txpool_to_mined_samples);
+        let txpool_to_mined_excluding_target_latency = self.mining_target_ms.map(|v| {
+            let target_ms = v as f64;
+            let adjusted: Vec<f64> = txpool_to_mined_samples
+                .iter()
+                .map(|latency_ms| (latency_ms - target_ms).max(0.0))
+                .collect();
+            PhaseLatencyStats::from_samples(&adjusted)
+        });
+        let mined_to_executed_latency = PhaseLatencyStats::from_samples(&mined_to_executed_samples);
+        let txpool_to_final_executed_latency = PhaseLatencyStats::from_samples(&all_delays);
+        let txpool_to_final_executed_excluding_target_latency = self.mining_target_ms.map(|v| {
+            let target_ms = v as f64;
+            let adjusted: Vec<f64> = all_delays
+                .iter()
+                .map(|latency_ms| (latency_ms - target_ms).max(0.0))
+                .collect();
+            PhaseLatencyStats::from_samples(&adjusted)
+        });
+        let (
+            blue_template_unique_txn_count,
+            blue_template_final_executed_count,
+            blue_template_duplicate_exec_count,
+            blue_template_final_latency,
+        ) = self.collect_blue_template_stats();
+        let (
+            blue_block_count_samples,
+            blue_block_count_non_zero_samples,
+            blue_block_count_min,
+            blue_block_count_max,
+            blue_block_count_avg,
+            blue_block_count_median,
+        ) = self.collect_blue_block_count_stats();
+        let (
+            red_block_count_samples,
+            red_block_count_non_zero_samples,
+            red_block_count_min,
+            red_block_count_max,
+            red_block_count_avg,
+            red_block_count_median,
+        ) = self.collect_red_block_count_stats();
+        let (
+            legal_parent_supp_samples,
+            legal_parent_supp_non_zero_parent_samples,
+            legal_parent_supp_candidate_vm1_total,
+            legal_parent_supp_candidate_vm2_total,
+            legal_parent_supp_included_vm1_total,
+            legal_parent_supp_included_vm2_total,
+            legal_parent_supp_candidate_per_template_p50,
+            legal_parent_supp_candidate_per_template_p95,
+            legal_parent_supp_candidate_per_non_zero_parent_template_p50,
+            legal_parent_supp_candidate_per_non_zero_parent_template_p95,
+        ) = self.collect_legal_parent_supplement_stats();
+        let legal_parent_supp_candidate_total =
+            legal_parent_supp_candidate_vm1_total + legal_parent_supp_candidate_vm2_total;
+        let legal_parent_supp_included_total =
+            legal_parent_supp_included_vm1_total + legal_parent_supp_included_vm2_total;
+        let legal_parent_supp_inclusion_rate_pct = if legal_parent_supp_candidate_total > 0 {
+            legal_parent_supp_included_total as f64 * 100.0
+                / legal_parent_supp_candidate_total as f64
+        } else {
+            0.0
+        };
+        let (
+            direct_cross_branch_included_count,
+            direct_cross_branch_executed_total,
+            direct_cross_branch_included_pct,
+        ) = self.collect_direct_cross_branch_included_stats();
 
         // Calculate TPS based on executed times (OLD - affected by event queue delays)
         let tps = self.calculate_tps_from_executed();
@@ -299,15 +617,305 @@ impl<'a> ResultsDumper<'a> {
             unique_txn_count,
             duplicate_exec_count,
             duplicate_pct,
-            min_latency_ms: if min_delay.is_finite() {
-                min_delay
-            } else {
-                0.0
-            },
-            max_latency_ms: max_delay,
-            avg_latency_ms: avg_delay,
-            median_latency_ms: median_delay,
+            txpool_to_mined_latency,
+            txpool_to_mined_excluding_target_latency,
+            mined_to_executed_latency,
+            txpool_to_final_executed_latency: txpool_to_final_executed_latency.clone(),
+            txpool_to_final_executed_excluding_target_latency,
+            mining_target_ms: self.mining_target_ms,
+            blue_template_unique_txn_count,
+            blue_template_final_executed_count,
+            blue_template_duplicate_exec_count,
+            blue_template_final_latency,
+            blue_block_count_samples,
+            blue_block_count_non_zero_samples,
+            blue_block_count_min,
+            blue_block_count_max,
+            blue_block_count_avg,
+            blue_block_count_median,
+            red_block_count_samples,
+            red_block_count_non_zero_samples,
+            red_block_count_min,
+            red_block_count_max,
+            red_block_count_avg,
+            red_block_count_median,
+            legal_parent_supp_samples,
+            legal_parent_supp_non_zero_parent_samples,
+            legal_parent_supp_candidate_vm1_total,
+            legal_parent_supp_candidate_vm2_total,
+            legal_parent_supp_candidate_total,
+            legal_parent_supp_included_vm1_total,
+            legal_parent_supp_included_vm2_total,
+            legal_parent_supp_included_total,
+            legal_parent_supp_inclusion_rate_pct,
+            legal_parent_supp_candidate_per_template_p50,
+            legal_parent_supp_candidate_per_template_p95,
+            legal_parent_supp_candidate_per_non_zero_parent_template_p50,
+            legal_parent_supp_candidate_per_non_zero_parent_template_p95,
+            direct_cross_branch_included_count,
+            direct_cross_branch_executed_total,
+            direct_cross_branch_included_pct,
+            min_latency_ms: txpool_to_final_executed_latency.min_ms,
+            max_latency_ms: txpool_to_final_executed_latency.max_ms,
+            avg_latency_ms: txpool_to_final_executed_latency.avg_ms,
+            median_latency_ms: txpool_to_final_executed_latency.median_ms,
         }
+    }
+
+    fn collect_blue_template_stats(&self) -> (usize, usize, usize, PhaseLatencyStats) {
+        let mut unique_txn_count = 0usize;
+        let mut final_executed_count = 0usize;
+        let mut duplicate_exec_count = 0usize;
+        let mut latencies: Vec<f64> = Vec::new();
+
+        for events in self.transaction_data.values() {
+            let mut has_blue_template = false;
+            let mut added_times: Vec<u64> = Vec::new();
+            let mut executed_times: Vec<u64> = Vec::new();
+
+            for ev in events {
+                match ev {
+                    TransactionExecutionResult::BlueTemplateSelected(_) => {
+                        has_blue_template = true;
+                    }
+                    TransactionExecutionResult::Added(ts_ms) => {
+                        added_times.push(*ts_ms);
+                    }
+                    TransactionExecutionResult::Executed(ts_ms, _, _, _) => {
+                        executed_times.push(*ts_ms);
+                    }
+                    _ => {}
+                }
+            }
+
+            if !has_blue_template || added_times.is_empty() {
+                continue;
+            }
+
+            unique_txn_count += 1;
+            if executed_times.is_empty() {
+                continue;
+            }
+
+            final_executed_count += 1;
+            if executed_times.len() > 1 {
+                duplicate_exec_count += executed_times.len() - 1;
+            }
+
+            let first_add = *added_times.iter().min().unwrap();
+            let last_exec = *executed_times.iter().max().unwrap();
+            if last_exec >= first_add {
+                latencies.push((last_exec - first_add) as f64);
+            } else {
+                latencies.push(0.0);
+            }
+        }
+
+        (
+            unique_txn_count,
+            final_executed_count,
+            duplicate_exec_count,
+            PhaseLatencyStats::from_samples(&latencies),
+        )
+    }
+
+    fn collect_blue_block_count_stats(&self) -> (usize, usize, f64, f64, f64, f64) {
+        let samples: Vec<f64> = self.blue_block_counts.iter().map(|v| *v as f64).collect();
+        let non_zero_samples = self.blue_block_counts.iter().filter(|v| **v > 0).count();
+        let (min, max, avg, median) = calculate_statistics(&samples);
+        (
+            self.blue_block_counts.len(),
+            non_zero_samples,
+            min,
+            max,
+            avg,
+            median,
+        )
+    }
+
+    fn collect_red_block_count_stats(&self) -> (usize, usize, f64, f64, f64, f64) {
+        let samples: Vec<f64> = self.red_block_counts.iter().map(|v| *v as f64).collect();
+        let non_zero_samples = self.red_block_counts.iter().filter(|v| **v > 0).count();
+        let (min, max, avg, median) = calculate_statistics(&samples);
+        (
+            self.red_block_counts.len(),
+            non_zero_samples,
+            min,
+            max,
+            avg,
+            median,
+        )
+    }
+
+    fn collect_legal_parent_supplement_stats(
+        &self,
+    ) -> (usize, usize, usize, usize, usize, usize, f64, f64, f64, f64) {
+        let samples = self.legal_parent_supplement_samples.len();
+        let non_zero_parent_samples = self
+            .legal_parent_supplement_samples
+            .iter()
+            .filter(|s| s.legal_parent_count > 0)
+            .count();
+        let candidate_per_template_samples: Vec<f64> = self
+            .legal_parent_supplement_samples
+            .iter()
+            .map(|s| (s.candidate_vm1 + s.candidate_vm2) as f64)
+            .collect();
+        let candidate_per_non_zero_parent_template_samples: Vec<f64> = self
+            .legal_parent_supplement_samples
+            .iter()
+            .filter(|s| s.legal_parent_count > 0)
+            .map(|s| (s.candidate_vm1 + s.candidate_vm2) as f64)
+            .collect();
+        let candidate_vm1_total = self
+            .legal_parent_supplement_samples
+            .iter()
+            .map(|s| s.candidate_vm1 as usize)
+            .sum();
+        let candidate_vm2_total = self
+            .legal_parent_supplement_samples
+            .iter()
+            .map(|s| s.candidate_vm2 as usize)
+            .sum();
+        let included_vm1_total = self
+            .legal_parent_supplement_samples
+            .iter()
+            .map(|s| s.included_vm1 as usize)
+            .sum();
+        let included_vm2_total = self
+            .legal_parent_supplement_samples
+            .iter()
+            .map(|s| s.included_vm2 as usize)
+            .sum();
+        let candidate_per_template_p50 =
+            calculate_percentile(&candidate_per_template_samples, 50.0);
+        let candidate_per_template_p95 =
+            calculate_percentile(&candidate_per_template_samples, 95.0);
+        let candidate_per_non_zero_parent_template_p50 =
+            calculate_percentile(&candidate_per_non_zero_parent_template_samples, 50.0);
+        let candidate_per_non_zero_parent_template_p95 =
+            calculate_percentile(&candidate_per_non_zero_parent_template_samples, 95.0);
+        (
+            samples,
+            non_zero_parent_samples,
+            candidate_vm1_total,
+            candidate_vm2_total,
+            included_vm1_total,
+            included_vm2_total,
+            candidate_per_template_p50,
+            candidate_per_template_p95,
+            candidate_per_non_zero_parent_template_p50,
+            candidate_per_non_zero_parent_template_p95,
+        )
+    }
+
+    fn collect_direct_cross_branch_included_stats(&self) -> (usize, usize, f64) {
+        let mut direct_cross_branch_included_count = 0usize;
+        let mut final_executed_total = 0usize;
+        for events in self.transaction_data.values() {
+            let mut has_added = false;
+            let mut blue_template_selected_times: Vec<u64> = Vec::new();
+            let mut executed_times: Vec<u64> = Vec::new();
+            for ev in events {
+                match ev {
+                    TransactionExecutionResult::Added(_) => {
+                        has_added = true;
+                    }
+                    TransactionExecutionResult::BlueTemplateSelected(ts_ms) => {
+                        blue_template_selected_times.push(*ts_ms);
+                    }
+                    TransactionExecutionResult::Executed(ts_ms, _, _, _) => {
+                        executed_times.push(*ts_ms);
+                    }
+                    _ => {}
+                }
+            }
+
+            if !has_added || executed_times.is_empty() {
+                continue;
+            }
+            final_executed_total += 1;
+            let final_exec_ts = *executed_times.iter().max().unwrap();
+            let has_blue_before_final_exec = blue_template_selected_times
+                .iter()
+                .any(|blue_ts| *blue_ts <= final_exec_ts);
+            if !has_blue_before_final_exec {
+                direct_cross_branch_included_count += 1;
+            }
+        }
+        let pct = if final_executed_total > 0 {
+            direct_cross_branch_included_count as f64 * 100.0 / final_executed_total as f64
+        } else {
+            0.0
+        };
+        (
+            direct_cross_branch_included_count,
+            final_executed_total,
+            pct,
+        )
+    }
+
+    fn collect_stage_latency_samples(&self) -> (Vec<f64>, Vec<f64>) {
+        let mut txpool_to_mined_samples: Vec<f64> = Vec::new();
+        let mut mined_to_executed_samples: Vec<f64> = Vec::new();
+
+        for events in self.transaction_data.values() {
+            let mut added_times: Vec<u64> = Vec::new();
+            let mut mined_infos: Vec<(u64, HashValue)> = Vec::new();
+            let mut executed_infos: Vec<(u64, HashValue)> = Vec::new();
+
+            for ev in events {
+                match ev {
+                    TransactionExecutionResult::Added(ts_ms) => {
+                        added_times.push(*ts_ms);
+                    }
+                    TransactionExecutionResult::Mined(ts_ms, _block_number, block_id) => {
+                        mined_infos.push((*ts_ms, *block_id));
+                    }
+                    TransactionExecutionResult::Executed(
+                        ts_ms,
+                        _block_number,
+                        block_id,
+                        _block_ts,
+                    ) => {
+                        executed_infos.push((*ts_ms, *block_id));
+                    }
+                    _ => {}
+                }
+            }
+
+            let first_add = added_times.iter().min().copied();
+            let first_mined = mined_infos.iter().map(|(ts, _)| *ts).min();
+            if let (Some(add_ts), Some(mined_ts)) = (first_add, first_mined) {
+                if mined_ts >= add_ts {
+                    txpool_to_mined_samples.push((mined_ts - add_ts) as f64);
+                }
+            }
+
+            if let Some((final_exec_ts, final_exec_block_id)) =
+                executed_infos.iter().max_by_key(|(ts, _)| *ts).copied()
+            {
+                let mined_for_final_block = mined_infos
+                    .iter()
+                    .filter(|(_, block_id)| *block_id == final_exec_block_id)
+                    .map(|(ts, _)| *ts)
+                    .min()
+                    .or_else(|| {
+                        mined_infos
+                            .iter()
+                            .map(|(ts, _)| *ts)
+                            .filter(|ts| *ts <= final_exec_ts)
+                            .max()
+                    });
+                if let Some(mined_ts) = mined_for_final_block {
+                    if final_exec_ts >= mined_ts {
+                        mined_to_executed_samples.push((final_exec_ts - mined_ts) as f64);
+                    }
+                }
+            }
+        }
+
+        (txpool_to_mined_samples, mined_to_executed_samples)
     }
 
     /// Get top N blocks with highest latency transactions (deduplicated by block_id)
@@ -660,7 +1268,7 @@ impl<'a> ResultsDumper<'a> {
         Ok(())
     }
 
-    /// Collect execution latency for each transaction
+    /// Collect txpool->final-executed latency for each transaction.
     /// Returns: (transaction latency data list, unique transaction count, duplicate execution count)
     /// Each element is (transaction ID, Added time in epoch ms, latency in milliseconds)
     fn collect_executions(&self) -> (Vec<(HashValue, u64, f64)>, usize, usize) {
@@ -690,6 +1298,7 @@ impl<'a> ResultsDumper<'a> {
 
             unique_txn_count += 1;
 
+            // Earliest Added event approximates txpool insertion time.
             let first_add = *added_times.iter().min().unwrap();
 
             if executed_times.is_empty() {
@@ -701,8 +1310,9 @@ impl<'a> ResultsDumper<'a> {
                 duplicate_exec_count += executed_times.len() - 1;
             }
 
+            // Use latest execution as final execution time when duplicates exist.
             let last_exec = *executed_times.iter().max().unwrap();
-            // Calculate latency: executed_time - added_time
+            // Calculate latency: final_executed_time - added_time
             let delay_ms = if last_exec >= first_add {
                 (last_exec - first_add) as f64
             } else {
@@ -784,10 +1394,7 @@ impl<'a> ResultsDumper<'a> {
         }
 
         let mut chart = ChartBuilder::on(area)
-            .caption(
-                "Transaction Latency (Added to Executed)",
-                ("sans-serif", 28),
-            )
+            .caption("Txpool to Final Executed Latency", ("sans-serif", 28))
             .margin(20)
             .x_label_area_size(120)
             .y_label_area_size(70)
@@ -868,7 +1475,7 @@ impl<'a> ResultsDumper<'a> {
                 total_txns, unique_txn_count, duplicate_exec_count, duplicate_pct
             ),
             format!(
-                "Latency - Min: {:.2}ms | Max: {:.2}ms | Avg: {:.2}ms | Median: {:.2}ms",
+                "Txpool->Final Executed Latency - Min: {:.2}ms | Max: {:.2}ms | Avg: {:.2}ms | Median: {:.2}ms",
                 min_delay, max_delay_stat, avg_delay, median_delay
             ),
         ];

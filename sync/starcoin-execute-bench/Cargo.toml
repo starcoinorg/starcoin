@@ -25,6 +25,7 @@ starcoin-crypto = { workspace = true }
 starcoin-dag = { workspace = true }
 starcoin-genesis = { workspace = true }
 starcoin-logger = { workspace = true }
+starcoin-miner = { workspace = true }
 starcoin-node = { workspace = true }
 starcoin-pipeline-timing = { workspace = true }
 starcoin-service-registry = { workspace = true }

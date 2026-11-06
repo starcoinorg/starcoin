@@ -16,7 +16,7 @@ use std::{
 use anyhow::{bail, format_err, Result};
 use chrono::Local;
 use clap::{Parser, ValueEnum, ValueHint};
-use results::{ResultsDumper, TransactionExecutionResult};
+use results::{LegalParentSupplementSample, ResultsDumper, TransactionExecutionResult};
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::{BaseConfig, BuiltinNetworkID, ChainNetworkID, NodeConfig, StarcoinOpt};
@@ -26,6 +26,7 @@ use starcoin_logger::{
     prelude::{error, info, warn, LevelFilter},
     LoggerHandle,
 };
+use starcoin_miner::MinerService;
 use starcoin_node::NodeHandle;
 use starcoin_pipeline_timing::{clear_timing, disable_timing, enable_timing, global_collector};
 use starcoin_service_registry::{
@@ -41,7 +42,10 @@ use starcoin_types::{
     block::{Block, BlockHeader},
     genesis_config::ChainId,
     multi_transaction::MultiSignedUserTransaction,
-    system_events::{MinedBlock, NewHeadBlock},
+    system_events::{
+        BlockTemplateBlueTxns, BlockTemplateLegalParentSupplementStats, GenerateBlockEvent,
+        MinedBlock, NewHeadBlock,
+    },
     transaction::StcTransactionInfo,
 };
 use starcoin_vm2_account_api::{
@@ -222,6 +226,93 @@ struct Cli {
                 Skips account creation, funding, settle delay, and signing (~37s savings)."
     )]
     load_bench_dir: Option<PathBuf>,
+
+    #[arg(
+        long = "blue-dag",
+        default_value_t = false,
+        help = "One-key blue DAG mode. Default off; when enabled, benchmark uses built-in parameters to generate visible blue blocks while keeping red blocks low."
+    )]
+    blue_dag: bool,
+
+    #[arg(
+        long = "blue-dag-warmup-rounds",
+        default_value = "0",
+        hide = true,
+        help = "Warmup rounds to induce multi-tip DAG forks before the benchmark loop (0 disables)."
+    )]
+    blue_dag_warmup_rounds: u32,
+
+    #[arg(
+        long = "blue-dag-burst-size",
+        default_value = "3",
+        hide = true,
+        help = "GenerateBlockEvent bursts per warmup round (break_current_task=true)."
+    )]
+    blue_dag_burst_size: u32,
+
+    #[arg(
+        long = "blue-dag-break-interval-ms",
+        default_value = "120",
+        hide = true,
+        help = "Interval in milliseconds between warmup burst events."
+    )]
+    blue_dag_break_interval_ms: u64,
+
+    #[arg(
+        long = "blue-dag-wait-mined-timeout-ms",
+        default_value = "0",
+        hide = true,
+        help = "If >0, wait for head height to advance after each warmup burst event (up to timeout)."
+    )]
+    blue_dag_wait_mined_timeout_ms: u64,
+
+    #[arg(
+        long = "blue-dag-round-wait-ms",
+        default_value = "1500",
+        hide = true,
+        help = "Wait time in milliseconds after each warmup burst round for blocks/tips to settle."
+    )]
+    blue_dag_round_wait_ms: u64,
+
+    #[arg(
+        long = "blue-dag-target-blue-blocks",
+        default_value = "0",
+        hide = true,
+        help = "Approx target blue-block count (estimated as max(tips-1, 0)) to stop warmup early."
+    )]
+    blue_dag_target_blue_blocks: u32,
+
+    #[arg(
+        long = "blue-dag-warmup-max-extra-rounds",
+        default_value = "0",
+        hide = true,
+        help = "If target blue blocks is not reached, append up to N extra warmup rounds (0 keeps old behavior)."
+    )]
+    blue_dag_warmup_max_extra_rounds: u32,
+
+    #[arg(
+        long = "blue-dag-post-observe-rounds",
+        default_value = "0",
+        hide = true,
+        help = "Optional blue-DAG observation rounds after benchmark completion to enlarge blue-block sampling window."
+    )]
+    blue_dag_post_observe_rounds: u32,
+
+    #[arg(
+        long = "blue-dag-post-observe-target-blue-blocks",
+        default_value = "0",
+        hide = true,
+        help = "Approx target blue blocks during post-observe phase (estimated as max(tips-1, 0)); 0 disables target."
+    )]
+    blue_dag_post_observe_target_blue_blocks: u32,
+
+    #[arg(
+        long = "blue-dag-parent-parent-interval",
+        default_value = "0",
+        hide = true,
+        help = "Force miner create_block_template to use selected_parent's parent every N templates (0 disables)."
+    )]
+    blue_dag_parent_parent_interval: u64,
 }
 
 fn parse_network_choice(value: &str) -> Result<NetworkChoice, String> {
@@ -290,6 +381,54 @@ impl NetworkChoice {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
+struct BlueDagBenchConfig {
+    warmup_rounds: u32,
+    burst_size: u32,
+    break_interval_ms: u64,
+    wait_mined_timeout_ms: u64,
+    round_wait_ms: u64,
+    target_blue_blocks: u32,
+    warmup_max_extra_rounds: u32,
+    post_observe_rounds: u32,
+    post_observe_target_blue_blocks: u32,
+    parent_parent_interval: u64,
+}
+
+impl BlueDagBenchConfig {
+    fn from_cli(cli: &Cli) -> Self {
+        if cli.blue_dag {
+            // One-key mode: tuned defaults for "visible blue blocks, no red blocks".
+            Self {
+                warmup_rounds: 2,
+                burst_size: 4,
+                break_interval_ms: 300,
+                wait_mined_timeout_ms: 2500,
+                round_wait_ms: 1500,
+                target_blue_blocks: 1,
+                warmup_max_extra_rounds: 2,
+                post_observe_rounds: 3,
+                post_observe_target_blue_blocks: 1,
+                parent_parent_interval: 1,
+            }
+        } else {
+            // Legacy advanced knobs remain available (hidden in help).
+            Self {
+                warmup_rounds: cli.blue_dag_warmup_rounds,
+                burst_size: cli.blue_dag_burst_size,
+                break_interval_ms: cli.blue_dag_break_interval_ms,
+                wait_mined_timeout_ms: cli.blue_dag_wait_mined_timeout_ms,
+                round_wait_ms: cli.blue_dag_round_wait_ms,
+                target_blue_blocks: cli.blue_dag_target_blue_blocks,
+                warmup_max_extra_rounds: cli.blue_dag_warmup_max_extra_rounds,
+                post_observe_rounds: cli.blue_dag_post_observe_rounds,
+                post_observe_target_blue_blocks: cli.blue_dag_post_observe_target_blue_blocks,
+                parent_parent_interval: cli.blue_dag_parent_parent_interval,
+            }
+        }
+    }
+}
+
 struct DataDir {
     path: PathBuf,
     temp_dir: Option<TempDir>,
@@ -326,6 +465,16 @@ impl DataDir {
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
+    let blue_dag = BlueDagBenchConfig::from_cli(&cli);
+    if cli.blue_dag {
+        info!(
+            "Blue DAG one-key mode enabled: parent_parent_interval={}, warmup_rounds={}, burst_size={}, post_observe_rounds={}",
+            blue_dag.parent_parent_interval,
+            blue_dag.warmup_rounds,
+            blue_dag.burst_size,
+            blue_dag.post_observe_rounds
+        );
+    }
 
     // Set fixed block time if requested
     if cli.fixed_block_time {
@@ -367,6 +516,7 @@ fn build_node_config(
     chain_network: &ChainNetworkID,
     genesis_config: Option<String>,
 ) -> Result<Arc<NodeConfig>> {
+    let blue_dag = BlueDagBenchConfig::from_cli(cli);
     let funding_batch_size = 10usize;
     let estimated_funding_txns = (cli.account_count as usize).div_ceil(funding_batch_size);
     let txpool_max_per_sender_for_bench = (estimated_funding_txns as u64 + 32).max(128);
@@ -390,6 +540,7 @@ fn build_node_config(
     init_opt
         .txpool
         .set_max_per_sender(txpool_max_per_sender_for_bench);
+    init_opt.miner.template_parent_parent_interval = Some(blue_dag.parent_parent_interval);
     init_opt.txpool.set_max_count(txpool_max_count);
     init_opt.genesis_config = genesis_config.clone();
     init_opt.network.disable_seed = true; // Single-node benchmark, no peers needed
@@ -403,6 +554,7 @@ fn build_node_config(
     global_opt
         .txpool
         .set_max_per_sender(txpool_max_per_sender_for_bench);
+    global_opt.miner.template_parent_parent_interval = Some(blue_dag.parent_parent_interval);
     global_opt.txpool.set_max_count(txpool_max_count);
     global_opt.genesis_config = genesis_config;
     global_opt.network.disable_seed = true;
@@ -473,6 +625,7 @@ fn run_normal_bench(cli: &Cli) -> Result<()> {
     let chain_network = network_choice.to_chain_network()?;
     let data_dir = DataDir::new(cli.data_dir.clone())?;
     let base_dir = data_dir.path().to_path_buf();
+    let blue_dag = BlueDagBenchConfig::from_cli(cli);
 
     let custom_genesis = if matches!(network_choice, NetworkChoice::Custom) {
         Some(prepare_custom_genesis_template(
@@ -521,6 +674,15 @@ fn run_normal_bench(cli: &Cli) -> Result<()> {
         cli.preload_batches,
         cli.simple_transfer,
         cli.rounds,
+        blue_dag.warmup_rounds,
+        blue_dag.burst_size,
+        blue_dag.break_interval_ms,
+        blue_dag.wait_mined_timeout_ms,
+        blue_dag.round_wait_ms,
+        blue_dag.target_blue_blocks,
+        blue_dag.warmup_max_extra_rounds,
+        blue_dag.post_observe_rounds,
+        blue_dag.post_observe_target_blue_blocks,
     ));
 
     run_post_benchmark(cli, node)?;
@@ -953,6 +1115,148 @@ async fn get_balance(
     let statedb2 = ChainStateDB::new(storage2.clone(), Some(multi_state.state_root2()));
     let balance = statedb2.get_balance_by_type(address, G_STC_TOKEN_CODE.clone().try_into()?)?;
     Ok(balance)
+}
+
+async fn get_dag_tip_count(chain_reader_service: ServiceRef<ChainReaderService>) -> Result<usize> {
+    let dag_state = match chain_reader_service
+        .send(ChainRequest::GetDagStateView)
+        .await??
+    {
+        ChainResponse::DagStateView(state) => state,
+        _ => bail!("Unexpected response type when reading dag state"),
+    };
+    Ok(dag_state.tips.len())
+}
+
+async fn induce_blue_dag_warmup(
+    rounds: u32,
+    burst_size: u32,
+    break_interval_ms: u64,
+    wait_mined_timeout_ms: u64,
+    round_wait_ms: u64,
+    target_blue_blocks: u32,
+    max_extra_rounds: u32,
+    miner_service: ServiceRef<MinerService>,
+    chain_reader_service: ServiceRef<ChainReaderService>,
+) -> Result<()> {
+    if rounds == 0 {
+        return Ok(());
+    }
+    if burst_size == 0 {
+        info!("Skip blue DAG warmup because burst_size=0");
+        return Ok(());
+    }
+
+    let max_rounds = rounds.saturating_add(max_extra_rounds);
+    info!(
+        "Blue DAG warmup start: rounds={}, max_extra_rounds={}, burst_size={}, break_interval_ms={}, wait_mined_timeout_ms={}, round_wait_ms={}, target_blue_blocks={}",
+        rounds,
+        max_extra_rounds,
+        burst_size,
+        break_interval_ms,
+        wait_mined_timeout_ms,
+        round_wait_ms,
+        target_blue_blocks
+    );
+    let mut last_estimated_blue_blocks = 0u32;
+    for round in 0..max_rounds {
+        let tips_before = get_dag_tip_count(chain_reader_service.clone())
+            .await
+            .unwrap_or(0);
+        for i in 0..burst_size {
+            let before_number = get_current_header(chain_reader_service.clone())
+                .await
+                .map(|h| h.number())
+                .unwrap_or(0);
+            miner_service.notify(GenerateBlockEvent::new(true, true))?;
+            if wait_mined_timeout_ms > 0 {
+                let advanced = wait_for_head_advance(
+                    chain_reader_service.clone(),
+                    before_number,
+                    wait_mined_timeout_ms,
+                )
+                .await?;
+                if !advanced {
+                    warn!(
+                        "Blue DAG warmup did not observe head advance in {}ms (round={}, burst_index={}, before_number={})",
+                        wait_mined_timeout_ms,
+                        round + 1,
+                        i + 1,
+                        before_number
+                    );
+                }
+            }
+            if i + 1 < burst_size {
+                tokio::time::sleep(tokio::time::Duration::from_millis(break_interval_ms)).await;
+            }
+        }
+        tokio::time::sleep(tokio::time::Duration::from_millis(round_wait_ms)).await;
+        let tips_after = get_dag_tip_count(chain_reader_service.clone())
+            .await
+            .unwrap_or(0);
+        let estimated_blue_blocks = tips_after.saturating_sub(1) as u32;
+        last_estimated_blue_blocks = estimated_blue_blocks;
+        info!(
+            "Blue DAG warmup round {}/{} finished: tips {} -> {}, estimated_blue_blocks={}",
+            round + 1,
+            max_rounds,
+            tips_before,
+            tips_after,
+            estimated_blue_blocks
+        );
+        let min_rounds_done = round + 1 >= rounds;
+        let target_reached = target_blue_blocks == 0 || estimated_blue_blocks >= target_blue_blocks;
+        if min_rounds_done && target_reached {
+            info!(
+                "Blue DAG warmup finished at round {}/{}: estimated_blue_blocks={}, target={}",
+                round + 1,
+                max_rounds,
+                estimated_blue_blocks,
+                target_blue_blocks
+            );
+            break;
+        }
+
+        if round + 1 == max_rounds
+            && target_blue_blocks > 0
+            && estimated_blue_blocks < target_blue_blocks
+        {
+            warn!(
+                "Blue DAG warmup max rounds reached without hitting target: estimated_blue_blocks={} < target={}",
+                estimated_blue_blocks,
+                target_blue_blocks
+            );
+        }
+    }
+
+    if target_blue_blocks > 0 && last_estimated_blue_blocks < target_blue_blocks {
+        warn!(
+            "Blue DAG warmup finished below target: estimated_blue_blocks={} < target={}",
+            last_estimated_blue_blocks, target_blue_blocks
+        );
+    }
+    Ok(())
+}
+
+async fn wait_for_head_advance(
+    chain_reader_service: ServiceRef<ChainReaderService>,
+    before_number: u64,
+    timeout_ms: u64,
+) -> Result<bool> {
+    let start = Instant::now();
+    loop {
+        let current_number = get_current_header(chain_reader_service.clone())
+            .await
+            .map(|h| h.number())
+            .unwrap_or(before_number);
+        if current_number > before_number {
+            return Ok(true);
+        }
+        if start.elapsed() >= Duration::from_millis(timeout_ms) {
+            return Ok(false);
+        }
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    }
 }
 
 async fn wait_for_sufficient_balance(
@@ -1399,6 +1703,7 @@ impl BenchmarkState {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn execute_benchmark(
     node: &NodeHandle,
     account_count: u32,
@@ -1412,6 +1717,15 @@ async fn execute_benchmark(
     _preload_batches: usize,
     simple_transfer: bool,
     rounds: usize,
+    blue_dag_warmup_rounds: u32,
+    blue_dag_burst_size: u32,
+    blue_dag_break_interval_ms: u64,
+    blue_dag_wait_mined_timeout_ms: u64,
+    blue_dag_round_wait_ms: u64,
+    blue_dag_target_blue_blocks: u32,
+    blue_dag_warmup_max_extra_rounds: u32,
+    blue_dag_post_observe_rounds: u32,
+    blue_dag_post_observe_target_blue_blocks: u32,
 ) -> Result<()> {
     let registry = node.registry();
     let storage1 = node.storage();
@@ -1424,6 +1738,7 @@ async fn execute_benchmark(
         let account_service = registry.service_ref::<AccountService2>().await?;
 
         let chain_reader_service = registry.service_ref::<ChainReaderService>().await?;
+        let miner_service = registry.service_ref::<MinerService>().await?;
 
         wait_for_sufficient_balance(
             account_count,
@@ -1525,52 +1840,29 @@ async fn execute_benchmark(
             benchmark_state.total_txn_count
         );
 
-        // Build ALL transactions first, then sign and import them all at once
-        let total_batches = benchmark_state.total_batches();
-        info!(
-            "Building all {} batches of transactions before signing",
-            total_batches
-        );
+        // Warm up DAG topology before sending benchmark traffic, so warmup-induced forks
+        // do not interfere with first-batch execution accounting.
+        induce_blue_dag_warmup(
+            blue_dag_warmup_rounds,
+            blue_dag_burst_size,
+            blue_dag_break_interval_ms,
+            blue_dag_wait_mined_timeout_ms,
+            blue_dag_round_wait_ms,
+            blue_dag_target_blue_blocks,
+            blue_dag_warmup_max_extra_rounds,
+            miner_service.clone(),
+            chain_reader_service.clone(),
+        )
+        .await?;
 
+        // Submit first batch to kickstart the benchmark
         let expire_time = config.net().time_service().now_secs() + 3600;
-        let mut all_transactions: Vec<RawUserTransaction2> = Vec::new();
-
-        let phase_start = std::time::Instant::now();
-        for _ in 0..total_batches {
-            if let Some(batch) = benchmark_state.build_next_batch(expire_time) {
-                all_transactions.extend(batch);
-            }
+        if let Some(batch) = benchmark_state.build_next_batch(expire_time) {
+            let txn_hashes =
+                sign_and_import_transactions(&batch, &account_service, &txpool).await?;
+            benchmark_state.add_txn_hashes(&txn_hashes);
+            info!("Submitted initial batch: {} transactions", batch.len());
         }
-        let build_ms = phase_start.elapsed().as_millis();
-        info!(
-            "[Phase Timing] Transaction building: {}ms ({} txns)",
-            build_ms,
-            all_transactions.len()
-        );
-
-        // Sign and import ALL transactions at once
-        let phase_start = std::time::Instant::now();
-        let txn_hashes =
-            sign_and_import_transactions(&all_transactions, &account_service, &txpool).await?;
-        let sign_import_ms = phase_start.elapsed().as_millis();
-        info!(
-            "[Phase Timing] Sign + import: {}ms ({} txns)",
-            sign_import_ms,
-            txn_hashes.len()
-        );
-
-        info!(
-            "[Phase Timing] TOTAL SETUP: {}ms (create={}ms + fund={}ms + settle={}ms + build={}ms + sign={}ms)",
-            account_creation_ms + funding_ms + settle_ms + build_ms + sign_import_ms,
-            account_creation_ms, funding_ms, settle_ms, build_ms, sign_import_ms
-        );
-
-        benchmark_state.add_txn_hashes(&txn_hashes);
-
-        info!(
-            "Preloading complete: {} transactions in txpool",
-            txn_hashes.len()
-        );
 
         // Wait for benchmark to complete:
         // 1. All batches have been sent, AND
@@ -1642,6 +1934,25 @@ async fn execute_benchmark(
             benchmark_state.executed_count.load(Ordering::SeqCst),
             benchmark_state.total_txn_count
         );
+
+        if blue_dag_post_observe_rounds > 0 {
+            info!(
+                "Blue DAG post-observe start: rounds={}, target_blue_blocks={}",
+                blue_dag_post_observe_rounds, blue_dag_post_observe_target_blue_blocks
+            );
+            induce_blue_dag_warmup(
+                blue_dag_post_observe_rounds,
+                blue_dag_burst_size,
+                blue_dag_break_interval_ms,
+                blue_dag_wait_mined_timeout_ms,
+                blue_dag_round_wait_ms,
+                blue_dag_post_observe_target_blue_blocks,
+                blue_dag_warmup_max_extra_rounds,
+                miner_service.clone(),
+                chain_reader_service.clone(),
+            )
+            .await?;
+        }
 
         Ok::<(), anyhow::Error>(())
     };
@@ -2204,6 +2515,9 @@ fn sign_and_import_transactions_sync(
 
 struct ObserverService {
     transaction_data: HashMap<HashValue, Vec<TransactionExecutionResult>>,
+    blue_block_counts: Vec<u32>,
+    red_block_counts: Vec<u32>,
+    legal_parent_supplement_samples: Vec<LegalParentSupplementSample>,
     storage1: Arc<Storage>,
     benchmark_state: Option<Arc<BenchmarkState>>,
     account_service: Option<ServiceRef<AccountService2>>,
@@ -2215,6 +2529,9 @@ impl ObserverService {
     fn new(storage1: Arc<Storage>) -> Result<Self> {
         Ok(Self {
             transaction_data: HashMap::new(),
+            blue_block_counts: Vec::new(),
+            red_block_counts: Vec::new(),
+            legal_parent_supplement_samples: Vec::new(),
             storage1,
             benchmark_state: None,
             account_service: None,
@@ -2358,22 +2675,34 @@ impl ObserverService {
     }
 
     fn dump_results(&self) -> Result<()> {
-        let dumper = ResultsDumper::new(&self.transaction_data);
+        let mining_target_ms = self.config.as_ref().map(|cfg| {
+            cfg.net()
+                .genesis_config2()
+                .consensus_config
+                .base_block_time_target
+        });
+        let dumper = ResultsDumper::with_mining_target(
+            &self.transaction_data,
+            &self.blue_block_counts,
+            &self.red_block_counts,
+            &self.legal_parent_supplement_samples,
+            mining_target_ms,
+        );
 
         // Calculate and log statistics
         let stats = dumper.calculate_stats();
         info!("\n{}", stats);
 
-        // Print top 10 blocks with highest latency
+        // Print top 10 blocks with highest txpool->final-executed latency
         let top_latency_blocks = dumper.get_top_latency_blocks(10);
         if !top_latency_blocks.is_empty() {
             info!(
-                "Top {} blocks with highest latency (deduplicated by block_id):",
+                "Top {} blocks with highest txpool->final-executed latency (deduplicated by block_id):",
                 top_latency_blocks.len()
             );
             for (i, (block_id, block_number, latency_ms)) in top_latency_blocks.iter().enumerate() {
                 info!(
-                    "  #{}: block_number={}, latency={:.2}ms, block_id={}",
+                    "  #{}: block_number={}, txpool->final-executed latency={:.2}ms, block_id={}",
                     i + 1,
                     block_number,
                     latency_ms,
@@ -2405,6 +2734,8 @@ impl ActorService for ObserverService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         // ctx.subscribe::<NewDagBlock>();
         // ctx.subscribe::<NewDagBlockFromPeer>();
+        ctx.subscribe::<BlockTemplateBlueTxns>();
+        ctx.subscribe::<BlockTemplateLegalParentSupplementStats>();
         ctx.subscribe::<MinedBlock>();
         ctx.subscribe::<NewHeadBlock>();
         Ok(())
@@ -2413,6 +2744,8 @@ impl ActorService for ObserverService {
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         // ctx.unsubscribe::<NewDagBlock>();
         // ctx.unsubscribe::<NewDagBlockFromPeer>();
+        ctx.unsubscribe::<BlockTemplateBlueTxns>();
+        ctx.unsubscribe::<BlockTemplateLegalParentSupplementStats>();
         ctx.unsubscribe::<MinedBlock>();
         ctx.unsubscribe::<NewHeadBlock>();
 
@@ -2420,6 +2753,35 @@ impl ActorService for ObserverService {
             error!("failed to dump the results: {:?}", e);
         }
         Ok(())
+    }
+}
+
+impl EventHandler<Self, BlockTemplateBlueTxns> for ObserverService {
+    fn handle_event(&mut self, msg: BlockTemplateBlueTxns, _ctx: &mut ServiceContext<Self>) {
+        self.blue_block_counts.push(msg.blue_block_count);
+        self.red_block_counts.push(msg.red_block_count);
+        for txn_hash in msg.txn_hashes.iter() {
+            self.transaction_data.entry(*txn_hash).or_default().push(
+                TransactionExecutionResult::BlueTemplateSelected(msg.template_time_ms),
+            );
+        }
+    }
+}
+
+impl EventHandler<Self, BlockTemplateLegalParentSupplementStats> for ObserverService {
+    fn handle_event(
+        &mut self,
+        msg: BlockTemplateLegalParentSupplementStats,
+        _ctx: &mut ServiceContext<Self>,
+    ) {
+        self.legal_parent_supplement_samples
+            .push(LegalParentSupplementSample {
+                legal_parent_count: msg.legal_parent_count,
+                candidate_vm1: msg.candidate_vm1,
+                candidate_vm2: msg.candidate_vm2,
+                included_vm1: msg.included_vm1,
+                included_vm2: msg.included_vm2,
+            });
     }
 }
 

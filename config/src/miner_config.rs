@@ -51,6 +51,11 @@ pub struct MinerConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(long = "dag-merge-depth")]
     pub dag_merge_depth: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(long = "template-parent-parent-interval")]
+    /// Force create_block_template to use selected_parent's parent every N templates (0 disables).
+    pub template_parent_parent_interval: Option<u64>,
 }
 
 impl MinerConfig {
@@ -89,6 +94,10 @@ impl MinerConfig {
 
     pub fn dag_merge_depth(&self) -> u64 {
         self.dag_merge_depth.unwrap_or(G_MERGE_DEPTH)
+    }
+
+    pub fn template_parent_parent_interval(&self) -> u64 {
+        self.template_parent_parent_interval.unwrap_or(0)
     }
 }
 
@@ -143,6 +152,10 @@ impl ConfigModule for MinerConfig {
 
         if opt.miner.dag_merge_depth.is_some() {
             self.dag_merge_depth = opt.miner.dag_merge_depth;
+        }
+
+        if opt.miner.template_parent_parent_interval.is_some() {
+            self.template_parent_parent_interval = opt.miner.template_parent_parent_interval;
         }
 
         // Validate DAG parameters: K must be >= max_parents_count

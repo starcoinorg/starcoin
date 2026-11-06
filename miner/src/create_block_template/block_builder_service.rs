@@ -20,6 +20,7 @@ use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::{error, info};
 use starcoin_open_block::OpenedBlock;
 use starcoin_pipeline_timing::global_collector;
+use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceRef,
 };
@@ -32,7 +33,9 @@ use starcoin_txpool::{NonceCache, PoolClient, TxPoolService};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::blockhash::BlockHashSet;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
-use starcoin_types::system_events::GenerateBlockEvent;
+use starcoin_types::system_events::{
+    BlockTemplateBlueTxns, BlockTemplateLegalParentSupplementStats, GenerateBlockEvent,
+};
 use starcoin_types::{
     block::{Block, BlockHeader, BlockTemplate, Version},
     transaction::SignedUserTransaction,
@@ -51,6 +54,8 @@ use sp_utils::thread_pool::RAYON_EXEC_POOL;
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_types::U256;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
+
+const EPHEMERAL_NONCE_CACHE_LIMIT: usize = 128;
 
 #[derive(Clone, Debug)]
 pub struct MinerResponse {
@@ -85,6 +90,7 @@ pub struct BlockTemplateResponse {
 pub struct BlockBuilderService {
     inner: Inner<TxPoolService>,
     new_header_channel: NewHeaderChannel,
+    bus: ServiceRef<BusService>,
 }
 
 enum ReceiveHeader {
@@ -166,9 +172,11 @@ impl ServiceFactory<Self> for BlockBuilderService {
             vm_metrics,
         )?;
         let new_header_channel = ctx.get_shared::<NewHeaderChannel>()?;
+        let bus = ctx.service_ref::<BusService>()?.clone();
         Ok(Self {
             inner,
             new_header_channel,
+            bus,
         })
     }
 }
@@ -246,11 +254,17 @@ impl EventHandler<Self, BlockTemplateRequest> for BlockBuilderService {
             .expect("MinerService should exist")
             .clone();
         let _ = self.receive_header();
+        // Parent-parent forcing is only for explicit synthetic fork/warmup events.
+        // Pacemaker's regular break events (`new_break(true)`) should not trigger it.
+        let allow_parent_parent_force =
+            msg.event.break_current_task && msg.event.skip_empty_block_check;
         let callback = BlockBuilderTemplateNotify::new(miner_service, msg.event);
-        if let Err(e) = self
-            .inner
-            .create_block_template(header_version, Box::new(callback))
-        {
+        if let Err(e) = self.inner.create_block_template(
+            header_version,
+            Box::new(callback),
+            self.bus.clone(),
+            allow_parent_parent_force,
+        ) {
             error!("Failed to create block template: {}", e);
         }
     }
@@ -339,7 +353,7 @@ impl TemplateTxProvider for TxPoolService {
             state_root2,
             statedb,
             statedb2,
-            NonceCache::new(0),
+            NonceCache::new(EPHEMERAL_NONCE_CACHE_LIMIT),
             None,
         );
         self.inner
@@ -367,6 +381,8 @@ pub struct Inner<P> {
     #[allow(unused)]
     metrics: Option<BlockBuilderMetrics>,
     vm_metrics: Option<VMMetrics>,
+    template_create_count: u64,
+    templates_since_last_forced_parent_parent: u64,
 }
 
 impl<P> Inner<P>
@@ -400,15 +416,20 @@ where
             metrics,
             vm_metrics,
             genesis_hash,
+            template_create_count: 0,
+            templates_since_last_forced_parent_parent: 0,
         })
     }
 
-    fn resolve_block_parents(&mut self) -> Result<(MinerResponse, BlockChain)> {
-        let MineNewDagBlockInfo {
-            selected_parents,
-            ghostdata,
-            pruning_point,
-        } = {
+    fn resolve_block_parents(
+        &mut self,
+        allow_parent_parent_force: bool,
+    ) -> Result<(MinerResponse, BlockChain)> {
+        let (mut selected_parents, mut ghostdata, mut pruning_point): (
+            Vec<HashValue>,
+            GhostdagData,
+            HashValue,
+        ) = {
             // get the current pruning point and the current dag state, which contains the tip blocks, some of which may be the selected parents
             let pruning_point = if self.main.pruning_point() == HashValue::zero() {
                 self.genesis_hash
@@ -456,12 +477,95 @@ where
 
             self.update_main_chain(ghostdata.selected_parent)?;
 
-            MineNewDagBlockInfo {
-                selected_parents,
-                ghostdata,
-                pruning_point,
-            }
+            (selected_parents, ghostdata, pruning_point)
         };
+
+        let parent_parent_interval = self.config.miner.template_parent_parent_interval();
+        self.template_create_count = self.template_create_count.saturating_add(1);
+        let mut forced_parent_parent_applied = false;
+        let should_try_parent_parent_force = allow_parent_parent_force
+            && parent_parent_interval > 0
+            // Only force when DAG currently has a single selected parent.
+            // If tips are already competing, keep natural parent selection to avoid over-forking.
+            && selected_parents.len() == 1
+            && self.templates_since_last_forced_parent_parent >= parent_parent_interval;
+        if should_try_parent_parent_force {
+            let selected_parent = ghostdata.selected_parent;
+            let selected_parent_header = self
+                .storage
+                .get_block_header_by_hash(selected_parent)?
+                .ok_or_else(|| {
+                    format_err!("BlockHeader should exist by hash: {}", selected_parent)
+                })?;
+            if selected_parent_header.number() == 0 {
+                info!(
+                    "[CreateBlockTemplate] skip parent-parent forcing at template_count={} because selected_parent={} is genesis",
+                    self.template_create_count, selected_parent
+                );
+            } else {
+                let parent_of_selected = selected_parent_header.parent_hash();
+                let parent_header = self.storage.get_block_header_by_hash(parent_of_selected)?;
+                let parent_has_ghostdata =
+                    self.dag.ghostdata_by_hash(parent_of_selected)?.is_some();
+                if parent_of_selected != HashValue::zero()
+                    && parent_header.is_some()
+                    && parent_has_ghostdata
+                {
+                    selected_parents = vec![parent_of_selected];
+                    ghostdata = self.dag.ghostdata(&selected_parents)?;
+                    self.update_main_chain(ghostdata.selected_parent)?;
+                    forced_parent_parent_applied = true;
+                    let forced_parent_header = self
+                        .storage
+                        .get_block_header_by_hash(ghostdata.selected_parent)?
+                        .ok_or_else(|| {
+                            format_err!(
+                                "BlockHeader should exist by hash: {}",
+                                ghostdata.selected_parent
+                            )
+                        })?;
+                    pruning_point = if forced_parent_header.pruning_point() == HashValue::zero() {
+                        self.genesis_hash
+                    } else {
+                        forced_parent_header.pruning_point()
+                    };
+                    info!(
+                    "[CreateBlockTemplate] force parent-parent mode: interval={}, template_count={}, selected_parent {} -> {}",
+                    parent_parent_interval,
+                    self.template_create_count,
+                    selected_parent,
+                    ghostdata.selected_parent
+                );
+                } else {
+                    info!(
+                    "[CreateBlockTemplate] skip parent-parent forcing at template_count={} because selected_parent={} parent={} is invalid for forcing (exists={}, has_ghostdata={})",
+                    self.template_create_count,
+                    selected_parent,
+                    parent_of_selected,
+                    parent_header.is_some(),
+                    parent_has_ghostdata
+                );
+                }
+            }
+        } else if allow_parent_parent_force
+            && parent_parent_interval > 0
+            && selected_parents.len() > 1
+        {
+            info!(
+                "[CreateBlockTemplate] skip parent-parent forcing at template_count={} because selected_parents_len={} (>1)",
+                self.template_create_count,
+                selected_parents.len()
+            );
+        }
+        if allow_parent_parent_force && parent_parent_interval > 0 {
+            if forced_parent_parent_applied {
+                self.templates_since_last_forced_parent_parent = 0;
+            } else {
+                self.templates_since_last_forced_parent_parent = self
+                    .templates_since_last_forced_parent_parent
+                    .saturating_add(1);
+            }
+        }
 
         let selected_parent = ghostdata.selected_parent;
 
@@ -505,6 +609,8 @@ where
         &mut self,
         version: Version,
         mut block_template_call_back: Box<dyn BlockTemplateCallBack + Send + Sync>,
+        bus: ServiceRef<BusService>,
+        allow_parent_parent_force: bool,
         // miner_service: Option<ServiceRef<MinerService>>,
         // event: Option<GenerateBlockEvent>,
     ) -> Result<()> {
@@ -521,7 +627,7 @@ where
                 max_transaction_per_block,
             },
             main,
-        ) = self.resolve_block_parents()?;
+        ) = self.resolve_block_parents(allow_parent_parent_force)?;
 
         let block_gas_limit = self
             .local_block_gas_limit
@@ -573,6 +679,27 @@ where
         );
 
         let (blue_txns, blue_txns2, seen_hashes) = collect_blue_transactions(&blue_blocks);
+        let blue_txn_hashes: Vec<HashValue> = blue_txns
+            .iter()
+            .map(|txn| txn.id())
+            .chain(
+                blue_txns2
+                    .iter()
+                    .map(|txn| HashValue::new(txn.id().to_inner())),
+            )
+            .collect();
+        let event = BlockTemplateBlueTxns {
+            template_time_ms: now_millis,
+            blue_block_count: blue_blocks.len() as u32,
+            red_block_count: ghostdata.mergeset_reds.len() as u32,
+            txn_hashes: blue_txn_hashes.into(),
+        };
+        if let Err(e) = bus.broadcast(event) {
+            error!(
+                "[BlockProcess] broadcast BlockTemplateBlueTxns failed: {:?}",
+                e
+            );
+        }
         info!(
             "[BlockProcess] Blue VM1 txns len: {}, Blue VM2 txns len: {}",
             blue_txns.len(),
@@ -583,6 +710,15 @@ where
         let storage2 = self.storage2.clone();
         let vm_metrics = self.vm_metrics.clone();
         let tx_provider = self.tx_provider.clone();
+        let bus_for_supplement_stats = bus.clone();
+        let selected_parent_id = previous_header.id();
+        // Additional legal parent branches after DAG filtering.
+        // We will use their state views as supplementary txpool candidate sources.
+        let legal_alternative_pending_parents: Vec<HashValue> = selected_parents
+            .iter()
+            .copied()
+            .filter(|id| *id != selected_parent_id)
+            .collect();
 
         let vm1_offline = previous_header.number().saturating_add(1)
             >= vm1_offline_height(previous_header.chain_id().id().into());
@@ -689,34 +825,122 @@ where
             let remaining_max = max_txns.saturating_sub(included_blue as u64);
             let mut pending_transactions = Vec::new();
             let mut pending_transactions2 = Vec::new();
+            let mut supplement_vm1_hashes: HashSet<HashValue> = HashSet::new();
+            let mut supplement_vm2_hashes: HashSet<HashValue> = HashSet::new();
+            let mut supplement_candidate_vm1 = 0usize;
+            let mut supplement_candidate_vm2 = 0usize;
+            let mut supplement_included_vm1 = 0usize;
+            let mut supplement_included_vm2 = 0usize;
             if remaining_max > 0 && opened_block.gas_left() > 0 {
                 let statedb = opened_block.state_db();
                 let statedb2 = opened_block.state_db2();
                 let state_root1 = statedb.state_root();
                 let state_root2 = statedb2.state_root();
                 let current_timestamp_secs = now_millis / 1000;
-                let pending_multi_transactions = tx_provider.get_pending_with_state_dbs(
-                    remaining_max,
-                    current_timestamp_secs,
-                    state_root1,
-                    state_root2,
-                    statedb,
-                    statedb2,
-                );
-                for txn in pending_multi_transactions {
-                    match txn {
-                        MultiSignedUserTransaction::VM1(txn) => {
-                            if vm1_offline {
+                // Step 1: pull from legal non-selected parents first.
+                // This prioritizes direct cross-branch inclusion from txpool before
+                // regular selected-parent pending fetch.
+                if !legal_alternative_pending_parents.is_empty() {
+                    let parent_count = legal_alternative_pending_parents.len() as u64;
+                    let per_parent_limit = remaining_max
+                        .div_ceil(parent_count)
+                        .max(1)
+                        .min(remaining_max);
+
+                    for parent_id in &legal_alternative_pending_parents {
+                        let vm_state = match storage.get_vm_multi_state(*parent_id) {
+                            Ok(state) => state,
+                            Err(e) => {
+                                error!(
+                                    "[BlockProcess] Failed to get vm_multi_state for legal parent {}: {}",
+                                    parent_id, e
+                                );
                                 continue;
                             }
-                            if seen_hashes.insert(txn.id()) {
-                                pending_transactions.push(txn);
+                        };
+
+                        let parent_state_root1 = vm_state.state_root1();
+                        let parent_state_root2 = vm_state.state_root2();
+                        let parent_statedb = Arc::new(ChainStateDB::new(
+                            storage.clone(),
+                            Some(parent_state_root1),
+                        ));
+                        let parent_statedb2 = Arc::new(ChainStateDB2::new(
+                            storage2.clone(),
+                            Some(parent_state_root2),
+                        ));
+
+                        let parent_pending = tx_provider.get_pending_with_state_dbs(
+                            per_parent_limit,
+                            current_timestamp_secs,
+                            parent_state_root1,
+                            parent_state_root2,
+                            parent_statedb,
+                            parent_statedb2,
+                        );
+
+                        let mut accepted_vm1 = 0usize;
+                        let mut accepted_vm2 = 0usize;
+                        for txn in parent_pending {
+                            match txn {
+                                MultiSignedUserTransaction::VM1(txn) => {
+                                    if vm1_offline {
+                                        continue;
+                                    }
+                                    if seen_hashes.insert(txn.id()) {
+                                        supplement_vm1_hashes.insert(txn.id());
+                                        pending_transactions.push(txn);
+                                        supplement_candidate_vm1 += 1;
+                                        accepted_vm1 += 1;
+                                    }
+                                }
+                                MultiSignedUserTransaction::VM2(txn) => {
+                                    let hash = HashValue::new(txn.id().to_inner());
+                                    if seen_hashes.insert(hash) {
+                                        supplement_vm2_hashes.insert(hash);
+                                        pending_transactions2.push(txn);
+                                        supplement_candidate_vm2 += 1;
+                                        accepted_vm2 += 1;
+                                    }
+                                }
                             }
                         }
-                        MultiSignedUserTransaction::VM2(txn) => {
-                            let hash = HashValue::new(txn.id().to_inner());
-                            if seen_hashes.insert(hash) {
-                                pending_transactions2.push(txn);
+
+                        info!(
+                            "[BlockProcess] Supplement from legal parent {}: accepted VM1={}, VM2={}",
+                            parent_id, accepted_vm1, accepted_vm2
+                        );
+                    }
+                }
+
+                // Step 2: fill remaining capacity from selected-parent view.
+                let selected_remaining = remaining_max.saturating_sub(
+                    (pending_transactions.len() + pending_transactions2.len()) as u64,
+                );
+                if selected_remaining > 0 {
+                    let pending_multi_transactions = tx_provider.get_pending_with_state_dbs(
+                        selected_remaining,
+                        current_timestamp_secs,
+                        state_root1,
+                        state_root2,
+                        statedb,
+                        statedb2,
+                    );
+                    for txn in pending_multi_transactions {
+                        match txn {
+                            MultiSignedUserTransaction::VM1(txn) => {
+                                if vm1_offline {
+                                    continue;
+                                }
+                                if seen_hashes.insert(txn.id()) {
+                                    pending_transactions.push(txn);
+                                }
+                            }
+                            MultiSignedUserTransaction::VM2(txn) => {
+                                let hash = HashValue::new(txn.id().to_inner());
+                                if seen_hashes.insert(hash) {
+                                    pending_transactions2.push(txn);
+                                }
                             }
                         }
                     }
@@ -757,6 +981,16 @@ where
                 let included_vm1 = pending_vm1_len
                     .saturating_sub(excluded_txns.discarded_txns.len())
                     .saturating_sub(excluded_txns.untouched_txns.len());
+                let excluded_vm1_hashes: HashSet<HashValue> = excluded_txns
+                    .discarded_txns
+                    .iter()
+                    .map(|txn| txn.id())
+                    .chain(excluded_txns.untouched_txns.iter().map(|txn| txn.id()))
+                    .collect();
+                supplement_included_vm1 = supplement_vm1_hashes
+                    .iter()
+                    .filter(|hash| !excluded_vm1_hashes.contains(hash))
+                    .count();
                 info!(
                     "[BlockProcess] TxPool VM1 included: {}, discarded: {}, untouched: {}",
                     included_vm1,
@@ -781,11 +1015,57 @@ where
                 let included_vm2 = pending_vm2_len
                     .saturating_sub(excluded_txns2.discarded_txns.len())
                     .saturating_sub(excluded_txns2.untouched_txns.len());
+                let excluded_vm2_hashes: HashSet<HashValue> = excluded_txns2
+                    .discarded_txns
+                    .iter()
+                    .map(|txn| HashValue::new(txn.id().to_inner()))
+                    .chain(
+                        excluded_txns2
+                            .untouched_txns
+                            .iter()
+                            .map(|txn| HashValue::new(txn.id().to_inner())),
+                    )
+                    .collect();
+                supplement_included_vm2 = supplement_vm2_hashes
+                    .iter()
+                    .filter(|hash| !excluded_vm2_hashes.contains(hash))
+                    .count();
                 info!(
                     "[BlockProcess] TxPool VM2 included: {}, discarded: {}, untouched: {}",
                     included_vm2,
                     excluded_txns2.discarded_txns.len(),
                     excluded_txns2.untouched_txns.len()
+                );
+            }
+
+            let supplement_candidate_total = supplement_candidate_vm1 + supplement_candidate_vm2;
+            let supplement_included_total = supplement_included_vm1 + supplement_included_vm2;
+            let supplement_inclusion_rate = if supplement_candidate_total > 0 {
+                supplement_included_total as f64 * 100.0 / supplement_candidate_total as f64
+            } else {
+                0.0
+            };
+            info!(
+                "[BlockProcess] Legal-parent supplement stats: parents={}, candidate_vm1={}, candidate_vm2={}, included_vm1={}, included_vm2={}, inclusion_rate={:.2}%",
+                legal_alternative_pending_parents.len(),
+                supplement_candidate_vm1,
+                supplement_candidate_vm2,
+                supplement_included_vm1,
+                supplement_included_vm2,
+                supplement_inclusion_rate
+            );
+            let supplement_event = BlockTemplateLegalParentSupplementStats {
+                template_time_ms: now_millis,
+                legal_parent_count: legal_alternative_pending_parents.len() as u32,
+                candidate_vm1: supplement_candidate_vm1 as u32,
+                candidate_vm2: supplement_candidate_vm2 as u32,
+                included_vm1: supplement_included_vm1 as u32,
+                included_vm2: supplement_included_vm2 as u32,
+            };
+            if let Err(e) = bus_for_supplement_stats.broadcast(supplement_event) {
+                error!(
+                    "[BlockProcess] broadcast BlockTemplateLegalParentSupplementStats failed: {:?}",
+                    e
                 );
             }
 
