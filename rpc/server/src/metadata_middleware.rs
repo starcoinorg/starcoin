@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use jsonrpsee::server::HttpRequest;
+use starcoin_logger::prelude::*;
 use starcoin_rpc_api::metadata::Metadata;
 use std::future::Future;
 use std::net::IpAddr;
@@ -63,6 +64,10 @@ where
             .trust_forwarded_ip_headers
             .then(|| extract_user_from_request(&request, &self.ip_headers))
             .flatten();
+        debug!(
+            "HTTP RPC metadata: user={:?}, trust_forwarded={}",
+            user, self.trust_forwarded_ip_headers
+        );
         request.extensions_mut().insert(Metadata { user });
 
         let fut = self.service.call(request);
