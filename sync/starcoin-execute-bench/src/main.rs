@@ -31,7 +31,7 @@ use starcoin_pipeline_timing::{clear_timing, disable_timing, enable_timing, glob
 use starcoin_service_registry::{
     ActorService, EventHandler, RegistryAsyncService, ServiceContext, ServiceFactory, ServiceRef,
 };
-use starcoin_storage::{BlockStore, Storage, Storage2, Store};
+use starcoin_storage::{BlockStore, BlockTransactionInfoStore, Storage, Storage2, Store};
 use starcoin_transaction_builder::vm2::{
     build_batch_transfer_txn as build_batch_transfer_txn2, raw_peer_to_peer_txn,
 };
@@ -43,6 +43,7 @@ use starcoin_types::{
     multi_transaction::MultiSignedUserTransaction,
     system_events::{MinedBlock, NewHeadBlock},
     transaction::StcTransactionInfo,
+    vm_error::KeptVMStatus as Vm1KeptVMStatus,
 };
 use starcoin_vm2_account_api::{
     message::{AccountRequest, AccountResponse},
@@ -56,7 +57,10 @@ use starcoin_vm2_types::{
     transaction::{RawUserTransaction as RawUserTransaction2, SignedUserTransaction},
 };
 use starcoin_vm2_vm_runtime::starcoin_vm::StarcoinVM;
-use starcoin_vm2_vm_types::{account_address::AccountAddress, state_view::StateReaderExt};
+use starcoin_vm2_vm_types::{
+    account_address::AccountAddress, state_view::StateReaderExt,
+    vm_status::KeptVMStatus as Vm2KeptVMStatus,
+};
 use tempfile::TempDir;
 use test_helper::run_node_with_all_service;
 
@@ -73,6 +77,7 @@ struct PreparedBenchMeta {
 const PREPARED_SIGNED_TXNS_FILE: &str = "signed_txns.json";
 const PREPARED_META_FILE: &str = "bench_meta.json";
 const PREPARED_CHAIN_DATA_DIR: &str = "chain_data";
+const FUNDING_BATCH_SIZE: usize = 10;
 
 #[derive(Debug, Parser)]
 #[command(about = "Execute the full build-and-execute benchmark outside of tests.")]
@@ -961,6 +966,7 @@ async fn wait_for_sufficient_balance(
     initial_gas_fee: u128,
     gas_price: u64,
     max_gas: u64,
+    funding_batch_size: usize,
     chain_reader_service: ServiceRef<ChainReaderService>,
     storage1: Arc<Storage>,
     storage2: Arc<Storage2>,
@@ -993,9 +999,12 @@ async fn wait_for_sufficient_balance(
                 continue;
             }
         };
+        let receiver_count = account_count as usize;
+        let funding_txn_count = receiver_count.div_ceil(funding_batch_size.max(1)) as u128;
         let per_tx_fee = max_gas as u128 * gas_price as u128;
-        let needed_balance =
-            account_count as u128 * (initial_balance + per_tx_fee) + initial_gas_fee;
+        let total_transfer = account_count as u128 * initial_balance;
+        let total_gas_fee = funding_txn_count * per_tx_fee;
+        let needed_balance = total_transfer + total_gas_fee + initial_gas_fee;
         if association_balance >= needed_balance {
             info!(
                 "Association account has sufficient balance: {} >= {}",
@@ -1317,16 +1326,19 @@ impl BenchmarkState {
     /// Each batch uses batch_user_count users, where first half sends to second half.
     /// Supports multiple rounds where the same accounts are reused with incrementing sequence numbers.
     /// Returns None if all batches have been sent.
-    fn build_next_batch(&self, expire_time: u64) -> Option<Vec<RawUserTransaction2>> {
+    fn build_next_batch(
+        &self,
+        expire_time: u64,
+    ) -> Result<Option<(usize, Vec<RawUserTransaction2>)>> {
         if self.batch_user_count == 0 || self.total_batches == 0 {
-            return None;
+            return Ok(None);
         }
         let batch_index = self.batch_index.fetch_add(1, Ordering::SeqCst);
 
         // Check if we've completed all rounds
         let total_batch_count = self.total_batches * self.rounds;
         if batch_index >= total_batch_count {
-            return None;
+            return Ok(None);
         }
 
         // Calculate which batch within a round and which round we're in
@@ -1356,13 +1368,15 @@ impl BenchmarkState {
             self.chain_id,
             self.simple_transfer,
         ) {
-            Ok(txns) => Some(txns),
+            Ok(txns) => Ok(Some((batch_index, txns))),
             Err(e) => {
+                // Revert the cursor on build error so this batch can be retried.
+                self.batch_index.fetch_sub(1, Ordering::SeqCst);
                 error!(
                     "Failed to build batch {} (round {}, batch_in_round {}): {:?}",
                     batch_index, round, batch_in_round, e
                 );
-                None
+                Err(e)
             }
         }
     }
@@ -1431,6 +1445,7 @@ async fn execute_benchmark(
             initial_gas_fee,
             gas_price,
             max_gas,
+            FUNDING_BATCH_SIZE,
             chain_reader_service.clone(),
             storage1.clone(),
             storage2.clone(),
@@ -1453,7 +1468,7 @@ async fn execute_benchmark(
         );
 
         // Funding batch size: 10 receivers per transaction (~13.8M gas)
-        let batch_size = 10usize;
+        let batch_size = FUNDING_BATCH_SIZE;
         let estimated_funding_txns = receivers.len().div_ceil(batch_size);
         info!(
             "Funding batch plan: receivers={}, batch_size={}, estimated_funding_txns={}, funding_max_gas={}, txpool_max_per_sender={}",
@@ -1537,7 +1552,7 @@ async fn execute_benchmark(
 
         let phase_start = std::time::Instant::now();
         for _ in 0..total_batches {
-            if let Some(batch) = benchmark_state.build_next_batch(expire_time) {
+            if let Some((_batch_index, batch)) = benchmark_state.build_next_batch(expire_time)? {
                 all_transactions.extend(batch);
             }
         }
@@ -1682,6 +1697,7 @@ async fn prepare_benchmark_state(
             initial_gas_fee,
             gas_price,
             max_gas,
+            FUNDING_BATCH_SIZE,
             chain_reader_service.clone(),
             storage1.clone(),
             storage2.clone(),
@@ -1701,7 +1717,7 @@ async fn prepare_benchmark_state(
             account_creation_ms, account_count
         );
 
-        let batch_size = 10usize;
+        let batch_size = FUNDING_BATCH_SIZE;
         let phase_start = std::time::Instant::now();
         transfer_to_accounts(
             &receivers,
@@ -1750,7 +1766,7 @@ async fn prepare_benchmark_state(
 
         let phase_start = std::time::Instant::now();
         for _ in 0..total_batches {
-            if let Some(batch) = benchmark_state.build_next_batch(expire_time) {
+            if let Some((_batch_index, batch)) = benchmark_state.build_next_batch(expire_time)? {
                 all_transactions.extend(batch);
             }
         }
@@ -2035,7 +2051,7 @@ async fn sign_and_import_transactions(
         signed_transactions.push(signed_transaction);
     }
 
-    txpool.add_txns_multi_signed(
+    let import_results = txpool.add_txns_multi_signed(
         signed_transactions
             .into_iter()
             .map(MultiSignedUserTransaction::VM2)
@@ -2043,6 +2059,21 @@ async fn sign_and_import_transactions(
         false,
         None,
     )?;
+    let imported_count = import_results.iter().filter(|r| r.is_ok()).count();
+    if imported_count != import_results.len() {
+        let sample_errors: Vec<String> = import_results
+            .iter()
+            .filter_map(|r| r.as_ref().err())
+            .take(5)
+            .map(|e| format!("{:?}", e))
+            .collect();
+        bail!(
+            "user tx import incomplete: imported {}/{}. sample errors: {}",
+            imported_count,
+            import_results.len(),
+            sample_errors.join(", ")
+        );
+    }
 
     Ok(txn_hashes)
 }
@@ -2186,7 +2217,7 @@ fn sign_and_import_transactions_sync(
                 signed_transactions.push(signed_transaction);
             }
 
-            txpool.add_txns_multi_signed(
+            let import_results = txpool.add_txns_multi_signed(
                 signed_transactions
                     .into_iter()
                     .map(MultiSignedUserTransaction::VM2)
@@ -2194,6 +2225,21 @@ fn sign_and_import_transactions_sync(
                 false,
                 None,
             )?;
+            let imported_count = import_results.iter().filter(|r| r.is_ok()).count();
+            if imported_count != import_results.len() {
+                let sample_errors: Vec<String> = import_results
+                    .iter()
+                    .filter_map(|r| r.as_ref().err())
+                    .take(5)
+                    .map(|e| format!("{:?}", e))
+                    .collect();
+                bail!(
+                    "user tx import incomplete: imported {}/{}. sample errors: {}",
+                    imported_count,
+                    import_results.len(),
+                    sample_errors.join(", ")
+                );
+            }
 
             Ok::<Vec<HashValue>, anyhow::Error>(txn_hashes)
         })
@@ -2223,6 +2269,23 @@ impl ObserverService {
         })
     }
 
+    fn is_txn_executed_in_block(&self, txn_hash: HashValue, block_id: HashValue) -> Result<bool> {
+        let infos = self.storage1.get_transaction_info_by_txn_hash(txn_hash)?;
+        Ok(infos.into_iter().any(|info| {
+            if info.block_id != block_id {
+                return false;
+            }
+            match info.transaction_info {
+                StcTransactionInfo::V1(txn_info) => {
+                    matches!(txn_info.status(), Vm1KeptVMStatus::Executed)
+                }
+                StcTransactionInfo::V2(txn_info) => {
+                    matches!(txn_info.status(), Vm2KeptVMStatus::Executed)
+                }
+            }
+        }))
+    }
+
     fn try_submit_next_batch(&self) -> Result<()> {
         let state = match &self.benchmark_state {
             Some(s) => s,
@@ -2248,7 +2311,7 @@ impl ObserverService {
         let expire_time = config.net().time_service().now_secs() + 3600;
 
         // Build next batch - each batch uses different users with seq=0
-        let batch = match state.build_next_batch(expire_time) {
+        let (batch_index, batch) = match state.build_next_batch(expire_time)? {
             Some(b) => b,
             None => {
                 info!("All batches have been sent");
@@ -2256,8 +2319,14 @@ impl ObserverService {
             }
         };
 
-        let batch_index = state.batch_index.load(Ordering::SeqCst);
-        let txn_hashes = sign_and_import_transactions_sync(&batch, account_service, txpool)?;
+        let txn_hashes = match sign_and_import_transactions_sync(&batch, account_service, txpool) {
+            Ok(hashes) => hashes,
+            Err(e) => {
+                // Revert cursor if submit failed so this batch can be retried.
+                state.batch_index.fetch_sub(1, Ordering::SeqCst);
+                return Err(e);
+            }
+        };
         state.add_txn_hashes(&txn_hashes);
         info!(
             "Submitted batch {}/{}: {} transactions",
@@ -2290,7 +2359,9 @@ impl ObserverService {
 
             // Only record benchmark transactions for TPS calculation
             if let Some(ref state) = self.benchmark_state {
-                if state.is_benchmark_txn(&txn_hash) {
+                if state.is_benchmark_txn(&txn_hash)
+                    && self.is_txn_executed_in_block(txn_hash, block_id)?
+                {
                     self.transaction_data.entry(txn_hash).or_default().push(
                         TransactionExecutionResult::Executed(
                             connected_time_ms,
@@ -2338,7 +2409,9 @@ impl ObserverService {
 
             // Only record benchmark transactions
             if let Some(ref state) = self.benchmark_state {
-                if state.is_benchmark_txn(&txn_hash) {
+                if state.is_benchmark_txn(&txn_hash)
+                    && self.is_txn_executed_in_block(txn_hash, block_id)?
+                {
                     self.transaction_data.entry(txn_hash).or_default().push(
                         TransactionExecutionResult::Mined(mined_time_ms, block_number, block_id),
                     );
@@ -2494,6 +2567,15 @@ impl EventHandler<Self, Arc<[(HashValue, TxStatus)]>> for ObserverService {
             .as_millis() as u64;
 
         for transaction_event in msg.as_ref() {
+            let should_record = self
+                .benchmark_state
+                .as_ref()
+                .map(|state| state.is_benchmark_txn(&transaction_event.0))
+                .unwrap_or(false);
+            if !should_record {
+                continue;
+            }
+
             match &transaction_event.1 {
                 starcoin_types::transaction::TxStatus::Added => self
                     .transaction_data

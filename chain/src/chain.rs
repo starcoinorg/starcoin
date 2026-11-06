@@ -411,13 +411,16 @@ impl BlockChain {
         author_array.copy_from_slice(&author_bytes[..16]);
         let author_v2 = starcoin_vm2_types::account_address::AccountAddress::new(author_array);
 
+        // Build execution state from the selected parent, not from current main head.
+        // In equal-difficulty DAG branches, selected parent may differ from self.statedb head.
+        let parent_multi_state = self.storage.0.get_vm_multi_state(parent_header.id())?;
         let chain_state = ChainStateDB::new(
             self.storage.0.clone().into_super_arc(),
-            Some(self.statedb.0.state_root()),
+            Some(parent_multi_state.state_root1()),
         );
         let chain_state2 = ChainStateDB2::new(
             self.storage.1.clone().into_super_arc(),
-            Some(self.statedb.1.state_root()),
+            Some(parent_multi_state.state_root2()),
         );
 
         let mut opened_block = OpenedBlock::new(

@@ -46,6 +46,7 @@ hex = "0.4.3"
 bytes = { workspace = true }
 bcs = { workspace = true }
 dashmap = { workspace = true }
+rustc-hash = { workspace = true }
 starcoin-mvhashmap = { workspace = true }
 move-bytecode-verifier = { git = "https://github.com/starcoinorg/move", rev = "ed9d919d05fedeae9cf433d4f44f6aba526580c3" }
 starcoin-aggregator = { path = "../aggregator" }
