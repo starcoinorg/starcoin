@@ -49,31 +49,38 @@ pub fn new_dag_block(
     };
     let miner_address = *miner.address();
 
-    let block_chain = writeable_block_chain_service.get_main();
-    let tips = if block_chain.status().head().pruning_point() == HashValue::zero() {
-        let genesis_id = block_chain
+    let base_chain = writeable_block_chain_service.get_main();
+    let tips = if base_chain.status().head().pruning_point() == HashValue::zero() {
+        let genesis_id = base_chain
             .get_storage()
             .get_genesis()?
             .ok_or_else(|| format_err!("Genesis block is none"))?;
-        block_chain
+        base_chain
             .current_tips_hash(genesis_id)
             .expect("failed to get tips")
     } else {
-        block_chain
-            .current_tips_hash(block_chain.status().head().pruning_point())
+        base_chain
+            .current_tips_hash(base_chain.status().head().pruning_point())
             .expect("failed to get tips")
     };
-    let (block_template, _) = block_chain
-        .create_block_template(
-            miner_address,
-            None, // No specific parent header
-            Vec::new(),
-            None,       // uncles
-            None,       // block_gas_limit
-            Some(tips), // tips
-            HashValue::zero(),
-        )
-        .unwrap();
+    let ghostdata = base_chain.dag().ghostdata(&tips)?;
+    let block_chain = BlockChain::new(
+        net.time_service(),
+        ghostdata.selected_parent,
+        base_chain.get_storage(),
+        writeable_block_chain_service.get_storage2(),
+        None,
+        writeable_block_chain_service.get_dag(),
+    )?;
+    let (block_template, _) = block_chain.create_block_template(
+        miner_address,
+        None, // No specific parent header
+        Vec::new(),
+        None,       // uncles
+        None,       // block_gas_limit
+        Some(tips), // tips
+        HashValue::zero(),
+    )?;
     block_chain
         .consensus()
         .create_block(block_template, net.time_service().as_ref())
