@@ -31,22 +31,24 @@ spec:
         starcoin/node-pool: seed-pool
       affinity:
         podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchLabels:
-                  app: starcoin
-                  network: main
-              topologyKey: kubernetes.io/hostname
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                app: starcoin
+                network: main
+            topologyKey: kubernetes.io/hostname
       containers:
       - name: starcoin
         image: ghcr.io/starcoinorg/starcoin@sha256:462a81a2cd33757acfa1c1c43eeb7aecd06b92869e53fc2537debe5e36495033
         imagePullPolicy: Always
+        # Seeds use 2.5-5 GiB once their caches are warm; the old 1.5 GiB request
+        # let the scheduler pack them onto nodes that later ran out of memory.
         resources:
           requests:
             cpu: 500m
-            memory: 1536Mi
+            memory: 3Gi
+          limits:
+            memory: 7Gi
         command:
           - bash
           - -c
