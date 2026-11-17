@@ -27,6 +27,10 @@ data:
       stcscan.io              starcoin-explorer-service.starcoin-client.svc.cluster.local;
       api.stcscan.io          scan-api.starcoin-api.svc.cluster.local;
       doapi.stcscan.io        scan-api.starcoin-api.svc.cluster.local;
+      bridge-node0.starswap.xyz            starcoin-bridge-main-main-service-0.starcoin-native-bridge.svc.cluster.local;
+      bridge-node1.starswap.xyz            starcoin-bridge-main-main-service-1.starcoin-native-bridge.svc.cluster.local;
+      bridge-node2.starswap.xyz            starcoin-bridge-main-main-service-2.starcoin-native-bridge.svc.cluster.local;
+      bridge-indexer-monitor.starswap.xyz  bridge-indexer-main-main.starcoin-native-bridge.svc.cluster.local;
     }
 
     map $http_upgrade $connection_upgrade {
