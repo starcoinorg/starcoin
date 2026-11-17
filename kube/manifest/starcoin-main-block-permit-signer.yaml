@@ -55,26 +55,31 @@ spec:
     spec:
       priorityClassName: starcoin-core-critical
       terminationGracePeriodSeconds: 60
-      nodeSelector:
-        starcoin/node-pool: seed-pool
-      # Keep the signer on a node of its own. The node carries the label and a
-      # NoSchedule taint starcoin.org/dedicated=block-permit-signer; other
-      # workloads do not tolerate it. Both live on the node object, so a
-      # recycled node must be relabelled and retainted.
+      # Block production (this signer and the mining pool's stratumd) runs on the
+      # dedicated block-production node pool. Its label and NoSchedule taint
+      # starcoin.org/dedicated=block-production are set on the pool, so nodes
+      # recycled by an upgrade or a repair keep them. seed-pool is the fallback
+      # when that node is unavailable; the memory request reserves real room there.
       tolerations:
         - key: starcoin.org/dedicated
           operator: Equal
-          value: block-permit-signer
+          value: block-production
           effect: NoSchedule
       affinity:
         nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: starcoin/node-pool
+                    operator: In
+                    values: [block-production, seed-pool]
           preferredDuringSchedulingIgnoredDuringExecution:
             - weight: 100
               preference:
                 matchExpressions:
-                  - key: starcoin.org/dedicated
+                  - key: starcoin/node-pool
                     operator: In
-                    values: [block-permit-signer]
+                    values: [block-production]
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             - labelSelector:
@@ -116,10 +121,14 @@ spec:
               containerPort: 9850
             - name: ws-rpc
               containerPort: 9870
+          # Observed 3.4-5.0 GiB resident. The limits of every pod on the
+          # block-production node add up to less than its allocatable memory.
           resources:
             requests:
               cpu: 500m
-              memory: 1536Mi
+              memory: 5Gi
+            limits:
+              memory: 7Gi
           livenessProbe:
             tcpSocket:
               port: 9840
