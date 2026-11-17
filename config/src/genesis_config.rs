@@ -401,13 +401,6 @@ impl ChainNetworkID {
             _ => None,
         }
     }
-
-    pub fn limit_peers(&self) -> u8 {
-        match self {
-            Self::Builtin(BuiltinNetworkID::Main) => 5,
-            _ => 1,
-        }
-    }
 }
 
 impl Default for ChainNetworkID {
@@ -566,10 +559,6 @@ impl ChainNetwork {
             //TODO conform new Epoch events salt value.
             EventHandle::new_from_address(&genesis_address(), 0),
         )
-    }
-
-    pub fn min_peers(&self) -> u8 {
-        self.id.limit_peers()
     }
 }
 

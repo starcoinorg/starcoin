@@ -36,36 +36,6 @@ use std::time::Duration;
 use stream_task::{TaskError, TaskEventCounterHandle, TaskHandle};
 
 const REPUTATION_THRESHOLD: i32 = -1000;
-const MAIN_DEGRADED_PEER_COUNT: usize = 4;
-const PREFERRED_PEER_WAIT_ROUNDS: usize = 30;
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-enum EligiblePeerWaitDecision {
-    Wait { next_wait_round: usize },
-    Proceed,
-}
-
-fn eligible_peer_wait_decision(
-    eligible_peer_count: usize,
-    preferred_peer_count: usize,
-    degraded_peer_count: usize,
-    wait_rounds: usize,
-    has_requested_peers: bool,
-) -> EligiblePeerWaitDecision {
-    if eligible_peer_count == 0 {
-        EligiblePeerWaitDecision::Wait { next_wait_round: 0 }
-    } else if has_requested_peers || eligible_peer_count >= preferred_peer_count {
-        EligiblePeerWaitDecision::Proceed
-    } else if eligible_peer_count != degraded_peer_count {
-        EligiblePeerWaitDecision::Wait { next_wait_round: 0 }
-    } else if wait_rounds >= PREFERRED_PEER_WAIT_ROUNDS {
-        EligiblePeerWaitDecision::Proceed
-    } else {
-        EligiblePeerWaitDecision::Wait {
-            next_wait_round: wait_rounds.saturating_add(1),
-        }
-    }
-}
 
 fn peer_score_from_reputation(reputation: i32) -> u64 {
     i64::from(reputation)
@@ -191,16 +161,6 @@ impl SyncService {
             let peer_select_strategy =
                 peer_strategy.unwrap_or_else(|| config.sync.peer_select_strategy());
 
-            let preferred_peer_count = usize::from(config.net().min_peers());
-            // Main historically requires five peers. For automatic sync, permit only the
-            // observed four-peer incident shape after a grace period; do not weaken other
-            // networks or let one to three peers select Main's chain automatically.
-            let degraded_peer_count = if config.net().is_main() {
-                MAIN_DEGRADED_PEER_COUNT
-            } else {
-                preferred_peer_count
-            };
-            let mut peer_wait_rounds = 0;
             let block_permit_policy = config.net().block_permit_policy();
             let has_requested_peers = !peers.is_empty();
 
@@ -233,42 +193,20 @@ impl SyncService {
                     peer_selector.retain(peers.as_ref())
                 }
 
-                let eligible_peer_count = peer_selector.len();
-                match eligible_peer_wait_decision(
-                    eligible_peer_count,
-                    preferred_peer_count,
-                    degraded_peer_count,
-                    peer_wait_rounds,
-                    has_requested_peers,
-                ) {
-                    EligiblePeerWaitDecision::Wait { next_wait_round } => {
-                        let level = if config.net().is_dev() || config.net().is_test() {
-                            Level::Debug
-                        } else {
-                            Level::Info
-                        };
-                        log!(
-                            level,
-                            "[sync]Waiting enough peers to sync, current: {:?} peers, min peers: {:?}",
-                            eligible_peer_count,
-                            config.net().min_peers()
-                        );
-
-                        peer_wait_rounds = next_wait_round;
-                        Delay::new(Duration::from_secs(1)).await;
-                    }
-                    EligiblePeerWaitDecision::Proceed => break peer_selector,
+                // One eligible peer is enough. On permit networks every block needs the
+                // signer's permit and fork choice ranks permitted chains first; the other
+                // networks never required more.
+                if !peer_selector.is_empty() {
+                    break peer_selector;
                 }
+                let level = if config.net().is_dev() || config.net().is_test() {
+                    Level::Debug
+                } else {
+                    Level::Info
+                };
+                log!(level, "[sync]Waiting for an eligible peer to sync");
+                Delay::new(Duration::from_secs(1)).await;
             };
-
-            if !has_requested_peers && peer_selector.len() < preferred_peer_count {
-                info!(
-                    "[sync]Proceeding with {:?} eligible peers after waiting {:?} rounds for the preferred {:?} peers",
-                    peer_selector.len(),
-                    peer_wait_rounds,
-                    preferred_peer_count
-                );
-            }
 
             let startup_info = storage
                 .get_startup_info()?
@@ -755,160 +693,7 @@ impl SyncServiceHandler for SyncService {}
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        eligible_peer_wait_decision, peer_score_from_reputation, EligiblePeerWaitDecision,
-        MAIN_DEGRADED_PEER_COUNT, PREFERRED_PEER_WAIT_ROUNDS, REPUTATION_THRESHOLD,
-    };
-
-    const MAIN_PREFERRED_PEER_COUNT: usize = 5;
-
-    #[test]
-    fn zero_eligible_peers_always_waits() {
-        for wait_rounds in [0, PREFERRED_PEER_WAIT_ROUNDS, usize::MAX] {
-            assert_eq!(
-                eligible_peer_wait_decision(
-                    0,
-                    MAIN_PREFERRED_PEER_COUNT,
-                    MAIN_DEGRADED_PEER_COUNT,
-                    wait_rounds,
-                    false,
-                ),
-                EligiblePeerWaitDecision::Wait { next_wait_round: 0 }
-            );
-        }
-    }
-
-    #[test]
-    fn zero_eligible_peers_reset_an_in_progress_grace_period() {
-        assert_eq!(
-            eligible_peer_wait_decision(
-                MAIN_DEGRADED_PEER_COUNT,
-                MAIN_PREFERRED_PEER_COUNT,
-                MAIN_DEGRADED_PEER_COUNT,
-                PREFERRED_PEER_WAIT_ROUNDS - 1,
-                false,
-            ),
-            EligiblePeerWaitDecision::Wait {
-                next_wait_round: PREFERRED_PEER_WAIT_ROUNDS,
-            }
-        );
-        assert_eq!(
-            eligible_peer_wait_decision(
-                0,
-                MAIN_PREFERRED_PEER_COUNT,
-                MAIN_DEGRADED_PEER_COUNT,
-                PREFERRED_PEER_WAIT_ROUNDS,
-                false,
-            ),
-            EligiblePeerWaitDecision::Wait { next_wait_round: 0 }
-        );
-        assert_eq!(
-            eligible_peer_wait_decision(
-                MAIN_DEGRADED_PEER_COUNT,
-                MAIN_PREFERRED_PEER_COUNT,
-                MAIN_DEGRADED_PEER_COUNT,
-                0,
-                false,
-            ),
-            EligiblePeerWaitDecision::Wait { next_wait_round: 1 }
-        );
-    }
-
-    #[test]
-    fn automatic_sync_with_one_to_three_eligible_peers_never_proceeds() {
-        for eligible_peer_count in 0..MAIN_DEGRADED_PEER_COUNT {
-            for wait_rounds in [0, PREFERRED_PEER_WAIT_ROUNDS, usize::MAX] {
-                assert_eq!(
-                    eligible_peer_wait_decision(
-                        eligible_peer_count,
-                        MAIN_PREFERRED_PEER_COUNT,
-                        MAIN_DEGRADED_PEER_COUNT,
-                        wait_rounds,
-                        false,
-                    ),
-                    EligiblePeerWaitDecision::Wait { next_wait_round: 0 }
-                );
-            }
-        }
-    }
-
-    #[test]
-    fn requested_peer_sync_waits_with_zero_eligible_peers() {
-        for wait_rounds in [0, PREFERRED_PEER_WAIT_ROUNDS, usize::MAX] {
-            assert_eq!(
-                eligible_peer_wait_decision(
-                    0,
-                    MAIN_PREFERRED_PEER_COUNT,
-                    MAIN_DEGRADED_PEER_COUNT,
-                    wait_rounds,
-                    true,
-                ),
-                EligiblePeerWaitDecision::Wait { next_wait_round: 0 }
-            );
-        }
-    }
-
-    #[test]
-    fn requested_peer_sync_proceeds_with_one_to_three_eligible_peers() {
-        for eligible_peer_count in 1..MAIN_DEGRADED_PEER_COUNT {
-            for wait_rounds in [0, PREFERRED_PEER_WAIT_ROUNDS, usize::MAX] {
-                assert_eq!(
-                    eligible_peer_wait_decision(
-                        eligible_peer_count,
-                        MAIN_PREFERRED_PEER_COUNT,
-                        MAIN_DEGRADED_PEER_COUNT,
-                        wait_rounds,
-                        true,
-                    ),
-                    EligiblePeerWaitDecision::Proceed
-                );
-            }
-        }
-    }
-
-    #[test]
-    fn four_eligible_peers_proceed_at_exact_boundary() {
-        for wait_rounds in 0..PREFERRED_PEER_WAIT_ROUNDS {
-            assert_eq!(
-                eligible_peer_wait_decision(
-                    MAIN_DEGRADED_PEER_COUNT,
-                    MAIN_PREFERRED_PEER_COUNT,
-                    MAIN_DEGRADED_PEER_COUNT,
-                    wait_rounds,
-                    false,
-                ),
-                EligiblePeerWaitDecision::Wait {
-                    next_wait_round: wait_rounds + 1,
-                }
-            );
-        }
-        assert_eq!(
-            eligible_peer_wait_decision(
-                MAIN_DEGRADED_PEER_COUNT,
-                MAIN_PREFERRED_PEER_COUNT,
-                MAIN_DEGRADED_PEER_COUNT,
-                PREFERRED_PEER_WAIT_ROUNDS,
-                false,
-            ),
-            EligiblePeerWaitDecision::Proceed
-        );
-    }
-
-    #[test]
-    fn preferred_eligible_peer_count_proceeds_immediately() {
-        for wait_rounds in [0, PREFERRED_PEER_WAIT_ROUNDS] {
-            assert_eq!(
-                eligible_peer_wait_decision(
-                    MAIN_PREFERRED_PEER_COUNT,
-                    MAIN_PREFERRED_PEER_COUNT,
-                    MAIN_DEGRADED_PEER_COUNT,
-                    wait_rounds,
-                    false,
-                ),
-                EligiblePeerWaitDecision::Proceed
-            );
-        }
-    }
+    use super::{peer_score_from_reputation, REPUTATION_THRESHOLD};
 
     #[test]
     fn reputation_score_is_always_positive() {
