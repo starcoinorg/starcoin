@@ -48,10 +48,10 @@ spec:
         starcoin.org/role: block-permit-signer
       annotations:
         starcoin.org/activation-height: "32165300"
-        starcoin.org/image-digest: sha256:8d4f8e9c68b8111faaa3736039cb65aafeab147f4191033737028ea430283b10
+        starcoin.org/image-digest: sha256:462a81a2cd33757acfa1c1c43eeb7aecd06b92869e53fc2537debe5e36495033
         starcoin.org/mining-upstream: single-endpoint
-        starcoin.org/release-commit: 7c424e76af56efdbac669934dc21891f60d544eb
-        starcoin.org/release-version: v1.13.22
+        starcoin.org/release-commit: a98468fc8183f14256f17910f4979cce02bf0c18
+        starcoin.org/release-version: v1.13.23
     spec:
       priorityClassName: starcoin-core-critical
       terminationGracePeriodSeconds: 60
@@ -84,7 +84,7 @@ spec:
               topologyKey: kubernetes.io/hostname
       containers:
         - name: starcoin
-          image: ghcr.io/starcoinorg/starcoin@sha256:8d4f8e9c68b8111faaa3736039cb65aafeab147f4191033737028ea430283b10
+          image: ghcr.io/starcoinorg/starcoin@sha256:462a81a2cd33757acfa1c1c43eeb7aecd06b92869e53fc2537debe5e36495033
           imagePullPolicy: IfNotPresent
           command:
             - bash
