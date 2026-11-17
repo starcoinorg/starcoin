@@ -35,10 +35,6 @@ spec:
       port: 9870
       targetPort: 9870
       name: ws-rpc
-    - port: 9101
-      name: metrics
-      protocol: TCP
-      targetPort: 9101
   type: LoadBalancer
 ---
 apiVersion: v1
@@ -72,10 +68,6 @@ spec:
       name: ws-rpc
       protocol: TCP
       targetPort: 9870
-    - port: 9101
-      name: metrics
-      protocol: TCP
-      targetPort: 9101
   selector:
     app: starcoin
     network: main
@@ -113,10 +105,6 @@ spec:
       name: ws-rpc
       protocol: TCP
       targetPort: 9870
-    - port: 9101
-      name: metrics
-      protocol: TCP
-      targetPort: 9101
   selector:
     app: starcoin
     network: main
