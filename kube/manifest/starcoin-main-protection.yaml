@@ -5,7 +5,7 @@ metadata:
 value: 1000000
 globalDefault: false
 preemptionPolicy: PreemptLowerPriority
-description: Protect Starcoin main seed and mining-pool workloads from lower-priority workloads.
+description: Protect Starcoin pool and seed workloads
 ---
 apiVersion: policy/v1
 kind: PodDisruptionBudget
