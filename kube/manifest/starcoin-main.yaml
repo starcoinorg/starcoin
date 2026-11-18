@@ -41,14 +41,15 @@ spec:
       - name: starcoin
         image: ghcr.io/starcoinorg/starcoin@sha256:462a81a2cd33757acfa1c1c43eeb7aecd06b92869e53fc2537debe5e36495033
         imagePullPolicy: Always
-        # Seeds use 2.5-5 GiB once their caches are warm; the old 1.5 GiB request
-        # let the scheduler pack them onto nodes that later ran out of memory.
+        # With --rocksdb-max-open-files 2048 a warm seed stays under ~3 GiB
+        # (SST index ~0.7 GiB, 18 memtables bounded by the 1 GiB WAL cap,
+        # per-CF block caches); before that cap it grew to 6+ GiB.
         resources:
           requests:
             cpu: 500m
-            memory: 3Gi
+            memory: 2Gi
           limits:
-            memory: 7Gi
+            memory: 4Gi
         command:
           - bash
           - -c
