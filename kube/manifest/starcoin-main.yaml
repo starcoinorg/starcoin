@@ -57,17 +57,16 @@ spec:
             # Keep ~six months of RPC logs (client IPs): the node rolls its
             # 1 GiB log about every 6.3 days on Main, so 36 gzipped backups
             # cover ~7.5 months at about 3.6 GiB per node.
+            # --rocksdb-max-open-files: RocksDB keeps the index and filter
+            # blocks of every open SST in memory. The default (40960) exceeds the
+            # ~8k SSTs of the Main DB, so memory grew toward the 7Gi limit.
             rm -rf /sc-data/main/starcoin.ipc /sc-data/main/starcoindb/db/starcoindb/LOCK;
             id=$(echo -e $POD_NAME|awk -F'-' '{print $2}') && IFS='; ' read -r -a node_keys <<< $NODE_KEYS &&
             node_key=${node_keys[$id]};
             if [ ! -z $node_key ]; then
               node_key_flag="--node-key ${node_key}";
             fi;
-            rocksdb_flag="";
-            if [ "$id" = "3" ]; then
-              rocksdb_flag="--rocksdb-max-open-files 1024";
-            fi;
-            /starcoin/starcoin -n main --discover-local true --disable-miner-client true --min-peers-to-propagate 512 --max-peers-to-propagate 1024 --max-outgoing-peers 512 --max-incoming-peers 512 -d /sc-data --logger-max-backup 36 $node_key_flag $rocksdb_flag;
+            /starcoin/starcoin -n main --discover-local true --disable-miner-client true --min-peers-to-propagate 512 --max-peers-to-propagate 1024 --max-outgoing-peers 512 --max-incoming-peers 512 -d /sc-data --logger-max-backup 36 --rocksdb-max-open-files 2048 $node_key_flag;
         ports:
           - containerPort: 9840
             hostPort: 9840
