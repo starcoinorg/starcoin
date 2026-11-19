@@ -22,9 +22,9 @@ spec:
         network: main
       annotations:
         starcoin.org/activation-height: "32165300"
-        starcoin.org/image-digest: sha256:462a81a2cd33757acfa1c1c43eeb7aecd06b92869e53fc2537debe5e36495033
-        starcoin.org/release-commit: a98468fc8183f14256f17910f4979cce02bf0c18
-        starcoin.org/release-version: v1.13.23
+        starcoin.org/image-digest: sha256:14cd03cff64b11b7ce1310888454cf778c91bec52d8e335b777eff20e3a7ea09
+        starcoin.org/release-commit: 06493b1d744091fb94e3a149ca0ab56c5c22a1ce
+        starcoin.org/release-version: v1.13.25
     spec:
       priorityClassName: starcoin-core-critical
       nodeSelector:
@@ -39,7 +39,7 @@ spec:
             topologyKey: kubernetes.io/hostname
       containers:
       - name: starcoin
-        image: ghcr.io/starcoinorg/starcoin@sha256:462a81a2cd33757acfa1c1c43eeb7aecd06b92869e53fc2537debe5e36495033
+        image: ghcr.io/starcoinorg/starcoin@sha256:14cd03cff64b11b7ce1310888454cf778c91bec52d8e335b777eff20e3a7ea09
         imagePullPolicy: Always
         # With --rocksdb-max-open-files 2048 a warm seed stays under ~3 GiB
         # (SST index ~0.7 GiB, 18 memtables bounded by the 1 GiB WAL cap,
