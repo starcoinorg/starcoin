@@ -147,11 +147,7 @@ pub mod transaction_argument {
     pub use move_core_types::transaction_argument::*;
 }
 
-pub mod parser {
-    pub use move_core_types::parser::{
-        parse_struct_tag, parse_transaction_argument, parse_type_tag, parse_type_tags,
-    };
-}
+pub mod parser;
 
 #[cfg(any(test, feature = "fuzzing"))]
 pub mod proptest_types;

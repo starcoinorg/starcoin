@@ -26,6 +26,11 @@ use std::task::Poll;
 use std::time;
 use std::time::Duration;
 
+/// Largest notification a peer may send, matching the network RPC response limit. It used to
+/// be `u64::MAX`, so one length prefix near 2^63 made the receiver reserve that much memory and
+/// panic before any payload arrived.
+pub const MAX_NOTIFICATION_SIZE: u64 = 64 * 1024 * 1024;
+
 //const REQUEST_TIMEOUT_SEC: u64 = 40;
 /// Interval at which we perform time based maintenance
 const TICK_TIMEOUT: time::Duration = time::Duration::from_millis(1100);
@@ -347,7 +352,7 @@ impl<T: 'static + BusinessLayerHandle + Send> Protocol<T> {
             let notif_protocol_wth_handshake = notif_protocols
                 .clone()
                 .into_iter()
-                .map(|protocol| (protocol, handshake_message.clone(), u64::max_value()));
+                .map(|protocol| (protocol, handshake_message.clone(), MAX_NOTIFICATION_SIZE));
 
             debug!(
                 "Handshake message: {}",
