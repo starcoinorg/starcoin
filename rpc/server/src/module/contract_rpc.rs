@@ -153,7 +153,7 @@ where
         let metrics = self.playground.metrics.clone();
         let f = async move {
             let state_root = service.state_root().await?;
-            let state = ChainStateDB::new(storage, Some(state_root));
+            let state = ChainStateDB::try_new(storage, Some(state_root))?;
             let output = call_contract(
                 &state,
                 function_id.0.module,
@@ -185,7 +185,7 @@ where
             } = txn;
 
             let txn = txn_builder.fill_transaction(transaction).await?;
-            let state_view = ChainStateDB::new(storage, Some(state_root));
+            let state_view = ChainStateDB::try_new(storage, Some(state_root))?;
             dry_run(
                 &state_view,
                 DryRunTransaction {
@@ -210,7 +210,7 @@ where
         let f = async move {
             let state_root = service.state_root().await?;
             let raw_txn = RawUserTransaction::from_str(raw_txn.as_str())?;
-            let state_view = ChainStateDB::new(storage, Some(state_root));
+            let state_view = ChainStateDB::try_new(storage, Some(state_root))?;
             dry_run(
                 &state_view,
                 DryRunTransaction {
@@ -228,7 +228,7 @@ where
         let service = self.chain_state.clone();
         let storage = self.storage.clone();
         let fut = async move {
-            let state = ChainStateDB::new(storage, Some(service.state_root().await?));
+            let state = ChainStateDB::try_new(storage, Some(service.state_root().await?))?;
             ABIResolver::new(&state)
                 .resolve_function(&function_id.0.module, function_id.0.function.as_ident_str())
         }
@@ -244,7 +244,7 @@ where
         let service = self.chain_state.clone();
         let storage = self.storage.clone();
         let fut = async move {
-            let state = ChainStateDB::new(storage, Some(service.state_root().await?));
+            let state = ChainStateDB::try_new(storage, Some(service.state_root().await?))?;
             ABIResolver::new(&state).resolve_module_function_index(&module_id.0, function_idx)
         }
         .map_err(map_err);
@@ -255,7 +255,7 @@ where
         let service = self.chain_state.clone();
         let storage = self.storage.clone();
         let fut = async move {
-            let state = ChainStateDB::new(storage, Some(service.state_root().await?));
+            let state = ChainStateDB::try_new(storage, Some(service.state_root().await?))?;
             ABIResolver::new(&state).resolve_struct_tag(&struct_tag.0)
         }
         .map_err(map_err);
@@ -266,7 +266,7 @@ where
         let service = self.chain_state.clone();
         let storage = self.storage.clone();
         let fut = async move {
-            let state = ChainStateDB::new(storage, Some(service.state_root().await?));
+            let state = ChainStateDB::try_new(storage, Some(service.state_root().await?))?;
             ABIResolver::new(&state).resolve_module(&module_id.0)
         }
         .map_err(map_err);

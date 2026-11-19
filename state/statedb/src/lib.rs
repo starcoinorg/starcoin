@@ -234,7 +234,17 @@ impl ChainStateDB {
         Self::new(Arc::new(MockStateNodeStore::new()), None)
     }
 
+    /// Opens the state at `root_hash`, which must be a root this node produced or verified.
+    ///
+    /// Panics if the root's table handle state cannot be read: for a trusted root that means the
+    /// database is corrupt. Use [`ChainStateDB::try_new`] for roots supplied by a caller.
     pub fn new(store: Arc<dyn StateNodeStore>, root_hash: Option<HashValue>) -> Self {
+        Self::try_new(store, root_hash).expect("open chain state at a trusted state root")
+    }
+
+    /// Opens the state at `root_hash`, returning an error if the root, or the table handle state
+    /// under it, is not in the store.
+    pub fn try_new(store: Arc<dyn StateNodeStore>, root_hash: Option<HashValue>) -> Result<Self> {
         let mut chain_statedb = ChainStateDB {
             store: store.clone(),
             state_tree: StateTree::new(store.clone(), root_hash),
@@ -250,24 +260,31 @@ impl ChainStateDB {
         {
             let account_state_object = chain_statedb
                 .get_account_state_object(handle_address, true)
-                .expect("get account state success");
-            let state_root = account_state_object
-                .get(table_path)
-                .expect("get state_root success");
-            match state_root {
-                Some(state_root) => {
-                    let hash =
-                        HashValue::from_slice(state_root.as_slice()).expect("hash value success");
-                    chain_statedb
-                        .state_tree_table_handles_list
-                        .push(StateTree::new(store.clone(), Some(hash)));
-                }
-                None => chain_statedb
-                    .state_tree_table_handles_list
-                    .push(StateTree::new(store.clone(), None)),
+                .map_err(|e| {
+                    format_err!(
+                        "read table handle account {} at state root {:?}: {}",
+                        handle_address,
+                        root_hash,
+                        e
+                    )
+                })?;
+            let state_root = account_state_object.get(table_path).map_err(|e| {
+                format_err!(
+                    "read table state root of {} at state root {:?}: {}",
+                    handle_address,
+                    root_hash,
+                    e
+                )
+            })?;
+            let table_root = match state_root {
+                Some(state_root) => Some(HashValue::from_slice(state_root.as_slice())?),
+                None => None,
             };
+            chain_statedb
+                .state_tree_table_handles_list
+                .push(StateTree::new(store.clone(), table_root));
         }
-        chain_statedb
+        Ok(chain_statedb)
     }
 
     /// Fork a new statedb base current statedb
@@ -278,6 +295,11 @@ impl ChainStateDB {
     /// Fork a new statedb at `root_hash`
     pub fn fork_at(&self, state_root: HashValue) -> Self {
         Self::new(self.store.clone(), Some(state_root))
+    }
+
+    /// Fork a new statedb at a caller-supplied `state_root`; see [`ChainStateDB::try_new`].
+    pub fn try_fork_at(&self, state_root: HashValue) -> Result<Self> {
+        Self::try_new(self.store.clone(), Some(state_root))
     }
 
     fn new_state_tree<K: RawKey>(&self, root_hash: HashValue) -> StateTree<K> {

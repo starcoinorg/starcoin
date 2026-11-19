@@ -164,7 +164,7 @@ impl Inner {
     ) -> Result<Option<AccountStateSet>> {
         match state_root {
             Some(root) => {
-                let reader = self.state_db.fork_at(root);
+                let reader = self.state_db.try_fork_at(root)?;
                 reader.get_account_state_set(&address)
             }
             None => self.get_account_state_set(&address),
@@ -176,7 +176,7 @@ impl Inner {
         access_path: AccessPath,
         state_root: HashValue,
     ) -> Result<StateWithProof> {
-        let reader = self.state_db.fork_at(state_root);
+        let reader = self.state_db.try_fork_at(state_root)?;
         reader.get_with_proof(&access_path)
     }
 
@@ -186,7 +186,7 @@ impl Inner {
         key: Vec<u8>,
         state_root: HashValue,
     ) -> Result<StateWithTableItemProof> {
-        let reader = self.state_db.fork_at(state_root);
+        let reader = self.state_db.try_fork_at(state_root)?;
         reader.get_with_table_item_proof(&handle, &key)
     }
 
@@ -195,7 +195,7 @@ impl Inner {
         account: AccountAddress,
         state_root: HashValue,
     ) -> Result<Option<AccountState>> {
-        let reader = self.state_db.fork_at(state_root);
+        let reader = self.state_db.try_fork_at(state_root)?;
         reader.get_account_state(&account)
     }
 

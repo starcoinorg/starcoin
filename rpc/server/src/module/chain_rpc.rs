@@ -93,10 +93,10 @@ where
                 .map(|b| BlockView::try_from_block(b, false, raw))
                 .transpose()?;
             if decode {
-                let state = ChainStateDB::new(
+                let state = ChainStateDB::try_new(
                     storage,
                     Some(service.main_head_header().await?.state_root()),
-                );
+                )?;
                 if let Some(block) = block.as_mut() {
                     try_decode_block_txns(&state, block)?;
                 }
@@ -124,10 +124,10 @@ where
                 .map(|b| BlockView::try_from_block(b, false, raw))
                 .transpose()?;
             if decode {
-                let state = ChainStateDB::new(
+                let state = ChainStateDB::try_new(
                     storage,
                     Some(service.main_head_header().await?.state_root()),
-                );
+                )?;
                 if let Some(block) = block.as_mut() {
                     try_decode_block_txns(&state, block)?;
                 }
@@ -211,10 +211,10 @@ where
 
                     let mut txn = TransactionView::new(t, &block)?;
                     if decode_payload {
-                        let state = ChainStateDB::new(
+                        let state = ChainStateDB::try_new(
                             storage,
                             Some(service.main_head_header().await?.state_root()),
-                        );
+                        )?;
                         if let Some(txn) = txn.user_transaction.as_mut() {
                             try_decode_txn_payload(&state, txn)?;
                         }
@@ -301,7 +301,7 @@ where
                 .collect();
 
             if let Some(state_root) = state_root {
-                let state = ChainStateDB::new(storage, Some(state_root));
+                let state = ChainStateDB::try_new(storage, Some(state_root))?;
                 let annotator = MoveValueAnnotator::new(&state);
                 for elem in resp_data.iter_mut() {
                     elem.decode_event_data = Some(
@@ -366,7 +366,7 @@ where
                 })
                 .collect();
             if let Some(state_root) = state_root {
-                let state = ChainStateDB::new(storage, Some(state_root));
+                let state = ChainStateDB::try_new(storage, Some(state_root))?;
                 let annotator = MoveValueAnnotator::new(&state);
                 for elem in data.iter_mut() {
                     elem.decode_event_data = Some(

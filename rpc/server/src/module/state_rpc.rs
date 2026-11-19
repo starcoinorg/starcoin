@@ -110,7 +110,7 @@ where
         let db = self.state_store.clone();
         let fut = async move {
             let state_root = state_root.unwrap_or(state_service.state_root().await?);
-            let statedb = ChainStateDB::new(db, Some(state_root));
+            let statedb = ChainStateDB::try_new(db, Some(state_root))?;
             let state = statedb.get_account_state_set(&address)?;
             let annotator = MoveValueAnnotator::new(&statedb);
             match state {
@@ -237,7 +237,7 @@ where
             let state_root = option
                 .state_root
                 .unwrap_or(service.clone().state_root().await?);
-            let chain_state = ChainStateDB::new(state_store, Some(state_root));
+            let chain_state = ChainStateDB::try_new(state_store, Some(state_root))?;
             let code = chain_state
                 .get_state_value(&StateKey::AccessPath(AccessPath::from(&module_id.0)))?;
             Ok(match code {
@@ -272,7 +272,7 @@ where
             let state_root = option
                 .state_root
                 .unwrap_or(service.clone().state_root().await?);
-            let chain_state = ChainStateDB::new(state_store, Some(state_root));
+            let chain_state = ChainStateDB::try_new(state_store, Some(state_root))?;
             let data = chain_state.get_state_value(&StateKey::AccessPath(
                 AccessPath::resource_access_path(addr, resource_type.0.clone()),
             ))?;
@@ -308,7 +308,7 @@ where
             let state_root = option
                 .state_root
                 .unwrap_or(state_service.state_root().await?);
-            let statedb = ChainStateDB::new(db, Some(state_root));
+            let statedb = ChainStateDB::try_new(db, Some(state_root))?;
 
             let state = statedb.get_account_state_set(&addr)?;
             let filter_types = option.resource_types;
@@ -380,7 +380,7 @@ where
             let state_root = option
                 .state_root
                 .unwrap_or(state_service.state_root().await?);
-            let statedb = ChainStateDB::new(db, Some(state_root));
+            let statedb = ChainStateDB::try_new(db, Some(state_root))?;
             //TODO implement list state by iter, and pagination
             let state = statedb.get_account_state_set(&addr)?;
             match state {

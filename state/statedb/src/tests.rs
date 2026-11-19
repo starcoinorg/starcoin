@@ -499,3 +499,34 @@ fn test_state_with_table_item_proof() -> Result<()> {
     state_with_table_item_proof3.verify(&handle2, key3.as_slice())?;
     Ok(())
 }
+
+#[test]
+fn test_try_new_rejects_missing_state_root() -> Result<()> {
+    let storage = Arc::new(MockStateNodeStore::new());
+    let chain_state_db = ChainStateDB::new(storage.clone(), None);
+    let access_path = AccessPath::new(AccountAddress::random(), AccountResource::resource_path());
+    chain_state_db.apply_write_set(to_write_set(access_path.clone(), random_bytes()))?;
+    chain_state_db.commit()?;
+    chain_state_db.flush()?;
+    let known_root = chain_state_db.state_root();
+
+    // An RPC caller can send any root; the 2026-11-19 Main seed crash came from the zero hash.
+    for missing_root in [HashValue::zero(), HashValue::random()] {
+        let err = ChainStateDB::try_new(storage.clone(), Some(missing_root))
+            .err()
+            .expect("a root that is not in the store must be rejected");
+        assert!(
+            err.to_string().contains("Missing node"),
+            "unexpected error for {}: {}",
+            missing_root,
+            err
+        );
+        assert!(chain_state_db.try_fork_at(missing_root).is_err());
+    }
+
+    let reopened = ChainStateDB::try_new(storage, Some(known_root))?;
+    assert!(reopened
+        .get_state_value(&StateKey::AccessPath(access_path))?
+        .is_some());
+    Ok(())
+}
