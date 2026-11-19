@@ -126,10 +126,26 @@ pub struct EventFilter {
     pub limit: Option<usize>,
 }
 
+/// Longest `event_keys`, `addrs` or `type_tags` list in one filter. Every event is matched
+/// against each list linearly, for every subscription and every queried block.
+pub const MAX_EVENT_FILTER_ITEMS: usize = 1000;
+
 impl TryInto<Filter> for EventFilter {
     type Error = JsonRpcError;
 
     fn try_into(self) -> std::result::Result<Filter, Self::Error> {
+        for (name, len) in [
+            ("eventKeys", self.event_keys.as_ref().map_or(0, Vec::len)),
+            ("addrs", self.addrs.as_ref().map_or(0, Vec::len)),
+            ("typeTags", self.type_tags.as_ref().map_or(0, Vec::len)),
+        ] {
+            if len > MAX_EVENT_FILTER_ITEMS {
+                return Err(errors::invalid_params(
+                    name,
+                    format!("at most {} items, got {}", MAX_EVENT_FILTER_ITEMS, len),
+                ));
+            }
+        }
         match (self.from_block, self.to_block) {
             (Some(f), Some(t)) if f > t => {
                 return Err(errors::invalid_params(
@@ -164,4 +180,30 @@ pub struct MintBlock {
     pub minting_blob: String,
     pub difficulty: U256,
     pub block_number: u64,
+}
+
+#[cfg(test)]
+mod filter_limit_tests {
+    use super::*;
+
+    fn filter_with_addrs(n: usize) -> EventFilter {
+        EventFilter {
+            from_block: None,
+            to_block: None,
+            event_keys: None,
+            addrs: Some(vec![AccountAddress::ZERO; n]),
+            type_tags: None,
+            limit: None,
+        }
+    }
+
+    #[test]
+    fn filter_lists_are_capped() {
+        let ok: std::result::Result<Filter, _> =
+            filter_with_addrs(MAX_EVENT_FILTER_ITEMS).try_into();
+        assert!(ok.is_ok());
+        let err: std::result::Result<Filter, _> =
+            filter_with_addrs(MAX_EVENT_FILTER_ITEMS + 1).try_into();
+        assert!(err.is_err());
+    }
 }

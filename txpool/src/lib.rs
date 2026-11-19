@@ -49,6 +49,10 @@ impl std::fmt::Debug for TxPoolActorService {
 
 const MIN_TXN_TO_PROPAGATE: usize = 256;
 const PROPAGATE_FOR_BLOCKS: u64 = 4;
+/// Most txns verified from one peer message. Nodes send at most 100 per message (see
+/// `transactions_to_propagate`); without a cap one 64 MiB message could queue ~100k signature
+/// and VM checks.
+const MAX_PEER_TXNS_PER_MESSAGE: usize = 256;
 
 impl TxPoolActorService {
     fn new(inner: Inner) -> Self {
@@ -214,8 +218,18 @@ impl EventHandler<Self, TxnStatusFullEvent> for TxPoolActorService {
 impl EventHandler<Self, PeerTransactionsMessage> for TxPoolActorService {
     fn handle_event(&mut self, msg: PeerTransactionsMessage, _ctx: &mut ServiceContext<Self>) {
         if self.is_synced() {
+            let mut txns = msg.message.txns;
+            if txns.len() > MAX_PEER_TXNS_PER_MESSAGE {
+                warn!(
+                    "[txpool] peer {} sent {} txns in one message, keeping the first {}",
+                    msg.peer_id,
+                    txns.len(),
+                    MAX_PEER_TXNS_PER_MESSAGE
+                );
+                txns.truncate(MAX_PEER_TXNS_PER_MESSAGE);
+            }
             // JUST need to keep at most once delivery.
-            let _ = self.inner.import_txns(msg.message.txns);
+            let _ = self.inner.import_txns(txns);
         } else {
             //TODO should keep txn in a buffer, then execute after sync finished.
             debug!("[txpool] Ignore PeerTransactions event because the node has not been synchronized yet.");

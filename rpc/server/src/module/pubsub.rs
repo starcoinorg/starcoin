@@ -41,6 +41,9 @@ pub struct PubSubImpl {
     service: ServiceRef<PubSubService>,
 }
 
+/// Most open pubsub subscriptions on one node, across all WebSocket clients.
+const MAX_SUBSCRIPTIONS: usize = 1024;
+
 impl PubSubImpl {
     pub fn new(s: ServiceRef<PubSubService>) -> Self {
         Self { service: s }
@@ -227,6 +230,28 @@ impl PubSubService {
             new_pending_txn_tasks: Arc::new(RwLock::new(HashMap::default())),
         }
     }
+    /// Open subscriptions of every kind. Each one gets a copy of every matching notification,
+    /// so the count is capped to keep one client from multiplying per-block work.
+    fn subscription_count(&self) -> usize {
+        self.new_header_subscribers.len()
+            + self.new_event_subscribers.len()
+            + self.mint_block_subscribers.len()
+            + self.new_pending_txn_tasks.read().len()
+    }
+
+    /// Rejects the subscriber when the node is at MAX_SUBSCRIPTIONS; returns it otherwise.
+    fn admit(&self, sink: Subscriber<pubsub::Result>) -> Option<Subscriber<pubsub::Result>> {
+        if self.subscription_count() < MAX_SUBSCRIPTIONS {
+            return Some(sink);
+        }
+        let _ = sink.reject(jsonrpc_core::Error {
+            code: jsonrpc_core::ErrorCode::ServerError(-32005),
+            message: format!("too many subscriptions (max {})", MAX_SUBSCRIPTIONS),
+            data: None,
+        });
+        None
+    }
+
     fn next_id(&self) -> SubscriptionId {
         let id = self.subscriber_id.fetch_add(1, atomic::Ordering::SeqCst);
         SubscriptionId::Number(id)
@@ -279,6 +304,9 @@ impl ServiceRequest for SubscribeNewHeads {
 impl ServiceHandler<Self, SubscribeNewHeads> for PubSubService {
     fn handle(&mut self, msg: SubscribeNewHeads, ctx: &mut ServiceContext<Self>) {
         let SubscribeNewHeads(sink) = msg;
+        let Some(sink) = self.admit(sink) else {
+            return;
+        };
         let (sender, receiver) = mpsc::unbounded();
         let subscriber_id = self.next_id();
         self.new_header_subscribers
@@ -302,6 +330,9 @@ impl ServiceRequest for SubscribeMintBlock {
 impl ServiceHandler<Self, SubscribeMintBlock> for PubSubService {
     fn handle(&mut self, msg: SubscribeMintBlock, ctx: &mut ServiceContext<Self>) {
         let SubscribeMintBlock(subscriber) = msg;
+        let Some(subscriber) = self.admit(subscriber) else {
+            return;
+        };
         let (sender, receiver) = mpsc::unbounded();
         let subscriber_id = self.next_id();
         self.mint_block_subscribers
@@ -351,6 +382,9 @@ impl ServiceHandler<Self, SubscribeEvents> for PubSubService {
             filter,
             decode,
         } = msg;
+        let Some(subscriber) = self.admit(subscriber) else {
+            return;
+        };
         let (sender, receiver) = mpsc::unbounded();
         let subscriber_id = self.next_id();
         self.new_event_subscribers
@@ -380,6 +414,9 @@ impl ServiceRequest for SubscribeNewPendingTxns {
 impl ServiceHandler<Self, SubscribeNewPendingTxns> for PubSubService {
     fn handle(&mut self, msg: SubscribeNewPendingTxns, ctx: &mut ServiceContext<Self>) {
         let SubscribeNewPendingTxns { subscriber } = msg;
+        let Some(subscriber) = self.admit(subscriber) else {
+            return;
+        };
         let subscriber_id = self.next_id();
         let tasks = self.new_pending_txn_tasks.clone();
         let subscriber_id_clone = subscriber_id.clone();
