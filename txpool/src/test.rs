@@ -94,6 +94,41 @@ async fn test_tx_pool() -> Result<()> {
 }
 
 #[stest::test]
+async fn test_rejects_deeply_nested_type_args() -> Result<()> {
+    use starcoin_types::transaction::{ScriptFunction, TransactionError, TransactionPayload};
+    use starcoin_vm_types::language_storage::{ModuleId, TypeTag};
+    let (txpool_service, _storage, config, _, _) = test_helper::start_txpool().await;
+    let mut deep = TypeTag::U8;
+    for _ in 0..(starcoin_vm_types::parser::MAX_TYPE_TAG_NESTING + 1) {
+        deep = TypeTag::Vector(Box::new(deep));
+    }
+    let payload = TransactionPayload::ScriptFunction(ScriptFunction::new(
+        ModuleId::new(
+            account_config::core_code_address(),
+            starcoin_vm_types::identifier::Identifier::new("TransferScripts").unwrap(),
+        ),
+        starcoin_vm_types::identifier::Identifier::new("peer_to_peer_v2").unwrap(),
+        vec![deep],
+        vec![],
+    ));
+    let txn = starcoin_transaction_builder::create_signed_txn_with_association_account(
+        payload,
+        0,
+        10_000_000,
+        1,
+        u64::MAX / 2,
+        config.net(),
+    );
+    let result = txpool_service.add_txns(vec![txn]).pop().unwrap();
+    assert!(
+        matches!(result, Err(TransactionError::TypeArgsTooDeep { .. })),
+        "{:?}",
+        result
+    );
+    Ok(())
+}
+
+#[stest::test]
 async fn test_subscribe_txns() {
     let (pool, ..) = test_helper::start_txpool().await;
     let _ = pool.subscribe_txns();

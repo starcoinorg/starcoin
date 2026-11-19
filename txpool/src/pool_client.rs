@@ -155,6 +155,7 @@ impl crate::pool::Client for PoolClient {
         tx: UnverifiedUserTransaction,
     ) -> Result<transaction::SignatureCheckedTransaction, transaction::TransactionError> {
         let txn = SignedUserTransaction::from(tx);
+        check_type_arg_nesting(&txn)?;
         let checked_txn = txn
             .clone()
             .check_signature()
@@ -168,4 +169,28 @@ impl crate::pool::Client for PoolClient {
             Some(status) => Err(TransactionError::CallErr(CallError::ExecutionError(status))),
         }
     }
+}
+
+/// Rejects txns whose type arguments nest deeper than RPC type tag strings may.
+///
+/// A txn decoded at the BCS depth limit gains container depth when it is wrapped in a network
+/// message or a block body, and that encoding used to panic. The VM does not cap type argument
+/// depth during validation, so this runs first, for RPC and peer txns alike.
+fn check_type_arg_nesting(txn: &SignedUserTransaction) -> Result<(), TransactionError> {
+    use starcoin_vm_types::parser::{type_tag_nesting, MAX_TYPE_TAG_NESTING};
+    use starcoin_vm_types::transaction::TransactionPayload;
+    let ty_args = match txn.payload() {
+        TransactionPayload::Script(s) => s.ty_args(),
+        TransactionPayload::ScriptFunction(f) => f.ty_args(),
+        TransactionPayload::Package(p) => p.init_script().map(|f| f.ty_args()).unwrap_or(&[]),
+    };
+    if ty_args
+        .iter()
+        .any(|t| type_tag_nesting(t) > MAX_TYPE_TAG_NESTING)
+    {
+        return Err(TransactionError::TypeArgsTooDeep {
+            max: MAX_TYPE_TAG_NESTING,
+        });
+    }
+    Ok(())
 }

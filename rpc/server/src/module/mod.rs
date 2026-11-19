@@ -127,7 +127,8 @@ impl From<TransactionError> for RpcError {
             | TransactionError::InvalidChainId
             | TransactionError::InvalidSignature(..)
             | TransactionError::NotAllowed
-            | TransactionError::TooBig => (ErrorCode::InvalidParams, None),
+            | TransactionError::TooBig
+            | TransactionError::TypeArgsTooDeep { .. } => (ErrorCode::InvalidParams, None),
             TransactionError::LimitReached => (ErrorCode::ServerError(TXN_ERROR_BASE), None),
             TransactionError::CallErr(call_err) => match call_err {
                 CallError::TransactionNotFound => (ErrorCode::InvalidParams, None),

@@ -66,6 +66,10 @@ pub enum Error {
     /// Transaction too big
     TooBig,
     CallErr(CallError),
+    /// A type argument nests deeper than the node accepts.
+    TypeArgsTooDeep {
+        max: usize,
+    },
 }
 
 impl fmt::Display for Error {
@@ -102,6 +106,9 @@ impl fmt::Display for Error {
                 "Sender does not have permissions to execute this type of transaction".into()
             }
             TooBig => "Transaction too big".into(),
+            TypeArgsTooDeep { max } => {
+                format!("Transaction type arguments nest deeper than {}", max)
+            }
             CallErr(call_err) => format!("Call txn err: {}.", call_err),
         };
 

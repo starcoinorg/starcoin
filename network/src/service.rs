@@ -688,9 +688,16 @@ impl Inner {
         peer_id: PeerId,
         notification: NotificationMessage,
     ) -> Option<(Cow<'static, str>, Vec<u8>)> {
-        let (protocol_name, data) = notification
-            .encode_notification()
-            .expect("Encode notification message should ok");
+        let (protocol_name, data) = match notification.encode_notification() {
+            Ok(encoded) => encoded,
+            Err(e) => {
+                warn!(
+                    "[network] drop message to {:?}, encode failed: {:?}",
+                    peer_id, e
+                );
+                return None;
+            }
+        };
         if !self.is_supported(&peer_id, protocol_name.clone()) {
             debug!(
                 "[network]protocol {:?} not supported by peer {:?}",
@@ -746,9 +753,16 @@ impl Inner {
                 );
 
                 self.self_peer.known_blocks.put(id, ());
-                let (protocol_name, message) = notification
-                    .encode_notification()
-                    .expect("Encode notification message should ok");
+                let (protocol_name, message) = match notification.encode_notification() {
+                    Ok(encoded) => encoded,
+                    Err(e) => {
+                        warn!(
+                            "[network] drop compact block {:?}, encode failed: {:?}",
+                            id, e
+                        );
+                        return prepare_to_broadcast;
+                    }
+                };
 
                 let unknown_peer_ids = self
                     .peers
@@ -796,9 +810,19 @@ impl Inner {
                 );
             }
             NotificationMessage::Transactions(msg) => {
-                let (protocol_name, origin_message) = notification
-                    .encode_notification()
-                    .expect("Encode notification message should ok");
+                // Encoding adds container depth to each txn, so a txn decoded at the BCS depth
+                // limit fails here; drop the message instead of stopping the node.
+                let (protocol_name, origin_message) = match notification.encode_notification() {
+                    Ok(encoded) => encoded,
+                    Err(e) => {
+                        warn!(
+                            "[network] drop {} txns, encode failed: {:?}",
+                            msg.txns.len(),
+                            e
+                        );
+                        return prepare_to_broadcast;
+                    }
+                };
                 msg.txns.iter().for_each(|txn| {
                     self.self_peer.known_transactions.put(txn.id(), ());
                 });
@@ -846,18 +870,30 @@ impl Inner {
                         if txns_unhandled.len() == origin_txn_len && is_not_announcement {
                             (protocol_name.clone(), origin_message.clone())
                         } else if is_not_announcement {
-                            NotificationMessage::Transactions(TransactionsMessage::new(
+                            match NotificationMessage::Transactions(TransactionsMessage::new(
                                 txns_unhandled.into_iter().cloned().collect(),
                             ))
                             .encode_notification()
-                            .expect("Encode notification Transactions message should ok")
+                            {
+                                Ok(encoded) => encoded,
+                                Err(e) => {
+                                    warn!("[network] drop txns to {:?}: {:?}", peer_id, e);
+                                    continue;
+                                }
+                            }
                         } else {
-                            NotificationMessage::Announcement(Announcement::new(
+                            match NotificationMessage::Announcement(Announcement::new(
                                 AnnouncementType::Txn,
                                 txn_unhandled_ids.clone(),
                             ))
                             .encode_notification()
-                            .expect("Encode notification Announcement message should ok")
+                            {
+                                Ok(encoded) => encoded,
+                                Err(e) => {
+                                    warn!("[network] drop announcement to {:?}: {:?}", peer_id, e);
+                                    continue;
+                                }
+                            }
                         };
 
                     if !is_not_announcement

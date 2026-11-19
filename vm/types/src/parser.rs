@@ -36,6 +36,22 @@ fn check_nesting(s: &str) -> Result<()> {
     Ok(())
 }
 
+/// Nesting depth of a decoded type tag: `u8` is 0, `vector<u8>` is 1. Used on type arguments
+/// that arrive already decoded (BCS transactions), where the string check cannot apply.
+pub fn type_tag_nesting(t: &TypeTag) -> usize {
+    let mut max = 0;
+    let mut stack = vec![(t, 0usize)];
+    while let Some((t, depth)) = stack.pop() {
+        max = max.max(depth);
+        match t {
+            TypeTag::Vector(inner) => stack.push((inner, depth + 1)),
+            TypeTag::Struct(st) => stack.extend(st.type_params.iter().map(|p| (p, depth + 1))),
+            _ => {}
+        }
+    }
+    max
+}
+
 pub fn parse_type_tag(s: &str) -> Result<TypeTag> {
     check_nesting(s)?;
     move_parser::parse_type_tag(s)
@@ -68,6 +84,13 @@ mod tests {
         parse_struct_tag("0x1::Account::Balance<0x1::STC::STC>").unwrap();
         parse_type_tag("vector<vector<u8>>").unwrap();
         parse_struct_tag(&nested(MAX_TYPE_TAG_NESTING)).unwrap();
+    }
+
+    #[test]
+    fn decoded_nesting_matches_the_string_limit() {
+        assert_eq!(type_tag_nesting(&TypeTag::U8), 0);
+        let t = parse_type_tag(&nested(MAX_TYPE_TAG_NESTING)).unwrap();
+        assert_eq!(type_tag_nesting(&t), MAX_TYPE_TAG_NESTING);
     }
 
     #[test]
