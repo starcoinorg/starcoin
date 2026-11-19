@@ -77,6 +77,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
     ) -> BoxFuture<Result<Vec<Option<SignedUserTransaction>>>> {
         let txpool = self.txpool_service.clone();
         let fut = async move {
+            req.verify()?;
             let mut data = vec![];
             for id in req.ids {
                 data.push(txpool.find_txn(&id));
@@ -92,7 +93,10 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         req: GetTxnsWithHash,
     ) -> BoxFuture<Result<Vec<Option<Transaction>>>> {
         let storage = self.storage.clone();
-        let fut = async move { storage.get_transactions(req.ids) };
+        let fut = async move {
+            req.verify()?;
+            storage.get_transactions(req.ids)
+        };
         Box::pin(fut)
     }
 

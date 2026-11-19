@@ -385,7 +385,15 @@ where
 
     fn get_headers(&self, block_hashes: Vec<HashValue>) -> FutureResult<Vec<BlockHeaderView>> {
         let service = self.service.clone();
+        let max = self.config.rpc.block_query_max_range();
         let fut = async move {
+            // Each hash loads a full block, so cap the list like the other block range queries.
+            anyhow::ensure!(
+                block_hashes.len() as u64 <= max,
+                "chain.get_headers accepts at most {} hashes, got {}",
+                max,
+                block_hashes.len()
+            );
             let headers = service.get_headers(block_hashes).await?;
             Ok(headers.into_iter().flatten().map(Into::into).collect())
         }

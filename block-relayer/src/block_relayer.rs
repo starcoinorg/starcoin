@@ -32,6 +32,10 @@ use std::collections::{HashMap, HashSet};
 use std::convert::TryInto;
 use std::sync::Arc;
 
+/// Upper bound on the txns of a relayed compact block: the Main block gas limit (50M) divided by
+/// the minimum txn gas (600) is about 83k.
+const MAX_COMPACT_BLOCK_TXNS: usize = 100_000;
+
 #[derive(Debug, Eq, PartialEq)]
 enum FailedBlockAction<'a> {
     Process,
@@ -116,6 +120,15 @@ impl BlockRelayer {
         metrics: Option<BlockRelayerMetrics>,
     ) -> Result<Block> {
         let expect_txn_len = compact_block.txn_len();
+        // The header is not verified yet, so the txn count is whatever the peer claims. Bound it
+        // before allocating one slot per txn; an oversized block still arrives through sync.
+        ensure!(
+            expect_txn_len <= MAX_COMPACT_BLOCK_TXNS,
+            "compact block from {} claims {} txns, more than {}",
+            peer_id,
+            expect_txn_len,
+            MAX_COMPACT_BLOCK_TXNS
+        );
         let mut filled_from_txpool: u64 = 0;
         let mut filled_from_prefilled: u64 = 0;
         let mut filled_from_network: u64 = 0;
