@@ -120,6 +120,7 @@ where
                 self.ancestor,
                 ancestor_block_info.clone().block_accumulator_info,
                 self.target.block_info.block_accumulator_info.clone(),
+                self.target.peers.clone(),
             ),
             self.event_handle.clone(),
             self.custom_error_handle.clone(),

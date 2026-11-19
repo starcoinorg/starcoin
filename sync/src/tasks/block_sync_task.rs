@@ -10,7 +10,9 @@ use network_api::PeerId;
 use network_api::PeerProvider;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::{verifier::BasicVerifier, BlockChain};
-use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, ExecutedBlock};
+use starcoin_chain_api::{
+    ChainReader, ChainWriter, ConnectBlockError, ExecutedBlock, VerifyBlockField,
+};
 use starcoin_config::G_CONSENSUS_BUILD_FINGERPRINT;
 use starcoin_logger::prelude::*;
 use starcoin_storage::BARNARD_HARD_FORK_HASH;
@@ -271,13 +273,19 @@ where
                         Err(ConnectBlockError::FutureBlock(block).into())
                     }
                     e => {
-                        self.chain.get_storage().save_failed_block(
-                            block.id(),
-                            block,
-                            peer_id.clone(),
-                            error_msg,
-                            G_CONSENSUS_BUILD_FINGERPRINT.to_string(),
-                        )?;
+                        // A failed record blocks this id for good, and the id covers only the
+                        // header. Keep it only for failures that the block itself proves;
+                        // a bad body or a header that does not fit our current head may come
+                        // from a lying peer or a short response.
+                        if is_intrinsic_failure(&e) {
+                            self.chain.get_storage().save_failed_block(
+                                block.id(),
+                                block,
+                                peer_id.clone(),
+                                error_msg,
+                                G_CONSENSUS_BUILD_FINGERPRINT.to_string(),
+                            )?;
+                        }
                         if let Some(peer) = peer_id {
                             self.peer_provider.report_peer(peer, e.reputation());
                         }
@@ -375,5 +383,30 @@ where
 
     fn finish(self) -> Result<Self::Output> {
         Ok(self.chain)
+    }
+}
+
+/// Failures that hold for the block no matter which peer sent it or what our head is.
+fn is_intrinsic_failure(e: &ConnectBlockError) -> bool {
+    matches!(
+        e,
+        ConnectBlockError::VerifyBlockFailed(
+            VerifyBlockField::Consensus | VerifyBlockField::Uncle | VerifyBlockField::State,
+            _
+        ) | ConnectBlockError::BarnardHardFork(_)
+    )
+}
+
+#[cfg(test)]
+mod failed_block_tests {
+    use super::*;
+
+    #[test]
+    fn only_block_proven_failures_are_persisted() {
+        let f = |field| ConnectBlockError::VerifyBlockFailed(field, anyhow::anyhow!("x"));
+        assert!(is_intrinsic_failure(&f(VerifyBlockField::Consensus)));
+        assert!(is_intrinsic_failure(&f(VerifyBlockField::State)));
+        assert!(!is_intrinsic_failure(&f(VerifyBlockField::Body)));
+        assert!(!is_intrinsic_failure(&f(VerifyBlockField::Header)));
     }
 }

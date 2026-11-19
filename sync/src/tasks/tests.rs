@@ -262,12 +262,15 @@ pub async fn test_failed_block() -> Result<()> {
         DummyNetworkService::default(),
         true,
     );
+    // A random header does not extend our head. That says nothing about the block itself
+    // (a peer can cause it with a short response), so the block must be rejected but not
+    // recorded as failed, or an honest block could be blocked for good.
     let header = BlockHeaderBuilder::random().with_number(1).build();
     let body = BlockBody::new(Vec::new(), None);
     let failed_block = Block::new(header, body);
     let failed_block_id = failed_block.id();
     if block_collector.apply_block_for_test(failed_block).is_err() {
-        assert!(storage.get_failed_block_by_id(failed_block_id)?.is_some());
+        assert!(storage.get_failed_block_by_id(failed_block_id)?.is_none());
         Ok(())
     } else {
         Err(format_err!("test FailedBlock fail."))
@@ -716,7 +719,8 @@ async fn test_accumulator_sync_by_stream_task() -> Result<()> {
     let task_state =
         BlockAccumulatorSyncTask::new(info0.num_leaves, info1.clone(), fetcher, 7).unwrap();
     let ancestor = BlockIdAndNumber::new(HashValue::random(), info0.num_leaves - 1);
-    let collector = AccumulatorCollector::new(Arc::new(store2), ancestor, info0, info1.clone());
+    let collector =
+        AccumulatorCollector::new(Arc::new(store2), ancestor, info0, info1.clone(), vec![]);
     let event_handle = Arc::new(TaskEventCounterHandle::new());
     let sync_task = TaskGenerator::new(
         task_state,

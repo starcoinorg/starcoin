@@ -45,6 +45,16 @@ impl RpcVerifyError {
     }
 }
 
+/// The blocks fetched for a sync target did not end at the target's accumulator. The target
+/// peers may have lied about their head, or may just have reorged since they advertised it,
+/// so this costs them reputation without an immediate ban; repeated mismatches add up to one.
+#[derive(Clone, Debug, Error)]
+#[error("Sync target from {peers:?} did not match: {msg}")]
+pub struct SyncTargetMismatch {
+    pub peers: Vec<PeerId>,
+    pub msg: String,
+}
+
 pub trait RpcVerifier<Req, Resp> {
     /// verify the rpc request and response
     fn verify(&self, peer_id: PeerId, req: Req, resp: Resp) -> Result<Resp, RpcVerifyError>;
@@ -390,25 +400,42 @@ impl VerifiedRpcClient {
             .as_millis()) as u32;
         let score = self.score(time);
         self.record(&peer_id, score);
-        Ok(ids
-            .into_iter()
-            .zip(blocks)
-            .map(|(id, block)| {
-                if let Some(block) = block {
-                    let actual_id = block.id();
-                    if actual_id != id {
-                        warn!(
-                            "Get block by id: {:?} from peer: {:?}, but got block: {:?}",
-                            id, peer_id, actual_id
-                        );
-                        None
-                    } else {
-                        Some((block, Some(peer_id.clone())))
-                    }
-                } else {
+        // A block id covers only the header, so a peer could pair an honest header with a
+        // tampered body, or answer short so a later honest block fails to connect; either way
+        // the honest block used to be stored as failed for good. Reject the whole response
+        // and let the caller report the peer.
+        if blocks.len() != ids.len() {
+            return Err(RpcVerifyError::new(
+                peer_id,
+                format!("asked for {} blocks, got {}", ids.len(), blocks.len()),
+            )
+            .into());
+        }
+        let mut out = Vec::with_capacity(ids.len());
+        for (id, block) in ids.into_iter().zip(blocks) {
+            out.push(match block {
+                Some(block) if block.id() != id => {
+                    warn!(
+                        "Get block by id: {:?} from peer: {:?}, but got block: {:?}",
+                        id,
+                        peer_id,
+                        block.id()
+                    );
                     None
                 }
-            })
-            .collect())
+                Some(block) => {
+                    if block.body.hash() != block.header().body_hash() {
+                        return Err(RpcVerifyError::new(
+                            peer_id,
+                            format!("block {} body does not match its header", id),
+                        )
+                        .into());
+                    }
+                    Some((block, Some(peer_id.clone())))
+                }
+                None => None,
+            });
+        }
+        Ok(out)
     }
 }

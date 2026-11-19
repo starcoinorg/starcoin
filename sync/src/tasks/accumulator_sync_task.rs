@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::tasks::BlockIdFetcher;
+use crate::verified_rpc_client::SyncTargetMismatch;
 use anyhow::{ensure, format_err, Result};
 use futures::future::BoxFuture;
 use futures::FutureExt;
+use network_api::PeerId;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::{Accumulator, AccumulatorTreeStore, MerkleAccumulator};
 use starcoin_crypto::HashValue;
@@ -91,6 +93,8 @@ pub struct AccumulatorCollector {
     accumulator: MerkleAccumulator,
     ancestor: BlockIdAndNumber,
     target: AccumulatorInfo,
+    /// Peers that advertised `target`; a mismatch at the end is their fault.
+    target_peers: Vec<PeerId>,
 }
 
 impl AccumulatorCollector {
@@ -99,12 +103,14 @@ impl AccumulatorCollector {
         ancestor: BlockIdAndNumber,
         start: AccumulatorInfo,
         target: AccumulatorInfo,
+        target_peers: Vec<PeerId>,
     ) -> Self {
         let accumulator = MerkleAccumulator::new_with_info(start, store);
         Self {
             accumulator,
             ancestor,
             target,
+            target_peers,
         }
     }
 }
@@ -124,12 +130,15 @@ impl TaskResultCollector<HashValue> for AccumulatorCollector {
 
     fn finish(self) -> Result<Self::Output> {
         let info = self.accumulator.get_info();
-        ensure!(
-            info == self.target,
-            "Target accumulator: {:?}, but got: {:?}",
-            self.target,
-            info
-        );
+        if info != self.target {
+            // A plain error let one peer advertising a fake head be chosen again after every
+            // failed sync and keep the node in sync mode indefinitely.
+            return Err(SyncTargetMismatch {
+                peers: self.target_peers,
+                msg: format!("target accumulator: {:?}, but got: {:?}", self.target, info),
+            }
+            .into());
+        }
         Ok((self.ancestor, self.accumulator))
     }
 }

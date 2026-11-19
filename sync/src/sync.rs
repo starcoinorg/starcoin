@@ -4,7 +4,7 @@
 use crate::block_connector::BlockConnectorService;
 use crate::sync_metrics::SyncMetrics;
 use crate::tasks::{full_sync_task, AncestorEvent, SyncFetcher};
-use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
+use crate::verified_rpc_client::{RpcVerifyError, SyncTargetMismatch, VerifiedRpcClient};
 use anyhow::{format_err, Result};
 use futures::FutureExt;
 use futures_timer::Delay;
@@ -309,7 +309,20 @@ impl SyncService {
                                             )
                                         }
                                         "verify_err"
-                                    }else if let Some(bcs_err) = err.downcast_ref::<bcs_ext::Error>(){
+                                    } else if let Some(mismatch) =
+                                        err.downcast_ref::<SyncTargetMismatch>()
+                                    {
+                                        for peer_id in mismatch.peers.as_slice() {
+                                            network.report_peer(
+                                                peer_id.clone(),
+                                                ReputationChange::new(
+                                                    i32::MIN / 10,
+                                                    "sync_target_mismatch",
+                                                ),
+                                            )
+                                        }
+                                        "target_mismatch"
+                                    } else if let Some(bcs_err) = err.downcast_ref::<bcs_ext::Error>(){
                                         warn!("[sync] bcs codec error, maybe network rpc protocol is not compat with other peers: {:?}", bcs_err);
                                         "bcs_err"
                                     } else {

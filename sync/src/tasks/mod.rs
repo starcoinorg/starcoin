@@ -8,7 +8,7 @@ use anyhow::{format_err, Error, Result};
 use futures::channel::mpsc::UnboundedSender;
 use futures::future::BoxFuture;
 use futures::{FutureExt, TryFutureExt};
-use network_api::{PeerId, PeerProvider, PeerSelector};
+use network_api::{PeerId, PeerInfo, PeerProvider, PeerSelector};
 use network_p2p_core::{NetRpcError, RpcErrorCode};
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::MerkleAccumulator;
@@ -42,34 +42,43 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
             .bests_by_rank(min_head_number, min_difficulty)
         {
             //TODO fast verify best peers by accumulator
-            let mut chain_statuses: Vec<(ChainStatus, Vec<PeerId>)> =
-                best_peers
-                    .into_iter()
-                    .fold(vec![], |mut chain_statuses, peer| {
-                        let update = chain_statuses
-                            .iter_mut()
-                            .find(|(chain_status, _peers)| {
-                                peer.chain_info().status() == chain_status
-                            })
-                            .map(|(_chain_status, peers)| {
-                                peers.push(peer.peer_id());
-                                true
-                            })
-                            .unwrap_or(false);
+            let mut chain_statuses: Vec<(ChainStatus, Vec<PeerId>)> = best_peers
+                .into_iter()
+                .filter(|peer| {
+                    let ok = status_is_consistent(peer.chain_info().status());
+                    if !ok {
+                        warn!(
+                            "[sync] skip peer {} as target, its chain status is inconsistent",
+                            peer.peer_id()
+                        );
+                    }
+                    ok
+                })
+                .fold(vec![], |mut chain_statuses, peer| {
+                    let update = chain_statuses
+                        .iter_mut()
+                        .find(|(chain_status, _peers)| peer.chain_info().status() == chain_status)
+                        .map(|(_chain_status, peers)| {
+                            peers.push(peer.peer_id());
+                            true
+                        })
+                        .unwrap_or(false);
 
-                        if !update {
-                            chain_statuses
-                                .push((peer.chain_info().status().clone(), vec![peer.peer_id()]))
-                        }
+                    if !update {
                         chain_statuses
-                    });
+                            .push((peer.chain_info().status().clone(), vec![peer.peer_id()]))
+                    }
+                    chain_statuses
+                });
             //if all best peers block info is same, block_infos len should been 1, other use majority peers block_info
             if chain_statuses.len() > 1 {
                 chain_statuses.sort_by(|(_chain_status_1, peers_1), (_chain_status_2, peers_2)| {
                     peers_1.len().cmp(&peers_2.len())
                 });
             }
-            let (chain_status, peers) = chain_statuses.pop().expect("chain statuses should exist");
+            let Some((chain_status, peers)) = chain_statuses.pop() else {
+                return Ok(None);
+            };
             let header = chain_status.head;
             Ok(Some(SyncTarget {
                 target_id: BlockIdAndNumber::new(header.id(), header.number()),
@@ -148,12 +157,14 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
                                         Some(better_peer.peer_id()),
                                         maybe_target_number,
                                     )
-                                    .await?
+                                    .await
+                                    .unwrap_or_else(|e| skip_peer(better_peer, e))
                                 {
                                     if block_id == better_block_id {
                                         block_info = self
                                             .fetch_block_info(Some(better_peer.peer_id()), block_id)
-                                            .await?;
+                                            .await
+                                            .unwrap_or_else(|e| skip_peer(better_peer, e));
                                     }
                                 }
 
@@ -177,7 +188,8 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
                                     Some(better_peer.peer_id()),
                                     target_id_number.number,
                                 )
-                                .await?
+                                .await
+                                .unwrap_or_else(|e| skip_peer(better_peer, e))
                             {
                                 if block_id == target_id_number.id {
                                     eligible = true;
@@ -236,6 +248,20 @@ impl PeerOperator for VerifiedRpcClient {
     fn peer_selector(&self) -> PeerSelector {
         self.selector().clone()
     }
+}
+
+/// A peer's advertised head and block info must describe the same block. Nothing in the
+/// handshake or compact block path proves the advertised total difficulty, so a mismatched
+/// pair is at least an easy lie to drop before choosing a sync target.
+fn status_is_consistent(status: &ChainStatus) -> bool {
+    status.info.block_id == status.head.id()
+        && status.info.block_accumulator_info.num_leaves == status.head.number().saturating_add(1)
+}
+
+/// One peer failing to answer must not abort the search for a better target.
+fn skip_peer<T>(peer: &PeerInfo, err: Error) -> Option<T> {
+    warn!("[sync] skip better peer {}: {:?}", peer.peer_id(), err);
+    None
 }
 
 fn fetcher_err_map(err: Error) -> Error {
@@ -716,5 +742,33 @@ fn max_better_peers(target_block_number: u64, latest_block_number: u64) -> u64 {
         )
     } else {
         MAX_BETTER_PEER_SIZE
+    }
+}
+
+#[cfg(test)]
+mod status_tests {
+    use super::status_is_consistent;
+    use starcoin_types::startup_info::ChainStatus;
+
+    fn consistent() -> ChainStatus {
+        let mut s = ChainStatus::random();
+        s.info.block_id = s.head.id();
+        s.info.block_accumulator_info.num_leaves = s.head.number().saturating_add(1);
+        s
+    }
+
+    #[test]
+    fn head_and_info_must_describe_the_same_block() {
+        assert!(status_is_consistent(&consistent()));
+        let mut other_block = consistent();
+        other_block.info.block_id = starcoin_crypto::HashValue::random();
+        assert!(!status_is_consistent(&other_block));
+        let mut fake_height = consistent();
+        fake_height.info.block_accumulator_info.num_leaves = fake_height
+            .info
+            .block_accumulator_info
+            .num_leaves
+            .saturating_add(1_000_000);
+        assert!(!status_is_consistent(&fake_height));
     }
 }
