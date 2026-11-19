@@ -1,8 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::anyhow;
 use anyhow::Result;
+use anyhow::{anyhow, ensure};
 use move_model::script_into_module;
 use starcoin_abi_types::{
     FieldABI, FunctionABI, FunctionParameterABI, ModuleABI, StructABI, StructInstantiation,
@@ -20,6 +20,21 @@ use starcoin_vm_types::normalized::{Function, Module, Struct, Type};
 use starcoin_vm_types::state_view::StateView;
 
 #[allow(clippy::upper_case_acronyms)]
+
+/// Largest resolved type, in nodes, that the resolver builds. Type arguments are copied into
+/// every field that uses them, so `Option<Option<...<u8>...>>` doubles per level; without a cap
+/// one `contract.resolve_struct` call could allocate until the node ran out of memory.
+pub const MAX_RESOLVED_TYPE_NODES: usize = 10_000;
+
+fn within_node_budget(t: TypeInstantiation) -> Result<TypeInstantiation> {
+    ensure!(
+        t.node_count_up_to(MAX_RESOLVED_TYPE_NODES) <= MAX_RESOLVED_TYPE_NODES,
+        "resolved type has more than {} nodes",
+        MAX_RESOLVED_TYPE_NODES
+    );
+    Ok(t)
+}
+
 pub struct ABIResolver<'a> {
     resolver: Resolver<'a>,
 }
@@ -102,7 +117,13 @@ impl<'a> ABIResolver<'a> {
             .iter()
             .map(|ty| self.resolve_type_tag(ty))
             .collect::<Result<Vec<_>>>()?;
-        struct_abi.instantiations(&ty_args)
+        let inst = struct_abi.instantiations(&ty_args)?;
+        ensure!(
+            inst.node_count_up_to(MAX_RESOLVED_TYPE_NODES) <= MAX_RESOLVED_TYPE_NODES,
+            "resolved type has more than {} nodes",
+            MAX_RESOLVED_TYPE_NODES
+        );
+        Ok(inst)
     }
 
     pub fn resolve_type_tag(&self, type_tag: &TypeTag) -> Result<TypeInstantiation> {
@@ -117,9 +138,9 @@ impl<'a> ABIResolver<'a> {
             TypeTag::Vector(sub_type) => {
                 TypeInstantiation::new_vector(self.resolve_type_tag(sub_type)?)
             }
-            TypeTag::Struct(struct_type) => {
-                TypeInstantiation::new_struct_instantiation(self.resolve_struct_tag(struct_type)?)
-            }
+            TypeTag::Struct(struct_type) => within_node_budget(
+                TypeInstantiation::new_struct_instantiation(self.resolve_struct_tag(struct_type)?),
+            )?,
 
             TypeTag::U16 => TypeInstantiation::U16,
             TypeTag::U32 => TypeInstantiation::U32,
@@ -158,7 +179,7 @@ impl<'a> ABIResolver<'a> {
                     .map(|t| self.resolve_type(t))
                     .collect::<Result<Vec<_>>>()?;
                 let inst_struct_abi = struct_abi.instantiations(&type_args)?;
-                TypeInstantiation::new_struct_instantiation(inst_struct_abi)
+                within_node_budget(TypeInstantiation::new_struct_instantiation(inst_struct_abi))?
             }
             Type::Vector(sub_ty) => TypeInstantiation::new_vector(self.resolve_type(sub_ty)?),
             Type::TypeParameter(i) => TypeInstantiation::TypeParameter(*i as usize),
@@ -232,7 +253,7 @@ impl<'a> ABIResolver<'a> {
                 .map(|arg| {
                     Ok(FunctionParameterABI::new(
                         arg.name().to_string(),
-                        arg.type_abi().subst(&type_args)?,
+                        within_node_budget(arg.type_abi().subst(&type_args)?)?,
                         arg.doc().to_string(),
                     ))
                 })
@@ -445,6 +466,27 @@ mod tests {
             let m = ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap());
             assert!(r.resolve_module_function_index(&m, 31).is_err())
         }
+    }
+
+    #[test]
+    fn nested_generic_struct_stops_at_the_node_budget() {
+        let modules = stdlib::load_latest_stable_compiled_modules().unwrap().1;
+        let view = InMemoryStateView::new(modules);
+        let r = ABIResolver::new(&view);
+        // Option<T> holds T twice (type argument and `vec: vector<T>`), so each level doubles.
+        let nested = |levels: usize| {
+            format!(
+                "{}u8{}",
+                "0x1::Option::Option<".repeat(levels),
+                ">".repeat(levels)
+            )
+        };
+        r.resolve_struct_tag(&parse_struct_tag(&nested(8)).unwrap())
+            .unwrap();
+        let err = r
+            .resolve_struct_tag(&parse_struct_tag(&nested(40)).unwrap())
+            .unwrap_err();
+        assert!(err.to_string().contains("more than"), "{}", err);
     }
 
     #[test]

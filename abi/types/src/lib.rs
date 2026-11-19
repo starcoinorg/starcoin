@@ -459,6 +459,23 @@ pub struct StructInstantiation {
     abilities: WrappedAbilitySet,
 }
 impl StructInstantiation {
+    /// Counts the nodes of this instantiation, stopping once the count passes `limit`; see
+    /// [`TypeInstantiation::node_count_up_to`].
+    pub fn node_count_up_to(&self, limit: usize) -> usize {
+        let mut count = 1;
+        for t in self
+            .ty_args
+            .iter()
+            .map(|a| &a.ty)
+            .chain(self.fields.iter().map(|f| &f.type_abi))
+        {
+            if count > limit {
+                break;
+            }
+            count += t.node_count_up_to(limit - count);
+        }
+        count
+    }
     pub fn new(
         name: String,
         module_name: ModuleId,
@@ -586,6 +603,28 @@ pub enum TypeInstantiation {
     U256,
 }
 impl TypeInstantiation {
+    /// Counts the nodes of this instantiation, stopping once the count passes `limit`.
+    /// Struct instantiations copy every type argument into the struct's own `ty_args` and into
+    /// each field that uses it, so the size can grow exponentially with nesting.
+    pub fn node_count_up_to(&self, limit: usize) -> usize {
+        let mut count = 0;
+        let mut stack = vec![self];
+        while let Some(t) = stack.pop() {
+            count += 1;
+            if count > limit {
+                break;
+            }
+            match t {
+                Self::Vector(inner) | Self::Reference(_, inner) => stack.push(inner),
+                Self::Struct(st) => {
+                    stack.extend(st.ty_args.iter().map(|a| &a.ty));
+                    stack.extend(st.fields.iter().map(|f| &f.type_abi));
+                }
+                _ => {}
+            }
+        }
+        count
+    }
     pub fn new_vector(subtype: TypeInstantiation) -> Self {
         Self::Vector(Box::new(subtype))
     }
