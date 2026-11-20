@@ -176,6 +176,22 @@ fn test_proof() {
 }
 
 #[test]
+fn test_no_proof_past_last_leaf() {
+    let accumulator = MerkleAccumulator::new(
+        *ACCUMULATOR_PLACEHOLDER_HASH,
+        vec![],
+        0,
+        0,
+        Arc::new(MockAccumulatorStore::new()),
+    );
+    accumulator.append(&create_leaves(0..10)).unwrap();
+    accumulator.flush().unwrap();
+    assert!(accumulator.get_proof(9).unwrap().is_some());
+    // Index 10 is one past the last leaf; a proof for it would not match any leaf here.
+    assert!(accumulator.get_proof(10).unwrap().is_none());
+}
+
+#[test]
 fn test_multiple_leaves() {
     let mut batch1 = create_leaves(600..608);
     let mock_store = MockAccumulatorStore::new();
