@@ -156,6 +156,7 @@ impl crate::pool::Client for PoolClient {
     ) -> Result<transaction::SignatureCheckedTransaction, transaction::TransactionError> {
         let txn = SignedUserTransaction::from(tx);
         check_type_arg_nesting(&txn)?;
+        check_publish_policy(self.nonce_client.statedb.as_ref(), &txn)?;
         let checked_txn = txn
             .clone()
             .check_signature()
@@ -184,4 +185,25 @@ fn check_type_arg_nesting(txn: &SignedUserTransaction) -> Result<(), Transaction
         });
     }
     Ok(())
+}
+
+/// Refuses payloads Main nodes do not accept, before any bytecode is touched.
+fn check_publish_policy(
+    state: &ChainStateDB,
+    txn: &SignedUserTransaction,
+) -> Result<(), TransactionError> {
+    use starcoin_types::publish_policy::{check_payload, RefusedPayload};
+    use starcoin_vm_types::state_view::StateReaderExt;
+    use starcoin_vm_types::vm_status::{StatusCode, VMStatus};
+    let chain_id = state.get_chain_id().map_err(|e| {
+        starcoin_logger::prelude::error!("[txpool] read chain id: {:?}", e);
+        TransactionError::CallErr(CallError::StateCorrupt)
+    })?;
+    check_payload(chain_id, txn.payload()).map_err(|refused| {
+        let status = match refused {
+            RefusedPayload::Script => StatusCode::UNKNOWN_SCRIPT,
+            RefusedPayload::Package(_) => StatusCode::INVALID_MODULE_PUBLISHER,
+        };
+        TransactionError::CallErr(CallError::ExecutionError(VMStatus::Error(status)))
+    })
 }

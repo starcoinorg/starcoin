@@ -164,10 +164,13 @@ impl OpenedBlock {
             .filter(|txn| {
                 let is_blacklisted = AddressFilter::is_blacklisted(txn, self.block_number());
                 // Discard the txns send by the account in black list after a block number.
-                if is_blacklisted {
+                let refused = is_blacklisted
+                    || starcoin_types::publish_policy::check_payload(self.chain_id, txn.payload())
+                        .is_err();
+                if refused {
                     discard_txns.push(txn.clone());
                 }
-                !is_blacklisted
+                !refused
             })
             .map(Transaction::UserTransaction)
             .collect();
