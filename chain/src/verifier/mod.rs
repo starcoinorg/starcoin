@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{format_err, Result};
+use anyhow::{format_err, Error, Result};
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
 use starcoin_chain_api::{
     verify_block, ChainReader, ConnectBlockError, VerifiedBlock, VerifyBlockField,
@@ -11,6 +11,9 @@ use starcoin_logger::prelude::debug;
 use starcoin_open_block::AddressFilter;
 use starcoin_types::block::{Block, BlockHeader, ALLOWED_FUTURE_BLOCKTIME};
 use starcoin_types::block_permit::validate_block_permit;
+use starcoin_types::U256;
+use starcoin_vm_types::genesis_config::ConsensusStrategy;
+use starcoin_vm_types::on_chain_resource::Epoch;
 use std::{collections::HashSet, str::FromStr};
 
 #[derive(Debug, Clone)]
@@ -43,6 +46,46 @@ impl FromStr for Verifier {
 
 pub struct StaticVerifier;
 impl StaticVerifier {
+    /// Cheap PoW check that needs no chain view, for untrusted headers before expensive work
+    /// such as building a fork. Every valid block passes:
+    /// - its difficulty is never zero (a target of at most `U256::MAX` is a difficulty of 1);
+    /// - its nonce meets that difficulty;
+    /// - its difficulty is at least `parent / (4 * window)`. A new target is at most twice its
+    ///   window's average and the parent's target is at least half of its own window's average,
+    ///   so no target in the child's window exceeds `2 * window` times the parent's.
+    ///   The dummy strategy does not adjust difficulty this way and is not bounded.
+    pub fn verify_claimed_pow(
+        epoch: &Epoch,
+        header: &BlockHeader,
+        parent: Option<&BlockHeader>,
+    ) -> Result<()> {
+        let difficulty = header.difficulty();
+        let consensus_err =
+            |e: Error| ConnectBlockError::VerifyBlockFailed(VerifyBlockField::Consensus, e).into();
+        if difficulty.is_zero() {
+            return Err(consensus_err(format_err!("block difficulty is zero")));
+        }
+        let strategy = epoch.strategy();
+        if let Some(parent) = parent.filter(|_| strategy != ConsensusStrategy::Dummy) {
+            let floor = parent.difficulty()
+                / U256::from(epoch.block_difficulty_window().saturating_mul(4).max(1));
+            if difficulty < floor {
+                return Err(consensus_err(format_err!(
+                    "block difficulty {} is below {}, the least a child of difficulty {} can have",
+                    difficulty,
+                    floor,
+                    parent.difficulty()
+                )));
+            }
+        }
+        strategy
+            .verify_header_difficulty(difficulty, header)
+            .map_err(|e| match e.downcast::<ConsensusVerifyError>() {
+                Ok(e) => consensus_err(e.into()),
+                Err(e) => e,
+            })
+    }
+
     pub fn verify_body_hash(block: &Block) -> Result<()> {
         //verify body
         let body_hash = block.body.hash();
@@ -337,5 +380,111 @@ impl BlockVerifier for NoneVerifier {
         R: ChainReader,
     {
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use starcoin_time_service::RealTimeService;
+    use starcoin_types::block::BlockHeaderBuilder;
+    use starcoin_vm_types::account_address::AccountAddress;
+    use starcoin_vm_types::event::{EventHandle, EventKey};
+
+    fn keccak_epoch() -> Epoch {
+        Epoch::new(
+            0,
+            0,
+            0,
+            1000,
+            10_000,
+            0,
+            0,
+            24,
+            2,
+            50_000_000,
+            ConsensusStrategy::Keccak.value(),
+            EventHandle::new(EventKey::new_from_address(&AccountAddress::ONE, 0), 0),
+        )
+    }
+
+    #[test]
+    fn claimed_pow_accepts_solved_headers_only() {
+        let epoch = keccak_epoch();
+        let difficulty = U256::from(1000u64);
+        let header = BlockHeaderBuilder::random()
+            .with_difficulty(difficulty)
+            .build();
+        let nonce = epoch.strategy().solve_consensus_nonce(
+            &header.as_pow_header_blob(),
+            difficulty,
+            &RealTimeService::new(),
+        );
+        let solved = header.as_builder().with_nonce(nonce).build();
+        StaticVerifier::verify_claimed_pow(&epoch, &solved, None).unwrap();
+
+        let unsolved = (0u32..)
+            .map(|n| header.as_builder().with_nonce(n).build())
+            .find(|h| {
+                epoch
+                    .strategy()
+                    .verify_header_difficulty(difficulty, h)
+                    .is_err()
+            })
+            .unwrap();
+        assert_consensus_failure(StaticVerifier::verify_claimed_pow(&epoch, &unsolved, None));
+    }
+
+    fn assert_consensus_failure(result: Result<()>) {
+        let err = result.unwrap_err();
+        assert!(
+            matches!(
+                err.downcast_ref::<ConnectBlockError>(),
+                Some(ConnectBlockError::VerifyBlockFailed(
+                    VerifyBlockField::Consensus,
+                    _
+                ))
+            ),
+            "{:?}",
+            err
+        );
+    }
+
+    #[test]
+    fn claimed_pow_rejects_zero_difficulty() {
+        let header = BlockHeaderBuilder::random()
+            .with_difficulty(U256::zero())
+            .build();
+        assert_consensus_failure(StaticVerifier::verify_claimed_pow(
+            &keccak_epoch(),
+            &header,
+            None,
+        ));
+    }
+
+    #[test]
+    fn claimed_pow_bounds_the_drop_from_the_parent() {
+        let epoch = keccak_epoch();
+        let floor = U256::from(1000u64);
+        let parent = BlockHeaderBuilder::random()
+            .with_difficulty(floor * U256::from(4 * epoch.block_difficulty_window()))
+            .build();
+        let solve = |difficulty: U256| {
+            let header = BlockHeaderBuilder::random()
+                .with_difficulty(difficulty)
+                .build();
+            let nonce = epoch.strategy().solve_consensus_nonce(
+                &header.as_pow_header_blob(),
+                difficulty,
+                &RealTimeService::new(),
+            );
+            header.as_builder().with_nonce(nonce).build()
+        };
+        StaticVerifier::verify_claimed_pow(&epoch, &solve(floor), Some(&parent)).unwrap();
+        assert_consensus_failure(StaticVerifier::verify_claimed_pow(
+            &epoch,
+            &solve(floor - U256::one()),
+            Some(&parent),
+        ));
     }
 }

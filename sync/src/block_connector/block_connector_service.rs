@@ -6,7 +6,8 @@ use crate::sync::{CheckSyncEvent, SyncService};
 use crate::tasks::{BlockConnectedEvent, BlockDiskCheckEvent};
 use anyhow::{format_err, Result};
 use network_api::PeerProvider;
-use starcoin_chain_api::{ConnectBlockError, WriteableChainService};
+use starcoin_chain::verifier::StaticVerifier;
+use starcoin_chain_api::{ChainReader, ConnectBlockError, WriteableChainService};
 use starcoin_config::{NodeConfig, G_CONSENSUS_BUILD_FINGERPRINT};
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
@@ -205,6 +206,40 @@ impl EventHandler<Self, PeerNewBlock> for BlockConnectorService {
             return;
         }
         let peer_id = msg.get_peer_id();
+        // A relayed block's id is the sender's choice and costs nothing without PoW, yet
+        // connecting it can build a fork (reading the parent's state and its whole epoch) and
+        // store it as failed. Every valid block passes this check.
+        let main = self.chain_service.get_main();
+        let parent_hash = msg.get_block().header().parent_hash();
+        let parent = match main.get_storage().get_block_header_by_hash(parent_hash) {
+            Ok(parent) => parent,
+            Err(e) => {
+                // Without the parent only the parent-relative bound is skipped; the block still
+                // has to meet its own claimed difficulty.
+                warn!("[connector] read parent header {}: {:?}", parent_hash, e);
+                None
+            }
+        };
+        if let Err(e) = StaticVerifier::verify_claimed_pow(
+            main.epoch(),
+            msg.get_block().header(),
+            parent.as_ref(),
+        ) {
+            warn!(
+                "[connector] drop block {} from {:?} without valid PoW: {:?}",
+                msg.get_block().id(),
+                peer_id,
+                e
+            );
+            let reputation = e
+                .downcast_ref::<ConnectBlockError>()
+                .map(ConnectBlockError::reputation)
+                .unwrap_or(ConnectBlockError::REP_VERIFY_BLOCK_FAILED);
+            if let Ok(network) = ctx.get_shared::<NetworkServiceRef>() {
+                network.report_peer(peer_id, reputation);
+            }
+            return;
+        }
         if let Err(e) = self.chain_service.try_connect(msg.get_block().clone()) {
             match e.downcast::<ConnectBlockError>() {
                 Ok(connect_error) => {
