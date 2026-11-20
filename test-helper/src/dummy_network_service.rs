@@ -53,7 +53,12 @@ impl PeerProvider for DummyNetworkService {
         &self,
         _reputation_threshold: i32,
     ) -> BoxFuture<'_, anyhow::Result<Receiver<Vec<(PeerId, i32)>>>> {
-        unimplemented!()
+        // Matches the empty peer set above.
+        let (sender, receiver) = futures::channel::oneshot::channel();
+        sender
+            .send(vec![])
+            .expect("reputation receiver is held below");
+        async move { Ok(receiver) }.boxed()
     }
 
     fn ban_peer(&self, _peer_id: PeerId, _ban: bool) {

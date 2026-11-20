@@ -3,7 +3,7 @@
 
 use crate::block_connector::BlockConnectorService;
 use crate::sync_metrics::SyncMetrics;
-use crate::tasks::{full_sync_task, AncestorEvent, SyncFetcher};
+use crate::tasks::{full_sync_task, AncestorEvent, SyncFetcher, REPUTATION_THRESHOLD};
 use crate::verified_rpc_client::{RpcVerifyError, SyncTargetMismatch, VerifiedRpcClient};
 use anyhow::{format_err, Result};
 use futures::FutureExt;
@@ -34,8 +34,6 @@ use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemS
 use std::sync::Arc;
 use std::time::Duration;
 use stream_task::{TaskError, TaskEventCounterHandle, TaskHandle};
-
-const REPUTATION_THRESHOLD: i32 = -1000;
 
 fn peer_score_from_reputation(reputation: i32) -> u64 {
     i64::from(reputation)

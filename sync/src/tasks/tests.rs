@@ -3,12 +3,13 @@
 
 #![allow(clippy::integer_arithmetic)]
 use crate::tasks::block_sync_task::SyncBlockData;
+use crate::tasks::find_ancestor_task::MAX_ANCESTOR_DEPTH;
 use crate::tasks::mock::{ErrorStrategy, MockBlockIdFetcher, SyncNodeMocker};
 use crate::tasks::{
     full_sync_task, AccumulatorCollector, AncestorCollector, BlockAccumulatorSyncTask,
     BlockCollector, BlockFetcher, BlockLocalStore, BlockSyncTask, FindAncestorTask, SyncFetcher,
 };
-use crate::verified_rpc_client::RpcVerifyError;
+use crate::verified_rpc_client::{RpcVerifyError, SyncTargetMismatch};
 use anyhow::Context;
 use anyhow::{format_err, Result};
 use futures::channel::mpsc::unbounded;
@@ -40,6 +41,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use stream_task::{
     DefaultCustomErrorHandle, Generator, TaskError, TaskEventCounterHandle, TaskGenerator,
+    TaskState,
 };
 use test_helper::DummyNetworkService;
 
@@ -757,7 +759,7 @@ pub async fn test_find_ancestor_same_number() -> Result<()> {
         fetcher.clone(),
     );
     let event_handle = Arc::new(TaskEventCounterHandle::new());
-    let collector = AncestorCollector::new(accumulator2.clone());
+    let collector = AncestorCollector::new(accumulator2.clone(), vec![]);
     let task = TaskGenerator::new(
         task_state,
         5,
@@ -797,7 +799,7 @@ pub async fn test_find_ancestor_block_number_behind() -> Result<()> {
         fetcher.clone(),
     );
     let event_handle = Arc::new(TaskEventCounterHandle::new());
-    let collector = AncestorCollector::new(accumulator2.clone());
+    let collector = AncestorCollector::new(accumulator2.clone(), vec![]);
     let task = TaskGenerator::new(
         task_state,
         5,
@@ -846,7 +848,7 @@ pub async fn test_find_ancestor_chain_fork() -> Result<()> {
         fetcher.clone(),
     );
     let event_handle = Arc::new(TaskEventCounterHandle::new());
-    let collector = AncestorCollector::new(accumulator2.clone());
+    let collector = AncestorCollector::new(accumulator2.clone(), vec![]);
     let task = TaskGenerator::new(
         task_state,
         5,
@@ -864,6 +866,108 @@ pub async fn test_find_ancestor_chain_fork() -> Result<()> {
     //sub task not all finished, the collector return enough.
     assert!(report.ok < report.sub_task);
     assert_eq!(report.processed_items, 100 + 1);
+    Ok(())
+}
+
+#[stest::test]
+pub async fn test_find_ancestor_deep_fork() -> Result<()> {
+    // An honest fork thousands of blocks deep is still found while the batch grows.
+    let store = Arc::new(MockAccumulatorStore::new());
+    let accumulator = Arc::new(MerkleAccumulator::new_empty(store.clone()));
+    let fetcher = MockBlockIdFetcher::new(accumulator.clone());
+    fetcher.appends(generate_hash(100).as_slice())?;
+    let info0 = accumulator.get_info();
+    fetcher.appends(generate_hash(5000).as_slice())?;
+
+    let store2 = Arc::new(MockAccumulatorStore::copy_from(store.as_ref()));
+    let accumulator2 = Arc::new(MerkleAccumulator::new_with_info(info0.clone(), store2));
+    accumulator2.append(generate_hash(5000).as_slice())?;
+    accumulator2.flush()?;
+
+    let task_state = FindAncestorTask::new(
+        accumulator2.num_leaves() - 1,
+        accumulator.num_leaves() - 1,
+        10,
+        fetcher.clone(),
+    );
+    let event_handle = Arc::new(TaskEventCounterHandle::new());
+    let collector = AncestorCollector::new(accumulator2.clone(), vec![]);
+    let ancestor = TaskGenerator::new(
+        task_state,
+        2,
+        3,
+        1,
+        collector,
+        event_handle.clone(),
+        Arc::new(DefaultCustomErrorHandle),
+    )
+    .generate()
+    .await?;
+    assert_eq!(ancestor.number, info0.num_leaves - 1);
+    let report = event_handle.get_reports().pop().unwrap();
+    assert!(
+        report.sub_task < 20,
+        "a 5000-block walk took {} requests",
+        report.sub_task
+    );
+    Ok(())
+}
+
+#[test]
+fn test_find_ancestor_walk_is_capped_and_contiguous() {
+    let fetcher = MockBlockIdFetcher::new(Arc::new(MerkleAccumulator::new_empty(Arc::new(
+        MockAccumulatorStore::new(),
+    ))));
+    let start = 3 * MAX_ANCESTOR_DEPTH;
+    let mut task = FindAncestorTask::new(start, start, 10, fetcher);
+    let mut requests = 1u64;
+    let mut covered_down_to = start;
+    while let Some(next) = task.next() {
+        // The previous request covered `batch_size` ids down from its start, so the next one
+        // must start no lower than just below that: no gaps.
+        assert!(next.start_number() >= covered_down_to.saturating_sub(task.batch_size()));
+        covered_down_to = next.start_number();
+        requests = requests.saturating_add(1);
+        task = next;
+    }
+    assert_eq!(covered_down_to, start - MAX_ANCESTOR_DEPTH);
+    assert!(requests < 1_100, "{} requests", requests);
+}
+
+#[stest::test]
+pub async fn test_find_ancestor_miss_blames_target_peers() -> Result<()> {
+    let store = Arc::new(MockAccumulatorStore::new());
+    let accumulator = Arc::new(MerkleAccumulator::new_empty(store));
+    let fetcher = MockBlockIdFetcher::new(accumulator.clone());
+    // The peer's chain shares nothing with ours, not even genesis.
+    fetcher.appends(generate_hash(50).as_slice())?;
+    let local = Arc::new(MerkleAccumulator::new_empty(Arc::new(
+        MockAccumulatorStore::new(),
+    )));
+    local.append(generate_hash(50).as_slice())?;
+    local.flush()?;
+
+    let peer = PeerId::random();
+    let task_state = FindAncestorTask::new(49, 49, 10, fetcher);
+    let collector = AncestorCollector::new(local, vec![peer.clone()]);
+    let err = TaskGenerator::new(
+        task_state,
+        2,
+        3,
+        1,
+        collector,
+        Arc::new(TaskEventCounterHandle::new()),
+        Arc::new(DefaultCustomErrorHandle),
+    )
+    .generate()
+    .await
+    .unwrap_err();
+    let mismatch = match &err {
+        TaskError::BreakError(e) => e.downcast_ref::<SyncTargetMismatch>(),
+        _ => None,
+    }
+    .unwrap_or_else(|| panic!("an ancestor miss must name the target peers, got {:?}", err));
+    assert_eq!(mismatch.peers, vec![peer]);
     Ok(())
 }
 
