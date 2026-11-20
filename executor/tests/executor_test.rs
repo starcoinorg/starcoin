@@ -1090,3 +1090,42 @@ fn test_chunk_block_transactions() -> Result<()> {
 
     Ok(())
 }
+
+/// With publishing and scripts locked, validation refuses packages and scripts before their
+/// bytecode is deserialized or verified, with the status the prologue gives.
+#[stest::test]
+fn test_validate_refuses_locked_payloads_before_bytecode() -> Result<()> {
+    use starcoin_config::{BuiltinNetworkID, ChainNetwork};
+    use starcoin_vm_types::on_chain_config::TransactionPublishOption;
+    use starcoin_vm_types::transaction::{Script, SignedUserTransaction, TransactionPayload};
+    use test_helper::executor::{
+        build_raw_txn, compile_modules_with_address, prepare_customized_genesis,
+    };
+
+    let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();
+    genesis_config.publishing_option = TransactionPublishOption::locked();
+    let net = ChainNetwork::new_custom("locked".to_string(), ChainId::new(100), genesis_config)?;
+    let state = prepare_customized_genesis(&net);
+    let association = Account::new_association();
+    let sign = |payload| {
+        let raw = build_raw_txn(*association.address(), &state, payload, None);
+        let signature = association.private_key().sign(&raw);
+        SignedUserTransaction::new(raw, signature)
+    };
+
+    // Not decodable at all: refused as a script, never reported as a deserialization error.
+    let garbage = TransactionPayload::Script(Script::new(vec![0xff; 16], vec![], vec![]));
+    let status = validate_transaction(&state, sign(garbage), None).expect("refused");
+    assert_eq!(status.status_code(), StatusCode::UNKNOWN_SCRIPT);
+
+    let module = compile_modules_with_address(
+        *association.address(),
+        "module {{sender}}::M { public fun f() {} }",
+    )
+    .pop()
+    .unwrap();
+    let package = TransactionPayload::Package(Package::new_with_module(module)?);
+    let status = validate_transaction(&state, sign(package), None).expect("refused");
+    assert_eq!(status.status_code(), StatusCode::INVALID_MODULE_PUBLISHER);
+    Ok(())
+}

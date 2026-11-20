@@ -51,7 +51,7 @@ use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::identifier::IdentStr;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::on_chain_config::{
-    GasSchedule, MoveLanguageVersion, G_GAS_CONSTANTS_IDENTIFIER,
+    GasSchedule, MoveLanguageVersion, TransactionPublishOption, G_GAS_CONSTANTS_IDENTIFIER,
     G_INSTRUCTION_SCHEDULE_IDENTIFIER, G_NATIVE_SCHEDULE_IDENTIFIER, G_VM_CONFIG_IDENTIFIER,
 };
 use starcoin_vm_types::state_store::state_key::StateKey;
@@ -403,6 +403,7 @@ impl StarcoinVM {
         let mut gas_meter = StarcoinGasMeter::new(gas_params.clone(), txn_data.max_gas_amount());
         gas_meter.set_metering(false);
         self.check_gas(&txn_data)?;
+        Self::check_publish_option(remote_cache, transaction.payload())?;
         match transaction.payload() {
             TransactionPayload::Package(package) => {
                 for module in package.modules() {
@@ -490,7 +491,18 @@ impl StarcoinVM {
             warn!("Load config error at verify_transaction: {}", err);
             return Some(VMStatus::Error(StatusCode::VM_STARTUP_FAILURE));
         }
-        match self.verify_transaction_impl(&signature_verified_txn, &data_cache) {
+        let verified = crate::untrusted_bytecode::contain(|| {
+            self.verify_transaction_impl(&signature_verified_txn, &data_cache)
+        })
+        .unwrap_or_else(|panic| {
+            error!(
+                "[VM] validation of txn {} panicked: {}",
+                signature_verified_txn.id(),
+                panic
+            );
+            Err(VMStatus::Error(StatusCode::VERIFIER_INVARIANT_VIOLATION))
+        });
+        match verified {
             Ok(_) => None,
             Err(err) => {
                 if err.status_code() == StatusCode::SEQUENCE_NUMBER_TOO_NEW {
@@ -513,6 +525,41 @@ impl StarcoinVM {
             Ok(bcs_ext::from_bytes::<ModuleUpgradeStrategy>(&data)?.only_new_module())
         } else {
             Ok(false)
+        }
+    }
+
+    /// The prologue refuses packages and scripts the on-chain `TransactionPublishOption`
+    /// disallows, but validation deserializes and verifies their bytecode before it gets there.
+    /// Refuse them first, with the status the prologue would give, so a disallowed payload
+    /// never reaches the deserializer or the bytecode verifier. The framework at 0x1 is not
+    /// subject to the option. Execution is unchanged: there the prologue runs first.
+    fn check_publish_option<S: StateView>(
+        remote_cache: &StateViewCache<S>,
+        payload: &TransactionPayload,
+    ) -> Result<(), VMStatus> {
+        let refused = match payload {
+            TransactionPayload::Package(p) if p.package_address() != genesis_address() => {
+                StatusCode::INVALID_MODULE_PUBLISHER
+            }
+            TransactionPayload::Script(_) => StatusCode::UNKNOWN_SCRIPT,
+            _ => return Ok(()),
+        };
+        let option = remote_cache
+            .get_on_chain_config::<TransactionPublishOption>()
+            .map_err(|e| {
+                warn!("[VM] read TransactionPublishOption: {:?}", e);
+                VMStatus::Error(StatusCode::FAILED_TO_DESERIALIZE_RESOURCE)
+            })?;
+        let allowed = match (option, payload) {
+            // Before the config exists (early genesis) the prologue decides.
+            (None, _) => true,
+            (Some(o), TransactionPayload::Package(_)) => o.is_module_publishing_allowed(),
+            (Some(o), _) => o.is_script_allowed(),
+        };
+        if allowed {
+            Ok(())
+        } else {
+            Err(VMStatus::Error(refused))
         }
     }
 
