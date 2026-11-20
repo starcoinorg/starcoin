@@ -52,6 +52,14 @@ pub fn type_tag_nesting(t: &TypeTag) -> usize {
     max
 }
 
+/// Whether any of the type arguments nests deeper than `MAX_TYPE_TAG_NESTING`, the bound RPC
+/// type tag strings already have.
+pub fn type_args_too_deep(ty_args: &[TypeTag]) -> bool {
+    ty_args
+        .iter()
+        .any(|t| type_tag_nesting(t) > MAX_TYPE_TAG_NESTING)
+}
+
 pub fn parse_type_tag(s: &str) -> Result<TypeTag> {
     check_nesting(s)?;
     move_parser::parse_type_tag(s)
@@ -91,6 +99,15 @@ mod tests {
         assert_eq!(type_tag_nesting(&TypeTag::U8), 0);
         let t = parse_type_tag(&nested(MAX_TYPE_TAG_NESTING)).unwrap();
         assert_eq!(type_tag_nesting(&t), MAX_TYPE_TAG_NESTING);
+    }
+
+    #[test]
+    fn type_args_too_deep_only_past_the_limit() {
+        let at_limit = parse_type_tag(&nested(MAX_TYPE_TAG_NESTING)).unwrap();
+        let past_limit = TypeTag::Vector(Box::new(at_limit.clone()));
+        assert!(!type_args_too_deep(&[]));
+        assert!(!type_args_too_deep(&[TypeTag::U8, at_limit]));
+        assert!(type_args_too_deep(&[TypeTag::U8, past_limit]));
     }
 
     #[test]

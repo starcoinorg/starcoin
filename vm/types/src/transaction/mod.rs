@@ -396,6 +396,16 @@ impl TransactionPayload {
             TransactionPayload::ScriptFunction(_) => TransactionPayloadType::ScriptFunction,
         }
     }
+
+    /// Type arguments the payload passes to Move code: the script's, the script function's, or
+    /// the package init script's.
+    pub fn ty_args(&self) -> &[crate::language_storage::TypeTag] {
+        match self {
+            TransactionPayload::Script(s) => s.ty_args(),
+            TransactionPayload::ScriptFunction(f) => f.ty_args(),
+            TransactionPayload::Package(p) => p.init_script().map(|f| f.ty_args()).unwrap_or(&[]),
+        }
+    }
 }
 
 impl TryFrom<u8> for TransactionPayloadType {

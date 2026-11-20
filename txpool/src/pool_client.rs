@@ -177,17 +177,8 @@ impl crate::pool::Client for PoolClient {
 /// message or a block body, and that encoding used to panic. The VM does not cap type argument
 /// depth during validation, so this runs first, for RPC and peer txns alike.
 fn check_type_arg_nesting(txn: &SignedUserTransaction) -> Result<(), TransactionError> {
-    use starcoin_vm_types::parser::{type_tag_nesting, MAX_TYPE_TAG_NESTING};
-    use starcoin_vm_types::transaction::TransactionPayload;
-    let ty_args = match txn.payload() {
-        TransactionPayload::Script(s) => s.ty_args(),
-        TransactionPayload::ScriptFunction(f) => f.ty_args(),
-        TransactionPayload::Package(p) => p.init_script().map(|f| f.ty_args()).unwrap_or(&[]),
-    };
-    if ty_args
-        .iter()
-        .any(|t| type_tag_nesting(t) > MAX_TYPE_TAG_NESTING)
-    {
+    use starcoin_vm_types::parser::{type_args_too_deep, MAX_TYPE_TAG_NESTING};
+    if type_args_too_deep(txn.payload().ty_args()) {
         return Err(TransactionError::TypeArgsTooDeep {
             max: MAX_TYPE_TAG_NESTING,
         });
