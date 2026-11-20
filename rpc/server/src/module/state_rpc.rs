@@ -52,6 +52,11 @@ where
     }
 }
 
+/// Most resources one `list_resource` call returns; page with `start_index` past that.
+/// Every listed resource can be decoded, and the default `max_size` is unbounded. The largest
+/// Main account (0x1) held 446 resources on 2026-11-20.
+const MAX_LIST_RESOURCES: usize = 10_000;
+
 impl<S> StateApi for StateRpcImpl<S>
 where
     S: ChainStateAsyncService,
@@ -338,7 +343,7 @@ where
                             false
                         })
                         .skip(option.start_index)
-                        .take(option.max_size)
+                        .take(std::cmp::min(option.max_size, MAX_LIST_RESOURCES))
                         .map(|(k, v)| {
                             let struct_tag = StructTag::decode(k.as_slice())?;
                             let decoded = if option.decode {
