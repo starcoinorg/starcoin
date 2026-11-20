@@ -242,7 +242,7 @@ fn user_execute_should_success(
     execute_signed_txn_should_success(state, txn)
 }
 
-fn build_signed_txn(
+pub fn build_signed_txn(
     user_address: AccountAddress,
     prikey: &AccountPrivateKey,
     state: &ChainStateDB,

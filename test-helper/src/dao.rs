@@ -220,7 +220,7 @@ pub fn min_action_delay<S: StateView>(state_view: &S, token: TypeTag) -> u64 {
     bcs_ext::from_bytes(ret.pop().unwrap().as_slice()).unwrap()
 }
 
-fn execute_cast_vote(
+pub fn execute_cast_vote(
     net: &ChainNetwork,
     chain_state: &ChainStateDB,
     alice: &Account,

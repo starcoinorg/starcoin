@@ -38,6 +38,9 @@ use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_view::{StateReaderExt, StateView};
 use std::{convert::TryInto, sync::Arc};
 
+mod dao_vote_guard;
+use starcoin_vm_types::write_set::WriteSet;
+
 pub struct OpenedBlock {
     previous_block_info: BlockInfo,
     block_meta: BlockMetadata,
@@ -193,8 +196,26 @@ impl OpenedBlock {
                 .collect()
         };
         debug_assert_eq!(txns.len(), txn_outputs.len());
-        for (txn, output) in txns.into_iter().zip(txn_outputs.into_iter()) {
+        let mut untouched_user_txns = untouched_user_txns;
+        let mut txns = txns.into_iter();
+        for output in txn_outputs.into_iter() {
+            let txn = match txns.next() {
+                Some(txn) => txn,
+                None => break,
+            };
             let txn_hash = txn.id();
+            if matches!(output.status(), TransactionStatus::Keep(_))
+                && self.leaves_out_vote_unstake(txn_hash, output.write_set())
+            {
+                // Later outputs were computed on top of this one, so stop here: they go back
+                // untouched and run again against a state without it.
+                discard_txns.push(txn.try_into().expect("user txn"));
+                let mut rest: Vec<SignedUserTransaction> =
+                    txns.map(|t| t.try_into().expect("user txn")).collect();
+                rest.append(&mut untouched_user_txns);
+                untouched_user_txns = rest;
+                break;
+            }
             match output.status() {
                 TransactionStatus::Discard(status) => {
                     debug!("discard txn {}, vm status: {:?}", txn_hash, status);
@@ -224,6 +245,31 @@ impl OpenedBlock {
             discarded_txns: discard_txns,
             untouched_txns: untouched_user_txns,
         })
+    }
+
+    /// Whether block production leaves this txn out because it changes an open DAO proposal's
+    /// tally without the matching stake. A check that cannot read the state leaves the txn out
+    /// too: block production must not stall on it, and the txn can come back in a later block.
+    fn leaves_out_vote_unstake(&self, txn_hash: HashValue, write_set: &WriteSet) -> bool {
+        match dao_vote_guard::unbacked_tallies(&self.state, write_set, self.block_meta.timestamp())
+        {
+            Ok(proposals) if proposals.is_empty() => false,
+            Ok(proposals) => {
+                warn!(
+                    "[open-block] leave out txn {}: it changes the tally of open DAO proposals \
+                     {:?} without the matching stake",
+                    txn_hash, proposals
+                );
+                true
+            }
+            Err(e) => {
+                error!(
+                    "[open-block] DAO tally check failed on txn {}: {:?}",
+                    txn_hash, e
+                );
+                true
+            }
+        }
     }
 
     /// Run blockmeta first
