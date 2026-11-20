@@ -15,6 +15,7 @@ mod errors;
 pub mod force_upgrade_management;
 pub mod move_vm_ext;
 pub mod parallel_executor;
+pub mod untrusted_bytecode;
 use crate::metrics::VMMetrics;
 use starcoin_vm_types::{
     access_path::AccessPath,

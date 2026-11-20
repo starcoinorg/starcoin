@@ -407,7 +407,9 @@ impl StarcoinVM {
         match transaction.payload() {
             TransactionPayload::Package(package) => {
                 for module in package.modules() {
-                    if let Ok(compiled_module) = CompiledModule::deserialize(module.code()) {
+                    if let Ok(compiled_module) =
+                        contain_untrusted(|| CompiledModule::deserialize(module.code()))?
+                    {
                         // check module's bytecode version.
                         self.check_move_version(compiled_module.version() as u64, block_number)?;
                     };
@@ -426,8 +428,8 @@ impl StarcoinVM {
                         }
                         Ok(only_new_module) => only_new_module,
                     };
-                let _ = session
-                    .verify_module_bundle(
+                let _ = contain_untrusted(|| {
+                    session.verify_module_bundle(
                         package
                             .modules()
                             .iter()
@@ -440,20 +442,22 @@ impl StarcoinVM {
                             only_new_module,
                         },
                     )
-                    .map_err(|e| e.into_vm_status())?;
+                })?
+                .map_err(|e| e.into_vm_status())?;
             }
             TransactionPayload::Script(s) => {
-                if let Ok(s) = CompiledScript::deserialize(s.code()) {
+                if let Ok(s) = contain_untrusted(|| CompiledScript::deserialize(s.code()))? {
                     self.check_move_version(s.version() as u64, block_number)?;
                 };
-                session
-                    .verify_script_args(
+                contain_untrusted(|| {
+                    session.verify_script_args(
                         s.code().to_vec(),
                         s.ty_args().to_vec(),
                         s.args().to_vec(),
                         txn_data.sender(),
                     )
-                    .map_err(|e| e.into_vm_status())?;
+                })?
+                .map_err(|e| e.into_vm_status())?;
             }
             TransactionPayload::ScriptFunction(s) => {
                 session
@@ -491,18 +495,7 @@ impl StarcoinVM {
             warn!("Load config error at verify_transaction: {}", err);
             return Some(VMStatus::Error(StatusCode::VM_STARTUP_FAILURE));
         }
-        let verified = crate::untrusted_bytecode::contain(|| {
-            self.verify_transaction_impl(&signature_verified_txn, &data_cache)
-        })
-        .unwrap_or_else(|panic| {
-            error!(
-                "[VM] validation of txn {} panicked: {}",
-                signature_verified_txn.id(),
-                panic
-            );
-            Err(VMStatus::Error(StatusCode::VERIFIER_INVARIANT_VIOLATION))
-        });
-        match verified {
+        match self.verify_transaction_impl(&signature_verified_txn, &data_cache) {
             Ok(_) => None,
             Err(err) => {
                 if err.status_code() == StatusCode::SEQUENCE_NUMBER_TOO_NEW {
@@ -1675,4 +1668,13 @@ impl VMAdapter for StarcoinVM {
             }
         })
     }
+}
+
+/// Deserializing or verifying bytecode a txn carries, during validation only: a panic there is
+/// a property of the submitted bytes, so it rejects the txn instead of stopping the node.
+fn contain_untrusted<T>(f: impl FnOnce() -> T) -> Result<T, VMStatus> {
+    crate::untrusted_bytecode::contain(f).map_err(|panic| {
+        error!("[VM] validating submitted bytecode panicked: {}", panic);
+        VMStatus::Error(StatusCode::VERIFIER_INVARIANT_VIOLATION)
+    })
 }

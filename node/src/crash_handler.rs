@@ -18,6 +18,11 @@ pub fn setup_panic_handler() {
 // Formats and logs panic information
 fn handle_panic(panic_info: &PanicInfo<'_>) {
     let details = format!("{}", panic_info);
+    if starcoin_vm_runtime::untrusted_bytecode::is_containing() {
+        // Validating outside bytecode; the panic unwinds into a txn rejection.
+        warn!("contained panic while validating a txn: {}", details);
+        return;
+    }
     let backtrace = format!("{:#?}", Backtrace::new());
 
     error!("panic occurred:");
