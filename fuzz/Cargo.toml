@@ -1,0 +1,58 @@
+[package]
+name = "starcoin-fuzz"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+# Standalone workspace: the fuzz build needs libFuzzer instrumentation flags and must not
+# change the main workspace's lockfile, toolchain, or default `cargo test` path.
+[workspace]
+members = ["."]
+
+[dependencies]
+anyhow = "~1"
+bcs-ext = { path = "../commons/bcs_ext" }
+forkable-jellyfish-merkle = { path = "../commons/forkable-jellyfish-merkle" }
+# 0.4.8+ needs std::sync::OnceLock (Rust 1.70); the repo toolchain is 1.66.1.
+libfuzzer-sys = "=0.4.7"
+serde = "1"
+network-api = { path = "../network/api" }
+network-p2p = { path = "../network-p2p" }
+starcoin-abi-resolver = { path = "../abi/resolver" }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "a742ddc0674022800341182cbb4c3681807b2f00" }
+starcoin-network = { path = "../network" }
+starcoin-network-rpc-api = { path = "../network-rpc/api" }
+starcoin-rpc-api = { path = "../rpc/api" }
+starcoin-types = { path = "../types" }
+starcoin-vm-types = { path = "../vm/types" }
+stdlib = { path = "../vm/stdlib" }
+
+[profile.release]
+debug = 1
+
+[[bin]]
+name = "rpc_request"
+path = "fuzz_targets/rpc_request.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "p2p_notification"
+path = "fuzz_targets/p2p_notification.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "signed_txn"
+path = "fuzz_targets/signed_txn.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "type_tag_parser"
+path = "fuzz_targets/type_tag_parser.rs"
+test = false
+doc = false
