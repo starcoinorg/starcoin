@@ -689,6 +689,12 @@ impl ServiceHandler<Self, SyncStartRequest> for SyncService {
         msg: SyncStartRequest,
         ctx: &mut ServiceContext<SyncService>,
     ) -> Result<()> {
+        // Without PoW checks a peer's header difficulty reaches total-difficulty arithmetic
+        // unchecked; Main has no reason to trust peers that far.
+        anyhow::ensure!(
+            !(msg.skip_pow_verify && self.config.net().is_main()),
+            "skip_pow_verify is not allowed on Main"
+        );
         if msg.force {
             info!("[sync] Try to cancel previous sync task, because receive force sync request.");
             self.cancel_task();
