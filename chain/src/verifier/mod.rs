@@ -487,4 +487,56 @@ mod tests {
             Some(&parent),
         ));
     }
+
+    /// Replays real headers through the check: every one must pass. The input is one
+    /// BCS-hex header per line in chain order, e.g. from `chain.get_block_by_number` with
+    /// `{"raw": true}`. Run with
+    /// `STARCOIN_MAIN_HEADERS=<file> cargo test -p starcoin-chain -- --ignored main_headers`.
+    #[test]
+    #[ignore]
+    fn claimed_pow_accepts_main_headers() {
+        let path = match std::env::var("STARCOIN_MAIN_HEADERS") {
+            Ok(path) => path,
+            Err(_) => return,
+        };
+        // Main's epoch: CryptoNight with a 24-block difficulty window.
+        let epoch = Epoch::new(
+            0,
+            0,
+            0,
+            0,
+            10_000,
+            0,
+            0,
+            24,
+            2,
+            50_000_000,
+            ConsensusStrategy::CryptoNight.value(),
+            EventHandle::new(EventKey::new_from_address(&AccountAddress::ONE, 0), 0),
+        );
+        let text = std::fs::read_to_string(path).unwrap();
+        let headers: Vec<BlockHeader> = text
+            .lines()
+            .map(|line| {
+                let bytes = hex::decode(line.trim().trim_start_matches("0x")).unwrap();
+                bcs_ext::from_bytes(&bytes).unwrap()
+            })
+            .collect();
+        let mut with_parent = 0;
+        for (i, header) in headers.iter().enumerate() {
+            let parent = i
+                .checked_sub(1)
+                .map(|p| &headers[p])
+                .filter(|p| p.id() == header.parent_hash());
+            with_parent += usize::from(parent.is_some());
+            StaticVerifier::verify_claimed_pow(&epoch, header, parent)
+                .unwrap_or_else(|e| panic!("block {} rejected: {:?}", header.number(), e));
+        }
+        assert!(with_parent > 0);
+        println!(
+            "{} headers passed, {} with parent",
+            headers.len(),
+            with_parent
+        );
+    }
 }
