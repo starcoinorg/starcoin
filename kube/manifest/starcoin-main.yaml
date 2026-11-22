@@ -39,7 +39,7 @@ spec:
             topologyKey: kubernetes.io/hostname
       containers:
       - name: starcoin
-        image: ghcr.io/starcoinorg/starcoin@sha256:0d4638b3fdc5ee6f8c2d8db78b5d625de6757609acbe9d259c7431834c2d3470
+        image: ghcr.io/starcoinorg/starcoin@sha256:ee867dc1bb717746628c996b4cc293a6cf0cf98f0732bec47e425a438cd6053e
         imagePullPolicy: Always
         # With --rocksdb-max-open-files 2048 a warm seed stays under ~3 GiB
         # (SST index ~0.7 GiB, 18 memtables bounded by the 1 GiB WAL cap,
