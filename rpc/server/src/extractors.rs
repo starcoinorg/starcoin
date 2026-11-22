@@ -54,9 +54,28 @@ pub struct WsExtractor;
 impl jsonrpc_ws_server::MetaExtractor<Metadata> for WsExtractor {
     fn extract(&self, req: &jsonrpc_ws_server::RequestContext) -> Metadata {
         let session = Some(Arc::new(Session::new(req.sender())));
+        // The ws handshake exposes no client address or headers here. Without a user, a single
+        // connection was limited only by the global per-method quota and could exhaust it for
+        // every client, so each connection gets its own user quota instead.
         Metadata {
             session,
-            user: None,
+            user: Some(ws_session_user(req.session_id)),
         }
+    }
+}
+
+/// Rate-limit user key of one ws connection. The prefix keeps it apart from client IPs.
+fn ws_session_user(session_id: u64) -> String {
+    format!("ws-session:{}", session_id)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ws_session_user;
+
+    #[test]
+    fn ws_sessions_get_distinct_users_that_cannot_be_ips() {
+        assert_ne!(ws_session_user(1), ws_session_user(2));
+        assert!(ws_session_user(1).parse::<std::net::IpAddr>().is_err());
     }
 }
