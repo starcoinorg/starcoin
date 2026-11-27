@@ -452,7 +452,8 @@ impl Genesis {
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
         let storage2 = Arc::new(Storage2(storage.clone()));
         let genesis = Genesis::load_or_build(net)?;
-        let dag = BlockDAG::create_for_testing()?;
+        let genesis_hash = genesis.block().id();
+        let dag = BlockDAG::create_for_testing(genesis_hash)?;
         let chain_info =
             genesis.execute_genesis_block(net, storage.clone(), storage2.clone(), dag.clone())?;
 
@@ -466,7 +467,8 @@ impl Genesis {
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
         let storage2 = Arc::new(Storage2(storage.clone()));
         let genesis = Genesis::load_or_build(net)?;
-        let dag = BlockDAG::create_for_testing_with_parameters(k)?;
+        let genesis_hash = genesis.block().id();
+        let dag = BlockDAG::create_for_testing_with_parameters(k, genesis_hash)?;
         let chain_info =
             genesis.execute_genesis_block(net, storage.clone(), storage2.clone(), dag.clone())?;
         Ok((storage, storage2, chain_info, genesis, dag))
@@ -483,7 +485,8 @@ impl Genesis {
         )?);
         let storage2 = Arc::new(Storage2(storage.clone()));
         let genesis = Genesis::load_or_build(net)?;
-        let dag = BlockDAG::create_for_testing()?;
+        let genesis_hash = genesis.block().id();
+        let dag = BlockDAG::create_for_testing(genesis_hash)?;
         let chain_info =
             genesis.execute_genesis_block(net, storage.clone(), storage2.clone(), dag.clone())?;
         Ok((storage, storage2, chain_info, genesis, dag))
@@ -558,12 +561,14 @@ mod tests {
 
     pub fn do_test_genesis(net: &ChainNetwork, data_dir: &Path) -> Result<()> {
         let storage1 = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
-        let dag1 = BlockDAG::create_for_testing()?;
+        let genesis = Genesis::load_or_build(net)?;
+        let genesis_hash = genesis.block().id();
+        let dag1 = BlockDAG::create_for_testing(genesis_hash)?;
         let (chain_info1, genesis1) =
             Genesis::init_and_check_storage(net, storage1.clone(), dag1, data_dir)?;
         let storage1_2 = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
         let storage2_2 = Arc::new(Storage2(storage1_2.clone()));
-        let dag2 = BlockDAG::create_for_testing()?;
+        let dag2 = BlockDAG::create_for_testing(genesis_hash)?;
         let (chain_info2, genesis2) =
             Genesis::init_and_check_storage(net, storage1_2.clone(), dag2, data_dir)?;
 

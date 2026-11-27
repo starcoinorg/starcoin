@@ -6,12 +6,13 @@ use starcoin_account::account_storage::AccountStorage;
 use starcoin_account::AccountManager;
 use starcoin_account_api::AccountInfo;
 use starcoin_config::{NodeConfig, StarcoinOpt};
+use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_genesis::Genesis;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::StorageInstance;
-use starcoin_storage::{Storage, Storage2};
+use starcoin_storage::{BlockStore, Storage, Storage2};
 use starcoin_types::startup_info::ChainInfo;
 use std::sync::Arc;
 
@@ -49,11 +50,13 @@ pub fn init_or_load_data_dir(
         .genesis_config2()
         .consensus_config
         .base_max_uncles_per_block;
-    let dag = starcoin_dag::blockdag::BlockDAG::new(
+    let genesis_hash = storage.get_genesis()?.unwrap_or(HashValue::zero());
+    let mut dag = starcoin_dag::blockdag::BlockDAG::new(
         starcoin_types::blockhash::KType::try_from(k)?,
         config.miner.dag_merge_depth(),
         config.miner.maximum_parents_count(),
         dag_storage.clone(),
+        genesis_hash,
     );
     let (chain_info, _genesis) = Genesis::init_and_check_storage(
         config.net(),
@@ -61,6 +64,9 @@ pub fn init_or_load_data_dir(
         dag.clone(),
         config.data_dir(),
     )?;
+    if genesis_hash == HashValue::zero() {
+        dag.set_genesis(chain_info.genesis_hash());
+    }
     let vault_config = &config.vault;
     let account_storage =
         AccountStorage::create_from_path(vault_config.dir(), config.storage.rocksdb_config())?;

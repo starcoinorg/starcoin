@@ -40,13 +40,13 @@ impl GhostAdpter {
             .with_difficulty(0.into())
             .with_timestamp(time.now_millis())
             .build();
+        let genesis_id = genesis.id();
 
         let db_tempdir = tempfile::tempdir()?;
         let config = FlexiDagStorageConfig::new();
         let dag_storage = FlexiDagStorage::create_from_path(db_tempdir.path(), config)?;
-        let mut dag = BlockDAG::new(k, merge_depth, max_parents_count, dag_storage);
+        let mut dag = BlockDAG::new(k, merge_depth, max_parents_count, dag_storage, genesis_id);
         dag.init_with_genesis(genesis.clone())?;
-        let genesis_id = genesis.id();
         Ok(Self {
             genesis,
             dag,
