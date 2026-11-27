@@ -20,12 +20,12 @@ fn test_select_dag_state_same_pruning_point() -> Result<()> {
 
     // Select DAG state with same pruning point (should use simple path)
     let mut test_chain = mock_chain.fork_new_branch(Some(block_1.id()))?;
-    let new_chain = test_chain.select_dag_state(&block_2)?;
+    test_chain.select_dag_state(&block_2)?;
 
     // Verify: selected chain should have block_2 as head (same pruning point, simple case)
-    assert_eq!(new_chain.status().head().id(), block_2.id());
+    assert_eq!(test_chain.status().head().id(), block_2.id());
     assert_eq!(
-        new_chain.status().head().pruning_point(),
+        test_chain.status().head().pruning_point(),
         block_2.pruning_point()
     );
 
@@ -72,11 +72,11 @@ fn test_select_dag_state_different_pruning_points() -> Result<()> {
     // Now test select_dag_state with different pruning points
     // This should trigger the complex comparison logic in lines 1915-1934
     let mut test_chain = mock_chain.fork_new_branch(Some(blue_5.id()))?;
-    let selected_chain = test_chain.select_dag_state(blue_6.header())?;
+    test_chain.select_dag_state(blue_6.header())?;
 
     // Verify: the selected chain should handle the pruning point change correctly
     // The exact result depends on GHOSTDAG comparison, but it should not panic/fail
-    assert!(selected_chain.status().head().id() != HashValue::zero());
+    assert!(test_chain.status().head().id() != HashValue::zero());
 
     Ok(())
 }
@@ -99,10 +99,10 @@ fn test_select_dag_state_zero_pruning_point() -> Result<()> {
 
     // This should take the simple path (condition on line 1905-1907)
     let mut test_chain = mock_chain.fork_new_branch(Some(genesis_header.id()))?;
-    let selected_chain = test_chain.select_dag_state(&block_1)?;
+    test_chain.select_dag_state(&block_1)?;
 
     // Verify: should work without issues
-    assert_eq!(selected_chain.status().head().id(), block_1.id());
+    assert_eq!(test_chain.status().head().id(), block_1.id());
 
     Ok(())
 }
@@ -156,9 +156,9 @@ fn test_select_dag_state_regression_pruning_change() -> Result<()> {
         "select_dag_state should handle pruning point changes"
     );
 
-    let selected_chain = result?;
+    result?;
     // Should successfully create a chain, exact head depends on GHOSTDAG logic
-    assert!(selected_chain.status().head().id() != HashValue::zero());
+    assert!(test_chain.status().head().id() != HashValue::zero());
 
     Ok(())
 }
