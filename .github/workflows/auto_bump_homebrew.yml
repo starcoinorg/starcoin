@@ -3,11 +3,12 @@ on:
   push:
     tags: 'v*'
   workflow_dispatch:
-    inputs:
-      tag-name:
-        description: 'The git tag name to bump the formula to'
-        required: true
+    # inputs:
+    #   tag-name:
+    #     description: 'The git tag name to bump the formula to'
+    #     required: true
 
+name: Auto Bump Homebrew
 jobs:
   homebrew:
     name: Bump Homebrew formula
